@@ -13,10 +13,7 @@
   header h1{font-size:1.05rem;font-weight:600}
   header p{font-size:.78rem;color:var(--muted);margin-top:2px}
   .last-update{font-size:.7rem;color:var(--muted);margin-top:4px}
-  .tabs{display:flex;overflow-x:auto;gap:6px;padding:1rem 1.25rem .5rem;scrollbar-width:none}
-  .tabs::-webkit-scrollbar{display:none}
-  .tab{flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer}
-  .tab.active{color:#0f1117}
+  
   .panel{display:none;padding:0 1.25rem}
   .panel.active{display:block}
   .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;gap:12px;color:var(--muted);font-size:.85rem}
@@ -85,12 +82,14 @@
   <div class="last-update" id="last-update">⏳ Caricamento...</div>
 </header>
 
-<div class="tabs" id="tabs">
-  <button class="tab active" data-panel="p0">Marinella – Pancotto</button>
-  <button class="tab" data-panel="p1">Agnese</button>
-  <button class="tab" data-panel="p2">Stefanelli – Mondelli</button>
-  <button class="tab" data-panel="p3">Meneghin</button>
-  <button class="tab" data-panel="p4">Salti</button>
+<div style="padding:.75rem 1.25rem .5rem">
+  <select id="group-select" onchange="switchPanel(this.value)" style="width:100%;font-size:14px;font-weight:500;padding:10px 14px;border-radius:12px;border:1.5px solid;background:#1a1d27;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path fill=%22%238b90a8%22 d=%22M6 8L1 3h10z%22/></svg>');background-repeat:no-repeat;background-position:right 14px center">
+    <option value="p0" style="color:#3ecf8e">🟢 Marinella – Pancotto</option>
+    <option value="p1" style="color:#a78bfa">🟣 Agnese</option>
+    <option value="p2" style="color:#5b8def">🔵 Stefanelli – Mondelli</option>
+    <option value="p3" style="color:#f5a623">🟡 Meneghin</option>
+    <option value="p4" style="color:#f472b6">🩷 Salti</option>
+  </select>
 </div>
 
 <div id="p0" class="panel active"><div class="loading"><div class="spinner"></div>Caricamento dati...</div></div>
@@ -113,11 +112,19 @@ const groupConfig = [
   {id:'p4', color:'#f472b6', sheet:'SALTI',                 label:'Salti',                dateCol:'Data',      presCol:'Presenza',            actCol:'Attività'},
 ];
 
-const tabColors = groupConfig.map(g=>g.color);
-document.querySelectorAll('.tab').forEach((t,i)=>{
-  t.style.background=tabColors[i];t.style.borderColor=tabColors[i];
-  t.style.opacity=t.classList.contains('active')?'1':'0.4';
-});
+function switchPanel(panelId){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+  const cfg = groupConfig.find(g=>g.id===panelId);
+  const sel = document.getElementById('group-select');
+  if(sel && cfg) sel.style.borderColor = cfg.color;
+}
+// Set initial border color
+const initCfg = groupConfig[0];
+setTimeout(()=>{
+  const sel = document.getElementById('group-select');
+  if(sel) sel.style.borderColor = initCfg.color;
+},50);
 
 // ── CSV fetch & parse ─────────────────────────────────────────
 function fetchCSV(sheetName){
@@ -396,14 +403,7 @@ async function loadAll(){
   document.getElementById('last-update').textContent = `✅ Aggiornato: ${ts}`;
 }
 
-document.getElementById('tabs').addEventListener('click',e=>{
-  const btn=e.target.closest('.tab');
-  if(!btn)return;
-  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');t.style.opacity='0.4';});
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');btn.style.opacity='1';
-  document.getElementById(btn.dataset.panel).classList.add('active');
-});
+// navigation handled by switchPanel()
 
 loadAll();
 </script>
