@@ -106,11 +106,11 @@ const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','
 const GIORNI = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 
 const groupConfig = [
-  {id:'p0', color:'#3ecf8e', gid:1, name:'Marinella – Pancotto', dateCol:'Data',     presCol:'presenza all - gare', actCol:'Attività'},
-  {id:'p1', color:'#a78bfa', gid:2, name:'Agnese',               dateCol:'Data',     presCol:'Presenza all - gare', actCol:'Attività'},
-  {id:'p2', color:'#5b8def', gid:3, name:'Stefanelli – Mondelli',dateCol:'Data',     presCol:'Presenza all - gare', actCol:'Attività'},
-  {id:'p3', color:'#f5a623', gid:4, name:'Meneghin',             dateCol:'Colonna 2',presCol:'Presenza all - gare', actCol:'Attività'},
-  {id:'p4', color:'#f472b6', gid:5, name:'Salti',                dateCol:'Data',     presCol:'Presenza',            actCol:'Attività'},
+  {id:'p0', color:'#3ecf8e', sheet:'Marinella - Pancotto',  label:'Marinella – Pancotto', dateCol:'Data',      presCol:'presenza all - gare', actCol:'Attività'},
+  {id:'p1', color:'#a78bfa', sheet:'AGNESE',                label:'Agnese',               dateCol:'Data',      presCol:'Presenza all - gare', actCol:'Attività'},
+  {id:'p2', color:'#5b8def', sheet:'stefanelli-Mondelli',   label:'Stefanelli – Mondelli',dateCol:'Data',      presCol:'Presenza all - gare', actCol:'Attività'},
+  {id:'p3', color:'#f5a623', sheet:'Meneghin',              label:'Meneghin',             dateCol:'Colonna 2', presCol:'Presenza all - gare', actCol:'Attività'},
+  {id:'p4', color:'#f472b6', sheet:'SALTI',                 label:'Salti',                dateCol:'Data',      presCol:'Presenza',            actCol:'Attività'},
 ];
 
 const tabColors = groupConfig.map(g=>g.color);
@@ -120,18 +120,18 @@ document.querySelectorAll('.tab').forEach((t,i)=>{
 });
 
 // ── CSV fetch & parse ─────────────────────────────────────────
-function fetchCSV(gid){
+function fetchCSV(sheetName){
   const proxy = 'https://script.google.com/macros/s/AKfycbwUEOrShhkbaAaSHcLJ1RRpyCpH4OA2H5FwM2X_56eIBoFmfkFlA6PpFiwLBLrrC8SK/exec';
   return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + gid + '_' + Date.now();
+    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const script = document.createElement('script');
     window[cbName] = (result) => {
       delete window[cbName];
-      document.body.removeChild(script);
+      if(document.body.contains(script)) document.body.removeChild(script);
       if(result.error) reject(new Error(result.error));
       else resolve(result.data);
     };
-    script.src = `${proxy}?gid=${gid}&callback=${cbName}`;
+    script.src = `${proxy}?sheet=${encodeURIComponent(sheetName)}&callback=${cbName}`;
     script.onerror = () => reject(new Error('Script load failed'));
     document.body.appendChild(script);
     setTimeout(() => reject(new Error('Timeout')), 15000);
@@ -398,7 +398,7 @@ async function loadAll(){
 
   for(const cfg of groupConfig){
     try{
-      const csv = await fetchCSV(cfg.gid);
+      const csv = await fetchCSV(cfg.sheet);
       const rows = parseCSV(csv);
       const stats = processRows(rows, cfg);
       renderGroup(cfg, stats);
