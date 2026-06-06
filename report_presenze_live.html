@@ -191,17 +191,30 @@ function parseDate(v){
 // ── Process one sheet's rows ──────────────────────────────────
 function processRows(rows, cfg){
   const skipRx=/giorni|n°|maggior|costo/i;
-  const athleteCols = Object.keys(rows[0]||{}).filter(k=>k.trim().startsWith('['));
+  // Athlete columns: headers containing '[' and ']'
+  const athleteCols = Object.keys(rows[0]||{}).filter(k=>k.includes('[') && k.includes(']'));
+
+  // Find actual column names before filtering
+  const allKeysFirst = Object.keys(rows[0]||{});
+  const findColFirst = (name) => allKeysFirst.find(k=>k.trim().toLowerCase()===name.trim().toLowerCase()) || name;
+  const resolvedActCol = findColFirst(cfg.actCol);
 
   const data = rows.filter(r=>{
-    const a=(r[cfg.actCol]||'').trim();
+    const a=(r[resolvedActCol]||'').trim();
     return a && !skipRx.test(a);
   });
 
+  // Find actual column names case-insensitively
+  const allKeys = Object.keys(rows[0]||{});
+  const findCol = (name) => allKeys.find(k=>k.trim().toLowerCase()===name.trim().toLowerCase()) || name;
+  const actualDateCol = findCol(cfg.dateCol);
+  const actualPresCol = findCol(cfg.presCol);
+  const actualActCol = findCol(cfg.actCol);
+
   data.forEach(r=>{
-    r._date = parseDate(r[cfg.dateCol]);
-    r._isAll = /allenamento/i.test(r[cfg.actCol]||'');
-    r._pres = parseInt(r[cfg.presCol])||0;
+    r._date = parseDate(r[actualDateCol]);
+    r._isAll = /allenamento/i.test(r[actualActCol]||'');
+    r._pres = parseInt(r[actualPresCol])||0;
   });
 
   const allenamenti = data.filter(r=>r._isAll && r._date);
