@@ -85,7 +85,7 @@
     </div>
     <div style="width:100%;max-width:320px">
       <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;text-align:center">Seleziona allenatore</div>
-      <select id="splash-select" onchange="startReport(this.value)" style="width:100%;font-size:14px;font-weight:500;padding:12px 16px;border-radius:14px;border:1.5px solid rgba(255,255,255,.15);background:#1a1d27;color:var(--text);cursor:pointer;appearance:none;-webkit-appearance:none;text-align:center">
+      <select id="splash-select" style="width:100%;font-size:14px;font-weight:500;padding:12px 16px;border-radius:14px;border:1.5px solid rgba(255,255,255,.15);background:#1a1d27;color:var(--text);cursor:pointer;appearance:none;-webkit-appearance:none;text-align:center;margin-bottom:12px">
         <option value="" disabled selected>— scegli —</option>
         <option value="p0">Marinella – Pancotto</option>
         <option value="p1">Agnese</option>
@@ -93,6 +93,7 @@
         <option value="p3">Meneghin</option>
         <option value="p4">Salti</option>
       </select>
+      <button onclick="startReport(document.getElementById('splash-select').value)" style="width:100%;font-size:15px;font-weight:600;padding:13px;border-radius:14px;border:none;background:#3ecf8e;color:#0f1117;cursor:pointer;letter-spacing:.02em">Apri report →</button>
     </div>
     <div id="splash-loading" style="display:none;flex-direction:column;align-items:center;gap:10px;color:var(--muted);font-size:.82rem">
       <div class="spinner"></div>Caricamento dati...
@@ -169,22 +170,13 @@ async function startReport(panelId){
 }
 
 // ── CSV fetch & parse ─────────────────────────────────────────
-function fetchCSV(sheetName){
-  const proxy = 'https://script.google.com/macros/s/AKfycbwUEOrShhkbaAaSHcLJ1RRpyCpH4OA2H5FwM2X_56eIBoFmfkFlA6PpFiwLBLrrC8SK/exec';
-  return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    window[cbName] = (result) => {
-      delete window[cbName];
-      if(document.body.contains(script)) document.body.removeChild(script);
-      if(result.error) reject(new Error(result.error));
-      else resolve(result.data);
-    };
-    script.src = `${proxy}?sheet=${encodeURIComponent(sheetName)}&callback=${cbName}`;
-    script.onerror = () => reject(new Error('Script load failed'));
-    document.body.appendChild(script);
-    setTimeout(() => reject(new Error('Timeout')), 15000);
-  });
+async function fetchCSV(sheetName){
+  const proxy = 'https://script.google.com/macros/s/AKfycbxbpCDZHpAVBJuV6xWsOgnCQ6ERAdNRNTyNGJT5rW2Thqh6hxYdu2fCXWH66zu74dY-nQ/exec';
+  const url = proxy + '?sheet=' + encodeURIComponent(sheetName);
+  const r = await fetch(url);
+  const json = await r.json();
+  if(json.error) throw new Error(json.error);
+  return json.data;
 }
 
 function parseCSV(text){
