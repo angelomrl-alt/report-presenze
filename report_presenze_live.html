@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report Presenze — Atletica</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d27;--card:#21253a;--border:rgba(255,255,255,0.07);--text:#eef0f8;--muted:#8b90a8;--green:#3ecf8e;--orange:#f5a623;--red:#f26464;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);padding-bottom:3rem}
+  header{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10}
+  header h1{font-size:1.05rem;font-weight:600}
+  header p{font-size:.78rem;color:var(--muted);margin-top:2px}
+  .last-update{font-size:.7rem;color:var(--muted);margin-top:4px}
+  .tabs{display:flex;overflow-x:auto;gap:6px;padding:1rem 1.25rem .5rem;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex-shrink:0;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer}
+  .tab.active{color:#0f1117}
+  .panel{display:none;padding:0 1.25rem}
+  .panel.active{display:block}
+  .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1rem;gap:12px;color:var(--muted);font-size:.85rem}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error-box{background:#2a1a1a;border:1px solid var(--red);border-radius:12px;padding:14px;margin:1rem 0;font-size:.8rem;color:var(--red)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:1rem 0}
+  .kpi{background:var(--card);border-radius:12px;padding:11px 10px;border:1px solid var(--border)}
+  .kpi-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+  .kpi-val{font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:500;line-height:1}
+  .kpi-sub{font-size:.65rem;color:var(--muted);margin-top:3px}
+  .section{margin:1.25rem 0 .5rem;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .card{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:10px}
+  .accordion{background:var(--card);border-radius:14px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden}
+  .accordion-header{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;cursor:pointer;user-select:none}
+  .accordion-title{font-size:.8rem;font-weight:600;color:var(--text)}
+  .accordion-meta{font-size:.72rem;color:var(--muted);margin-left:8px}
+  .accordion-icon{font-size:1rem;color:var(--muted);transition:transform .25s;flex-shrink:0}
+  .accordion.open .accordion-icon{transform:rotate(180deg)}
+  .accordion-body{display:none;padding:0 14px 14px}
+  .accordion.open .accordion-body{display:block}
+  .ath-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .ath-rank{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);width:18px;text-align:right;flex-shrink:0}
+  .ath-name{font-size:.73rem;width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ath-name.top{font-weight:600}
+  .ath-track{flex:1;height:7px;background:var(--surface);border-radius:99px;overflow:hidden}
+  .ath-fill{height:100%;border-radius:99px}
+  .ath-num{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);width:28px;text-align:right;flex-shrink:0}
+  .ath-pct{font-family:'DM Mono',monospace;font-size:.65rem;width:34px;text-align:right;flex-shrink:0}
+  .divider{height:1px;background:var(--border);margin:8px 0}
+  .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mini-card{background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border);position:relative;overflow:hidden}
+  .mini-card.best{border-color:rgba(255,255,255,.2)}
+  .mini-name{font-size:.75rem;font-weight:500;margin-bottom:6px}
+  .mini-stats{display:flex;flex-direction:column;gap:3px}
+  .mini-stat{display:flex;justify-content:space-between;font-size:.7rem}
+  .mini-stat span:first-child{color:var(--muted)}
+  .mini-stat span:last-child{font-family:'DM Mono',monospace;font-weight:500}
+  .mini-bar{height:3px;border-radius:99px;margin-top:8px;background:var(--border)}
+  .mini-bar-fill{height:100%;border-radius:99px}
+  .best-badge{position:absolute;top:8px;right:8px;font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:99px}
+  .month-detail-toggle{margin-top:10px;font-size:.68rem;cursor:pointer;display:flex;align-items:center;gap:4px}
+  .month-detail-body{display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+  .session-row{border-top:1px solid var(--border);padding:8px 0 4px}
+  .session-row:first-child{border-top:none;padding-top:0}
+  .session-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+  .session-date{font-size:.72rem;font-weight:600;color:var(--text)}
+  .session-tot{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500}
+  .pill-wrap{display:flex;flex-wrap:wrap;gap:4px}
+  .pill{font-size:.65rem;padding:2px 7px;border-radius:99px;white-space:nowrap}
+  .month-chart-wrap{position:relative;width:100%;height:180px}
+  .donut-wrap{display:flex;align-items:center;gap:14px;padding:4px 0}
+  .donut-legend{font-size:.74rem;flex:1}
+  .donut-legend div{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+  .donut-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+  .donut-lbl{color:var(--muted);flex:1}
+  .donut-num{font-family:'DM Mono',monospace;font-weight:500}
+  .empty-note{color:var(--muted);font-size:.8rem;text-align:center;padding:1.5rem}
+  .col-header{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-bottom:8px;padding:0 0 4px;border-bottom:1px solid var(--border)}
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 Report Presenze</h1>
+  <p>Dati aggiornati in tempo reale da Google Sheets</p>
+  <div class="last-update" id="last-update">⏳ Caricamento...</div>
+</header>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-panel="p0">Marinella – Pancotto</button>
+  <button class="tab" data-panel="p1">Agnese</button>
+  <button class="tab" data-panel="p2">Stefanelli – Mondelli</button>
+  <button class="tab" data-panel="p3">Meneghin</button>
+  <button class="tab" data-panel="p4">Salti</button>
+</div>
+
+<div id="p0" class="panel active"><div class="loading"><div class="spinner"></div>Caricamento dati...</div></div>
+<div id="p1" class="panel"><div class="loading"><div class="spinner"></div>Caricamento dati...</div></div>
+<div id="p2" class="panel"><div class="loading"><div class="spinner"></div>Caricamento dati...</div></div>
+<div id="p3" class="panel"><div class="loading"><div class="spinner"></div>Caricamento dati...</div></div>
+<div id="p4" class="panel"><div class="loading"><div class="spinner"></div>Caricamento dati...</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const SHEET_ID = '1XW7vRtnL5di-8BViW7M4E2-wIH5kbgOzoeUvJJeo_Qs';
+const MESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const GIORNI = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+
+const groupConfig = [
+  {id:'p0', color:'#3ecf8e', gid:1, name:'Marinella – Pancotto', dateCol:'Data',     presCol:'presenza all - gare', actCol:'Attività'},
+  {id:'p1', color:'#a78bfa', gid:2, name:'Agnese',               dateCol:'Data',     presCol:'Presenza all - gare', actCol:'Attività'},
+  {id:'p2', color:'#5b8def', gid:3, name:'Stefanelli – Mondelli',dateCol:'Data',     presCol:'Presenza all - gare', actCol:'Attività'},
+  {id:'p3', color:'#f5a623', gid:4, name:'Meneghin',             dateCol:'Colonna 2',presCol:'Presenza all - gare', actCol:'Attività'},
+  {id:'p4', color:'#f472b6', gid:5, name:'Salti',                dateCol:'Data',     presCol:'Presenza',            actCol:'Attività'},
+];
+
+const tabColors = groupConfig.map(g=>g.color);
+document.querySelectorAll('.tab').forEach((t,i)=>{
+  t.style.background=tabColors[i];t.style.borderColor=tabColors[i];
+  t.style.opacity=t.classList.contains('active')?'1':'0.4';
+});
+
+// ── CSV fetch & parse ─────────────────────────────────────────
+async function fetchCSV(gid){
+  const proxy = 'https://script.google.com/macros/s/AKfycbwUEOrShhkbaAaSHcLJ1RRpyCpH4OA2H5FwM2X_56eIBoFmfkFlA6PpFiwLBLrrC8SK/exec';
+  const url = `${proxy}?gid=${gid}`;
+  // Try with cors mode first, fallback to no-cors via iframe trick
+  try {
+    const r = await fetch(url, {mode:'cors', redirect:'follow'});
+    if(r.ok) return await r.text();
+  } catch(e){}
+  // Fallback: use a script tag injection (JSONP-style via redirect)
+  const r2 = await fetch(url + '&callback=none', {mode:'no-cors', redirect:'follow'});
+  // no-cors returns opaque response, try direct XMLHttpRequest instead
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onload = () => resolve(xhr.responseText);
+    xhr.onerror = () => reject(new Error('XHR failed'));
+    xhr.send();
+  });
+}
+
+function parseCSV(text){
+  const lines = text.split('\n');
+  const headers = splitCSVLine(lines[0]);
+  return lines.slice(1).filter(l=>l.trim()).map(l=>{
+    const vals = splitCSVLine(l);
+    const obj={};
+    headers.forEach((h,i)=>obj[h.trim()]=(vals[i]||'').trim());
+    return obj;
+  });
+}
+
+function splitCSVLine(line){
+  const result=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){result.push(cur);cur='';}
+    else cur+=c;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── Date parsing (Excel serial or dd/mm/yyyy) ─────────────────
+function parseDate(v){
+  if(!v||v.trim()==='') return null;
+  // Excel serial number
+  const n=parseFloat(v);
+  if(!isNaN(n)&&n>40000&&n<60000){
+    const d=new Date(1899,11,30);
+    d.setDate(d.getDate()+Math.round(n));
+    return d;
+  }
+  // Google Sheets full date string e.g. "Mon Feb 09 2026 00:00:00 GMT+0100 (...)"
+  // or "Sun Jan 25 2026 00:00:00 GMT+0100"
+  const gsMatch = v.match(/([A-Z][a-z]{2})\s+([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{4})/);
+  if(gsMatch){
+    const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+    return new Date(+gsMatch[4], months[gsMatch[2]], +gsMatch[3]);
+  }
+  // dd/mm/yyyy or yyyy-mm-dd
+  let m=v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m) return new Date(+m[3]<100?2000+ +m[3]:+m[3],+m[2]-1,+m[1]);
+  m=v.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  // fallback
+  const d=new Date(v);
+  return isNaN(d)?null:d;
+}
+
+// ── Process one sheet's rows ──────────────────────────────────
+function processRows(rows, cfg){
+  const skipRx=/giorni|n°|maggior|costo/i;
+  const athleteCols = Object.keys(rows[0]||{}).filter(k=>k.trim().startsWith('['));
+
+  const data = rows.filter(r=>{
+    const a=(r[cfg.actCol]||'').trim();
+    return a && !skipRx.test(a);
+  });
+
+  data.forEach(r=>{
+    r._date = parseDate(r[cfg.dateCol]);
+    r._isAll = /allenamento/i.test(r[cfg.actCol]||'');
+    r._pres = parseInt(r[cfg.presCol])||0;
+  });
+
+  const allenamenti = data.filter(r=>r._isAll && r._date);
+  const gare        = data.filter(r=>!r._isAll && r._date);
+  const nAll = allenamenti.length;
+  const nGare = gare.length;
+
+  // athletes
+  const athMap={};
+  const athGareMap={};
+  athleteCols.forEach(col=>{
+    const name=col.trim().replace(/^\[|\]$/g,'').trim();
+    athMap[name]  = allenamenti.filter(r=>(r[col]||'').trim()==='X').length;
+    athGareMap[name] = gare.filter(r=>(r[col]||'').trim()==='X').length;
+  });
+
+  const athletes    = Object.entries(athMap).sort((a,b)=>b[1]-a[1]);
+  const athletesGare= Object.entries(athGareMap).sort((a,b)=>b[1]-a[1]);
+
+  // per-session presences
+  const preses = allenamenti.map(r=>r._pres).filter(x=>x>0);
+  const mediaAll = preses.length ? (preses.reduce((a,b)=>a+b,0)/preses.length) : 0;
+  const above80 = athletes.filter(([,v])=>nAll>0&&v/nAll>=0.8).length;
+
+  // month stats
+  const monthMap={};
+  allenamenti.forEach(r=>{
+    const m=r._date.getMonth()+1;
+    if(!monthMap[m]) monthMap[m]={s:0,sum:0,sessions:[]};
+    monthMap[m].s++;
+    monthMap[m].sum+=r._pres;
+    const present=athleteCols.filter(col=>(r[col]||'').trim()==='X').map(col=>col.trim().replace(/^\[|\]$/g,'').trim());
+    const wd=GIORNI[r._date.getDay()===0?6:r._date.getDay()-1];
+    const day=String(r._date.getDate()).padStart(2,'0');
+    const mo=String(r._date.getMonth()+1).padStart(2,'0');
+    monthMap[m].sessions.push({label:`${wd} ${day}/${mo}`,tot:r._pres,present});
+  });
+  const months={};
+  Object.entries(monthMap).sort((a,b)=>+a[0]-+b[0]).forEach(([m,v])=>{
+    months[m]={s:v.s, m:v.s>0?v.sum/v.s:0, sessions:v.sessions};
+  });
+
+  return {nAll,nGare,nAtleti:athleteCols.length,mediaAll,above80,
+    min:preses.length?Math.min(...preses):0,max:preses.length?Math.max(...preses):0,
+    avg_rate:nAll>0&&athletes.length?Math.round(athletes.reduce((s,[,v])=>s+v/nAll,0)/athletes.length*1000)/10:0,
+    athletes,athletesGare,months};
+}
+
+// ── Render helpers ────────────────────────────────────────────
+function rateColor(v){return v>=80?'var(--green)':v>=60?'var(--orange)':'var(--red)';}
+
+function athListHTML(list,color,total,topN){
+  if(!list.length) return '<p class="empty-note">Nessun dato</p>';
+  const maxV=list[0][1]||1;
+  return `<div class="col-header"><span style="width:18px"></span><span style="flex:0 0 130px">Atleta</span><span style="flex:1"></span><span style="width:28px;text-align:right">Pres.</span><span style="width:34px;text-align:right">%</span></div>`+
+  list.map(([name,val],i)=>{
+    const isTop=i<topN&&val>0;
+    const pct=Math.round(val/maxV*100);
+    const ratePct=total>0?Math.round(val/total*100):0;
+    const sep=i===topN-1&&list.length>topN?'<div class="divider"></div>':'';
+    return `${sep}<div class="ath-row">
+      <div class="ath-rank">${i+1}</div>
+      <div class="ath-name${isTop?' top':''}" style="color:${isTop?color:'var(--muted)'}" title="${name}">${name}</div>
+      <div class="ath-track"><div class="ath-fill" style="width:${pct}%;background:${isTop?color:color+'55'}"></div></div>
+      <div class="ath-num">${val}</div>
+      <div class="ath-pct" style="color:${isTop?color:'var(--muted)'}">${ratePct}%</div>
+    </div>`;
+  }).join('');
+}
+
+function miniCardGrid(months,color,groupId){
+  const keys=Object.keys(months);
+  if(!keys.length) return '<p class="empty-note">Nessun dato</p>';
+  const maxM=Math.max(...keys.map(k=>months[k].m));
+  const bestK=keys.reduce((a,b)=>months[a].m>months[b].m?a:b);
+  return `<div class="mini-grid">${keys.map(k=>{
+    const {s,m,sessions}=months[k];
+    const isBest=k==bestK;
+    const pct=Math.round(m/maxM*100);
+    const accId=`md-${groupId}-${k}`;
+    const detailHTML=sessions.map(s=>`<div class="session-row">
+      <div class="session-header"><span class="session-date">${s.label}</span><span class="session-tot" style="color:${color}">${s.tot} presenti</span></div>
+      <div class="pill-wrap">${s.present.map(n=>`<span class="pill" style="background:${color}18;color:${color}">${n}</span>`).join('')||'<span style="color:var(--muted);font-size:.7rem">Nessuno</span>'}</div>
+    </div>`).join('');
+    return `<div class="mini-card${isBest?' best':''}">
+      ${isBest?`<span class="best-badge" style="background:${color}22;color:${color}">Top</span>`:''}
+      <div class="mini-name">${MESI[+k-1]}</div>
+      <div class="mini-stats">
+        <div class="mini-stat"><span>Sessioni</span><span>${s}</span></div>
+        <div class="mini-stat"><span>Media presenti</span><span style="color:${color}">${m.toFixed(1)}</span></div>
+      </div>
+      <div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="month-detail-toggle" onclick="toggleMD('${accId}')" style="color:${color}">
+        <span id="${accId}-ic" style="transition:transform .2s;display:inline-block">▾</span> Dettaglio sessioni
+      </div>
+      <div id="${accId}" class="month-detail-body">${detailHTML}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function accordion(title,meta,content,open=false){
+  const id='ac'+Math.random().toString(36).slice(2);
+  return `<div class="accordion${open?' open':''}" id="${id}">
+    <div class="accordion-header" onclick="toggleAcc('${id}')">
+      <div><span class="accordion-title">${title}</span><span class="accordion-meta">${meta}</span></div>
+      <span class="accordion-icon">▾</span>
+    </div>
+    <div class="accordion-body">${content}</div>
+  </div>`;
+}
+
+function toggleAcc(id){document.getElementById(id).classList.toggle('open');}
+function toggleMD(id){
+  const el=document.getElementById(id);
+  const ic=document.getElementById(id+'-ic');
+  const open=el.style.display==='none'||el.style.display==='';
+  el.style.display=open?'block':'none';
+  ic.style.transform=open?'rotate(180deg)':'';
+}
+
+// ── Render one group ──────────────────────────────────────────
+function renderGroup(cfg, stats){
+  const {nAll,nGare,nAtleti,mediaAll,above80,min,max,avg_rate,athletes,athletesGare,months}=stats;
+  const rc=rateColor(avg_rate);
+  const monthKeys=Object.keys(months).sort((a,b)=>+a-+b);
+  const monthLabels=monthKeys.map(k=>MESI[k-1]);
+  const monthData=monthKeys.map(k=>+months[k].m.toFixed(1));
+
+  const el=document.getElementById(cfg.id);
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Allenamenti</div><div class="kpi-val" style="color:${cfg.color}">${nAll}</div><div class="kpi-sub">sessioni</div></div>
+      <div class="kpi"><div class="kpi-label">Gare</div><div class="kpi-val" style="color:var(--red)">${nGare}</div><div class="kpi-sub">competizioni</div></div>
+      <div class="kpi"><div class="kpi-label">Atleti</div><div class="kpi-val">${nAtleti}</div><div class="kpi-sub">nel gruppo</div></div>
+      <div class="kpi"><div class="kpi-label">Media/sessione</div><div class="kpi-val" style="color:${cfg.color}">${mediaAll.toFixed(1)}</div><div class="kpi-sub">presenti</div></div>
+      <div class="kpi"><div class="kpi-label">Tasso medio</div><div class="kpi-val" style="font-size:1.15rem;color:${rc}">${avg_rate}%</div><div class="kpi-sub">${above80} ≥ 80%</div></div>
+      <div class="kpi"><div class="kpi-label">Range/sessione</div><div class="kpi-val" style="font-size:1.1rem">${min}–${max}</div><div class="kpi-sub">min / max</div></div>
+    </div>
+
+    <div class="section">📅 Presenze per mese</div>
+    <div class="card"><div class="month-chart-wrap"><canvas id="mc-${cfg.id}"></canvas></div></div>
+    ${miniCardGrid(months,cfg.color,cfg.id)}
+
+    <div class="section">Distribuzione sessioni</div>
+    <div class="card">
+      <div class="donut-wrap">
+        <canvas id="dc-${cfg.id}" width="90" height="90"></canvas>
+        <div class="donut-legend">
+          <div><span class="donut-dot" style="background:${cfg.color}"></span><span class="donut-lbl">Allenamenti</span><span class="donut-num">${nAll}</span></div>
+          <div><span class="donut-dot" style="background:var(--red)"></span><span class="donut-lbl">Gare</span><span class="donut-num">${nGare}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">⭐ Presenze atleti</div>
+    ${accordion('Tutti gli atleti',`${nAtleti} atleti · ${nAll} sessioni`,athListHTML(athletes,cfg.color,nAll,5),true)}
+
+    <div class="section">🏅 Partecipazione gare</div>
+    ${accordion('Tutti gli atleti – gare',`${nAtleti} atleti · ${nGare} gare`,
+      nGare>0?athListHTML(athletesGare,'#f26464',nGare,3):'<p class="empty-note">Nessuna gara registrata</p>',false)}
+  `;
+
+  new Chart(document.getElementById(`mc-${cfg.id}`),{
+    type:'bar',
+    data:{labels:monthLabels,datasets:[{label:'Media presenti',data:monthData,backgroundColor:cfg.color+'99',borderColor:cfg.color,borderWidth:1.5,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y.toFixed(1)} presenti`}}},
+      scales:{x:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'}},y:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true}}}
+  });
+
+  new Chart(document.getElementById(`dc-${cfg.id}`),{
+    type:'doughnut',
+    data:{labels:nGare>0?['Allenamenti','Gare']:['Allenamenti'],datasets:[{data:nGare>0?[nAll,nGare]:[nAll],backgroundColor:nGare>0?[cfg.color,'#f26464']:[cfg.color],borderWidth:0}]},
+    options:{responsive:false,cutout:'68%',plugins:{legend:{display:false}}}
+  });
+}
+
+// ── Load all groups ───────────────────────────────────────────
+async function loadAll(){
+  const now = new Date();
+  const ts = now.toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  for(const cfg of groupConfig){
+    try{
+      const csv = await fetchCSV(cfg.gid);
+      const rows = parseCSV(csv);
+      const stats = processRows(rows, cfg);
+      renderGroup(cfg, stats);
+    } catch(e){
+      document.getElementById(cfg.id).innerHTML=`<div class="error-box">⚠️ Errore caricamento dati: ${e.message}<br><small>Controlla la connessione o ricarica la pagina.</small></div>`;
+    }
+  }
+  document.getElementById('last-update').textContent = `✅ Aggiornato: ${ts}`;
+}
+
+document.getElementById('tabs').addEventListener('click',e=>{
+  const btn=e.target.closest('.tab');
+  if(!btn)return;
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.remove('active');t.style.opacity='0.4';});
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');btn.style.opacity='1';
+  document.getElementById(btn.dataset.panel).classList.add('active');
+});
+
+loadAll();
+</script>
+</body>
+</html>
