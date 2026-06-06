@@ -120,23 +120,21 @@ document.querySelectorAll('.tab').forEach((t,i)=>{
 });
 
 // ── CSV fetch & parse ─────────────────────────────────────────
-async function fetchCSV(gid){
+function fetchCSV(gid){
   const proxy = 'https://script.google.com/macros/s/AKfycbwUEOrShhkbaAaSHcLJ1RRpyCpH4OA2H5FwM2X_56eIBoFmfkFlA6PpFiwLBLrrC8SK/exec';
-  const url = `${proxy}?gid=${gid}`;
-  // Try with cors mode first, fallback to no-cors via iframe trick
-  try {
-    const r = await fetch(url, {mode:'cors', redirect:'follow'});
-    if(r.ok) return await r.text();
-  } catch(e){}
-  // Fallback: use a script tag injection (JSONP-style via redirect)
-  const r2 = await fetch(url + '&callback=none', {mode:'no-cors', redirect:'follow'});
-  // no-cors returns opaque response, try direct XMLHttpRequest instead
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.onload = () => resolve(xhr.responseText);
-    xhr.onerror = () => reject(new Error('XHR failed'));
-    xhr.send();
+    const cbName = 'cb_' + gid + '_' + Date.now();
+    const script = document.createElement('script');
+    window[cbName] = (result) => {
+      delete window[cbName];
+      document.body.removeChild(script);
+      if(result.error) reject(new Error(result.error));
+      else resolve(result.data);
+    };
+    script.src = `${proxy}?gid=${gid}&callback=${cbName}`;
+    script.onerror = () => reject(new Error('Script load failed'));
+    document.body.appendChild(script);
+    setTimeout(() => reject(new Error('Timeout')), 15000);
   });
 }
 
