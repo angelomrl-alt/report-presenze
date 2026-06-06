@@ -365,7 +365,7 @@ function renderGroup(cfg, stats){
       nGare>0?athListHTML(athletesGare,'#f26464',nGare,3):'<p class="empty-note">Nessuna gara registrata</p>',false)}
 
     <div class="section">📆 Dettaglio per mese</div>
-    ${miniCardGrid(months,cfg.color,cfg.id)}
+    ${accordion('Dettaglio sessioni per mese',`${Object.keys(months).length} mesi`,miniCardGrid(months,cfg.color,cfg.id),false)}
   `;
 
   new Chart(document.getElementById(`mc-${cfg.id}`),{
