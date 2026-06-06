@@ -356,18 +356,6 @@ function renderGroup(cfg, stats){
 
     <div class="section">📅 Presenze per mese</div>
     <div class="card"><div class="month-chart-wrap"><canvas id="mc-${cfg.id}"></canvas></div></div>
-    ${miniCardGrid(months,cfg.color,cfg.id)}
-
-    <div class="section">Distribuzione sessioni</div>
-    <div class="card">
-      <div class="donut-wrap">
-        <canvas id="dc-${cfg.id}" width="90" height="90"></canvas>
-        <div class="donut-legend">
-          <div><span class="donut-dot" style="background:${cfg.color}"></span><span class="donut-lbl">Allenamenti</span><span class="donut-num">${nAll}</span></div>
-          <div><span class="donut-dot" style="background:var(--red)"></span><span class="donut-lbl">Gare</span><span class="donut-num">${nGare}</span></div>
-        </div>
-      </div>
-    </div>
 
     <div class="section">⭐ Presenze atleti</div>
     ${accordion('Tutti gli atleti',`${nAtleti} atleti · ${nAll} sessioni`,athListHTML(athletes,cfg.color,nAll,5),true)}
@@ -375,6 +363,9 @@ function renderGroup(cfg, stats){
     <div class="section">🏅 Partecipazione gare</div>
     ${accordion('Tutti gli atleti – gare',`${nAtleti} atleti · ${nGare} gare`,
       nGare>0?athListHTML(athletesGare,'#f26464',nGare,3):'<p class="empty-note">Nessuna gara registrata</p>',false)}
+
+    <div class="section">📆 Dettaglio per mese</div>
+    ${miniCardGrid(months,cfg.color,cfg.id)}
   `;
 
   new Chart(document.getElementById(`mc-${cfg.id}`),{
@@ -384,11 +375,7 @@ function renderGroup(cfg, stats){
       scales:{x:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'}},y:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true}}}
   });
 
-  new Chart(document.getElementById(`dc-${cfg.id}`),{
-    type:'doughnut',
-    data:{labels:nGare>0?['Allenamenti','Gare']:['Allenamenti'],datasets:[{data:nGare>0?[nAll,nGare]:[nAll],backgroundColor:nGare>0?[cfg.color,'#f26464']:[cfg.color],borderWidth:0}]},
-    options:{responsive:false,cutout:'68%',plugins:{legend:{display:false}}}
-  });
+  // charts
 }
 
 // ── Load all groups ───────────────────────────────────────────
