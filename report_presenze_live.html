@@ -399,7 +399,7 @@ function renderGroup(cfg, stats){
     <div class="card"><div class="month-chart-wrap"><canvas id="mc-${cfg.id}"></canvas></div></div>
 
     <div class="section">⭐ Presenze atleti</div>
-    ${accordion('Tutti gli atleti',`${nAtleti} atleti · ${nAll} sessioni`,athListHTML(athletes,cfg.color,nAll,5),true)}
+    ${accordion('Tutti gli atleti',`${nAtleti} atleti · ${nAll} sessioni`,athListHTML(athletes,cfg.color,nAll,5),false)}
 
     <div class="section">🏅 Partecipazione gare</div>
     ${accordion('Tutti gli atleti – gare',`${nAtleti} atleti · ${nGare} gare`,
