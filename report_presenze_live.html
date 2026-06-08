@@ -415,16 +415,14 @@ function renderGroup(cfg, stats){
       <div class="kpi"><div class="kpi-label">Allenamenti</div><div class="kpi-val" style="color:${cfg.color}">${nAll}</div><div class="kpi-sub">sessioni</div></div>
       <div class="kpi"><div class="kpi-label">Gare</div><div class="kpi-val" style="color:var(--red)">${nGare}</div><div class="kpi-sub">competizioni</div></div>
       <div class="kpi"><div class="kpi-label">Atleti</div><div class="kpi-val">${nAtleti}</div><div class="kpi-sub">nel gruppo</div></div>
-      <div class="kpi"><div class="kpi-label">Media/sessione</div><div class="kpi-val" style="color:${cfg.color}">${mediaAll.toFixed(1)}</div><div class="kpi-sub">presenti</div></div>
       <div class="kpi"><div class="kpi-label">Tasso medio</div><div class="kpi-val" style="font-size:1.15rem;color:${rc}">${avg_rate}%</div><div class="kpi-sub">${above80} ≥ 80%</div></div>
-      <div class="kpi"><div class="kpi-label">Range/sessione</div><div class="kpi-val" style="font-size:1.1rem">${min}–${max}</div><div class="kpi-sub">min / max</div></div>
     </div>
 
     <div class="section">📅 Presenze per mese</div>
     <div class="card"><div class="month-chart-wrap"><canvas id="mc-${cfg.id}"></canvas></div></div>
 
     <div class="section">🏆 Podio</div>
-    ${podiumHTML(athletes, athletesGare, cfg.color, nAll, nGare)}
+    ${accordion('Top 3 presenze',`allenamenti & gare`,podiumHTML(athletes, athletesGare, cfg.color, nAll, nGare),false)}
 
     <div class="section">⭐ Presenze atleti</div>
     ${accordion('Tutti gli atleti',`${nAtleti} atleti · ${nAll} sessioni`,athListHTML(athletes,cfg.color,nAll,5),false)}
