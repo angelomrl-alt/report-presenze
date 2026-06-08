@@ -72,6 +72,9 @@
   .donut-lbl{color:var(--muted);flex:1}
   .donut-num{font-family:'DM Mono',monospace;font-weight:500}
   .empty-note{color:var(--muted);font-size:.8rem;text-align:center;padding:1.5rem}
+  .pod-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:flex-end;margin-top:4px}
+  .pod-col{display:flex;flex-direction:column;align-items:stretch}
+  .pod-base{min-width:0}
   .col-header{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-bottom:8px;padding:0 0 4px;border-bottom:1px solid var(--border)}
 </style>
 </head>
@@ -376,6 +379,28 @@ function toggleMD(id){
   ic.style.transform=open?'rotate(180deg)':'';
 }
 
+// ── Podium ─────────────────────────────────────────────────────
+function podiumHTML(athletes, athletesGare, color, nAll, nGare){
+  function medal(i){ return i===0?'🥇':i===1?'🥈':'🥉'; }
+  function simpleList(list, col){
+    const top3 = list.filter(([,v])=>v>0).slice(0,3);
+    if(!top3.length) return '<p class="empty-note">Nessun dato</p>';
+    return top3.map(([name,val],i)=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:1.1rem;width:24px;flex-shrink:0">${medal(i)}</span>
+        <span style="flex:1;font-size:.8rem;font-weight:500;color:var(--text)">${name}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.8rem;font-weight:600;color:${col}">${val}</span>
+      </div>`).join('');
+  }
+  return `<div class="card">
+    <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Allenamenti</div>
+    ${simpleList(athletes, color)}
+    <div style="height:1px;background:var(--border);margin:14px 0"></div>
+    <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Gare</div>
+    ${nGare>0?simpleList(athletesGare,'#f26464'):'<p class="empty-note">Nessuna gara registrata</p>'}
+  </div>`;
+}
+
 // ── Render one group ──────────────────────────────────────────
 function renderGroup(cfg, stats){
   const {nAll,nGare,nAtleti,mediaAll,above80,min,max,avg_rate,athletes,athletesGare,months}=stats;
@@ -397,6 +422,9 @@ function renderGroup(cfg, stats){
 
     <div class="section">📅 Presenze per mese</div>
     <div class="card"><div class="month-chart-wrap"><canvas id="mc-${cfg.id}"></canvas></div></div>
+
+    <div class="section">🏆 Podio</div>
+    ${podiumHTML(athletes, athletesGare, cfg.color, nAll, nGare)}
 
     <div class="section">⭐ Presenze atleti</div>
     ${accordion('Tutti gli atleti',`${nAtleti} atleti · ${nAll} sessioni`,athListHTML(athletes,cfg.color,nAll,5),false)}
