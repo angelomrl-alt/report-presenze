@@ -468,7 +468,7 @@ async function loadAll(){
   const now = new Date();
   const ts = now.toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 
-  for(const cfg of groupConfig){
+  await Promise.all(groupConfig.map(async cfg => {
     try{
       const csv = await fetchCSV(cfg.sheet);
       const rows = parseCSV(csv);
@@ -477,7 +477,7 @@ async function loadAll(){
     } catch(e){
       document.getElementById(cfg.id).innerHTML=`<div class="error-box">⚠️ Errore caricamento dati: ${e.message}<br><small>Controlla la connessione o ricarica la pagina.</small></div>`;
     }
-  }
+  }));
   document.getElementById('last-update').textContent = `✅ Aggiornato: ${ts}`;
 }
 
