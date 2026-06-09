@@ -86,22 +86,18 @@
       <h1 style="font-size:1.3rem;font-weight:600;margin:0 0 4px">Report Presenze</h1>
       <p style="font-size:.85rem;color:var(--muted);margin:0">Stagione 2025/2026</p>
     </div>
-    <div style="width:100%;max-width:320px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div style="width:100%;max-width:320px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
       <div style="background:#1a1d27;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.07);text-align:center">
-        <div style="font-size:.62rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Atleti totali</div>
-        <div style="font-family:'DM Mono',monospace;font-size:1.5rem;font-weight:500;color:#3ecf8e">86</div>
+        <div style="font-size:.58rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Atleti</div>
+        <div style="font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:500;color:#3ecf8e">86</div>
       </div>
       <div style="background:#1a1d27;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.07);text-align:center">
-        <div style="font-size:.62rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Gare totali</div>
-        <div style="font-family:'DM Mono',monospace;font-size:1.5rem;font-weight:500;color:#f26464">49</div>
+        <div style="font-size:.58rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Gare</div>
+        <div style="font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:500;color:#f26464">49</div>
       </div>
       <div style="background:#1a1d27;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.07);text-align:center">
-        <div style="font-size:.62rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">N° partecipanti</div>
-        <div style="font-family:'DM Mono',monospace;font-size:1.5rem;font-weight:500;color:#5b8def">258</div>
-      </div>
-      <div style="background:#1a1d27;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.07);text-align:center">
-        <div style="font-size:.62rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Costo medio gare</div>
-        <div style="font-family:'DM Mono',monospace;font-size:1.5rem;font-weight:500;color:#f5a623">€774</div>
+        <div style="font-size:.58rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Partecipanti</div>
+        <div style="font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:500;color:#5b8def">258</div>
       </div>
     </div>
 
@@ -306,7 +302,7 @@ function processRows(rows, cfg){
   const monthMap={};
   allenamenti.forEach(r=>{
     const m=r._date.getMonth()+1;
-    if(!monthMap[m]) monthMap[m]={s:0,sum:0,sessions:[]};
+    if(!monthMap[m]) monthMap[m]={s:0,sum:0,sg:0,sumg:0,sessions:[]};
     monthMap[m].s++;
     monthMap[m].sum+=r._pres;
     const present=athleteCols.filter(col=>(r[col]||'').trim()==='X').map(col=>col.trim().replace(/^\[|\]$/g,'').trim());
@@ -315,9 +311,16 @@ function processRows(rows, cfg){
     const mo=String(r._date.getMonth()+1).padStart(2,'0');
     monthMap[m].sessions.push({label:`${wd} ${day}/${mo}`,tot:r._pres,present});
   });
+  // add gare per month
+  gare.forEach(r=>{
+    const m=r._date.getMonth()+1;
+    if(!monthMap[m]) monthMap[m]={s:0,sum:0,sg:0,sumg:0,sessions:[]};
+    monthMap[m].sg=(monthMap[m].sg||0)+1;
+    monthMap[m].sumg=(monthMap[m].sumg||0)+r._pres;
+  });
   const months={};
   Object.entries(monthMap).sort((a,b)=>+a[0]-+b[0]).forEach(([m,v])=>{
-    months[m]={s:v.s, m:v.s>0?v.sum/v.s:0, sessions:v.sessions};
+    months[m]={s:v.s, m:v.s>0?v.sum/v.s:0, sg:v.sg||0, mg:v.sg>0?v.sumg/v.sg:0, sessions:v.sessions};
   });
 
   return {nAll,nGare,nAtleti:athleteCols.length,mediaAll,above80,
@@ -427,6 +430,7 @@ function renderGroup(cfg, stats){
   const monthKeys=Object.keys(months).sort((a,b)=>+a-+b);
   const monthLabels=monthKeys.map(k=>MESI[k-1]);
   const monthData=monthKeys.map(k=>+months[k].m.toFixed(1));
+  const monthGareData=monthKeys.map(k=>+( months[k].mg||0).toFixed(1));
 
   const el=document.getElementById(cfg.id);
   el.innerHTML=`
@@ -455,9 +459,15 @@ function renderGroup(cfg, stats){
 
   new Chart(document.getElementById(`mc-${cfg.id}`),{
     type:'bar',
-    data:{labels:monthLabels,datasets:[{label:'Media presenti',data:monthData,backgroundColor:cfg.color+'99',borderColor:cfg.color,borderWidth:1.5,borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y.toFixed(1)} presenti`}}},
-      scales:{x:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'}},y:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true}}}
+    data:{labels:monthLabels,datasets:[
+      {label:'Allenamenti',data:monthData,backgroundColor:cfg.color+'99',borderColor:cfg.color,borderWidth:1.5,borderRadius:0,stack:'s'},
+      {label:'Gare',data:monthGareData,backgroundColor:'#f2646499',borderColor:'#f26464',borderWidth:1.5,borderRadius:4,stack:'s'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#8b90a8',font:{size:11},boxWidth:12}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(1)}`}}},
+      scales:{x:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},stacked:true},
+        y:{ticks:{color:'#8b90a8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true,stacked:true}}}
   });
 
   // charts
