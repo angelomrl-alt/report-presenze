@@ -210,7 +210,7 @@ function rG(cfg,st){
     <div class="section">&#128197; Presenze per mese</div>
     <div class="card"><div class="mch"><canvas id="mc-${cfg.id}"></canvas></div></div>
     <div class="section">&#127942; Podio</div>
-    ${podiumHTML(st.ath,st.athG,cfg.color,st.nA,st.nG)}
+    ${acc("Top 3 presenze","allenamenti & gare",podiumHTML(st.ath,st.athG,cfg.color,st.nA,st.nG),false)}
     <div class="section">&#11088; Presenze allenamenti</div>
     ${acc("Tutti gli atleti",`${st.nAt} atleti · ${st.nA} sessioni`,aLH(st.ath,cfg.color,st.nA,5),false)}
     <div class="section">&#127941; Partecipazione gare</div>
