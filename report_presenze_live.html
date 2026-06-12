@@ -162,21 +162,40 @@ function pR(rows,cfg){
   const mM={};
   alls.forEach(r=>{const m=r._d.getMonth()+1;if(!mM[m])mM[m]={s:0,sum:0,sg:0,sumg:0};mM[m].s++;mM[m].sum+=r._p;});
   gare.forEach(r=>{const m=r._d.getMonth()+1;if(!mM[m])mM[m]={s:0,sum:0,sg:0,sumg:0};mM[m].sg=(mM[m].sg||0)+1;mM[m].sumg=(mM[m].sumg||0)+r._p;});
+  const mK2=Object.keys(mM).sort((a,b)=>+a-+b);
+  const lastTwo=mK2.slice(-2);
+  const athTrend={};
+  if(lastTwo.length===2){
+    const [prevM, lastM]=lastTwo;
+    athC.forEach(col=>{
+      const nm=col.trim().replace(/^\[|\]$/g,"").trim();
+      const prevSess=alls.filter(r=>r._d.getMonth()+1===+prevM);
+      const lastSess=alls.filter(r=>r._d.getMonth()+1===+lastM);
+      const prevRate=prevSess.length?prevSess.filter(r=>(r[col]||"").trim()==="X").length/prevSess.length:0;
+      const lastRate=lastSess.length?lastSess.filter(r=>(r[col]||"").trim()==="X").length/lastSess.length:0;
+      if(lastRate>prevRate+0.1) athTrend[nm]="up";
+      else if(lastRate<prevRate-0.1) athTrend[nm]="down";
+      else athTrend[nm]="stable";
+    });
+  }
+
   const months={};
   Object.entries(mM).sort((a,b)=>+a[0]-+b[0]).forEach(([m,v])=>{months[m]={s:v.s,m:v.s>0?v.sum/v.s:0,sg:v.sg||0,mg:v.sg>0?v.sumg/v.sg:0};});
-  return{nA:alls.length,nG:gare.length,nAt:athC.length,med:med,a80:a80,mn:pr.length?Math.min(...pr):0,mx:pr.length?Math.max(...pr):0,ar:alls.length&&ath.length?Math.round(ath.reduce((s,a)=>s+a[1]/alls.length,0)/ath.length*1000)/10:0,ath:ath,athG:athG,mo:months};
+  return{nA:alls.length,nG:gare.length,nAt:athC.length,med:med,a80:a80,mn:pr.length?Math.min(...pr):0,mx:pr.length?Math.max(...pr):0,ar:alls.length&&ath.length?Math.round(ath.reduce((s,a)=>s+a[1]/alls.length,0)/ath.length*1000)/10:0,ath:ath,athG:athG,mo:months,trend:athTrend};
 }
 
 function rC(v){return v>=80?"var(--green)":v>=60?"var(--orange)":"var(--red)";}
 
-function aLH(list,color,tot,topN){
+function aLH(list,color,tot,topN,trend){
   if(!list.length)return'<p class="en">Nessun dato</p>';
   const mx=list[0][1]||1;
-  return'<div class="ch"><span style="width:18px"></span><span style="flex:0 0 130px">Atleta</span><span style="flex:1"></span><span style="width:28px;text-align:right">Pres.</span><span style="width:34px;text-align:right">%</span></div>'+
+  return'<div class="ch"><span style="width:18px"></span><span style="flex:0 0 130px">Atleta</span><span style="flex:1"></span><span style="width:20px"></span><span style="width:28px;text-align:right">Pres.</span><span style="width:34px;text-align:right">%</span></div>'+
   list.map(([name,val],i)=>{
     const iT=i<topN&&val>0,p=Math.round(val/mx*100),rP=tot>0?Math.round(val/tot*100):0;
-    const sep=i===topN-1&&list.length>topN?'<div class="divider"></div>':""
-    return `${sep}<div class="ath-row"><div class="ar">${i+1}</div><div class="an${iT?" top":""}" style="color:${iT?color:"var(--muted)"}" title="${name}">${name}</div><div class="at2"><div class="af" style="width:${p}%;background:${iT?color:color+"55"};height:100%;border-radius:99px"></div></div><div class="anum">${val}</div><div class="apct" style="color:${iT?color:"var(--muted)"}">${rP}%</div></div>`;
+    const sep=i===topN-1&&list.length>topN?'<div class="divider"></div>':"";
+    const t=trend&&trend[name];
+    const arrow=t==="up"?'<span style="color:#3ecf8e;font-size:.85rem;flex-shrink:0">&#8679;</span>':t==="down"?'<span style="color:#f26464;font-size:.85rem;flex-shrink:0">&#8681;</span>':'<span style="color:#8b90a8;font-size:.85rem;flex-shrink:0">&#8680;</span>';
+    return `${sep}<div class="ath-row"><div class="ar">${i+1}</div><div class="an${iT?" top":""}" style="color:${iT?color:"var(--muted)"}" title="${name}">${name}</div><div class="at2"><div class="af" style="width:${p}%;background:${iT?color:color+"55"};height:100%;border-radius:99px"></div></div>${arrow}<div class="anum">${val}</div><div class="apct" style="color:${iT?color:"var(--muted)"}">${rP}%</div></div>`;
   }).join("");
 }
 
@@ -212,9 +231,9 @@ function rG(cfg,st){
     <div class="section">&#127942; Podio</div>
     ${acc("Top 3 presenze","allenamenti & gare",podiumHTML(st.ath,st.athG,cfg.color,st.nA,st.nG),false)}
     <div class="section">&#11088; Presenze allenamenti</div>
-    ${acc("Tutti gli atleti",`${st.nAt} atleti · ${st.nA} sessioni`,aLH(st.ath,cfg.color,st.nA,5),false)}
+    ${acc("Tutti gli atleti",`${st.nAt} atleti · ${st.nA} sessioni`,aLH(st.ath,cfg.color,st.nA,5,st.trend),false)}
     <div class="section">&#127941; Partecipazione gare</div>
-    ${acc("Tutti gli atleti – gare",`${st.nAt} atleti · ${st.nG} gare`,st.nG>0?aLH(st.athG,"#f26464",st.nG,3):'<p class="en">Nessuna gara registrata</p>',false)}
+    ${acc("Tutti gli atleti – gare",`${st.nAt} atleti · ${st.nG} gare`,st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{}):'<p class="en">Nessuna gara registrata</p>',false)}
   `;
   new Chart(document.getElementById(`mc-${cfg.id}`),{
     type:"bar",
