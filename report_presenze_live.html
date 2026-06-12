@@ -85,10 +85,10 @@ select{font-family:"DM Sans",sans-serif}
   <div style="width:100%;max-width:320px">
     <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;text-align:center">Seleziona allenatore</div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      <button onclick="startReport('p0')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #3ecf8e;background:#3ecf8e15;color:#3ecf8e;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Marinella &#8211; Pancotto</span><span style="opacity:.6">&#8594;</span></button>
+      <button onclick="startReport('p0')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #3ecf8e;background:#3ecf8e15;color:#3ecf8e;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Marinella &#8211; Pancotto<br><small style="font-weight:400;opacity:.7">Cadetti</small></span><span style="opacity:.6">&#8594;</span></button>
       <button onclick="startReport('p1')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #a78bfa;background:#a78bfa15;color:#a78bfa;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Agnese</span><span style="opacity:.6">&#8594;</span></button>
-      <button onclick="startReport('p2')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #5b8def;background:#5b8def15;color:#5b8def;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Stefanelli &#8211; Mondelli</span><span style="opacity:.6">&#8594;</span></button>
-      <button onclick="startReport('p3')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #f5a623;background:#f5a62315;color:#f5a623;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Meneghin</span><span style="opacity:.6">&#8594;</span></button>
+      <button onclick="startReport('p2')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #5b8def;background:#5b8def15;color:#5b8def;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Stefanelli &#8211; Mondelli<br><small style="font-weight:400;opacity:.7">Ragazzi</small></span><span style="opacity:.6">&#8594;</span></button>
+      <button onclick="startReport('p3')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #f5a623;background:#f5a62315;color:#f5a623;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Meneghin<br><small style="font-weight:400;opacity:.7">Lanci</small></span><span style="opacity:.6">&#8594;</span></button>
       <button onclick="startReport('p4')" style="width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #f472b6;background:#f472b615;color:#f472b6;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between"><span>Salti</span><span style="opacity:.6">&#8594;</span></button>
     </div>
   </div>
@@ -125,11 +125,11 @@ const SU = "https://script.google.com/macros/s/AKfycbxbpCDZHpAVBJuV6xWsOgnCQ6ERA
 const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 const GIORNI = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
 const GC = [
-  {id:"p0",name:"Marinella - Pancotto", label:"Marinella – Pancotto",color:"#3ecf8e",dateCol:"Data",      presCol:"presenza all - gare",actCol:"Attività"},
-  {id:"p1",name:"AGNESE",               label:"Agnese",              color:"#a78bfa",dateCol:"Data",      presCol:"Presenza all - gare",actCol:"Attività"},
-  {id:"p2",name:"stefanelli-Mondelli",  label:"Stefanelli – Mondelli",color:"#5b8def",dateCol:"Data",presCol:"Presenza all - gare",actCol:"Attività"},
-  {id:"p3",name:"Meneghin",             label:"Meneghin",            color:"#f5a623",dateCol:"Colonna 2", presCol:"Presenza all - gare",actCol:"Attività"},
-  {id:"p4",name:"SALTI",                label:"Salti",               color:"#f472b6",dateCol:"Data",      presCol:"Presenza",           actCol:"Attività"}
+  {id:"p0",name:"Marinella - Pancotto", label:"Marinella – Pancotto",cat:"Cadetti",  color:"#3ecf8e",dateCol:"Data",      presCol:"presenza all - gare",actCol:"Attività"},
+  {id:"p1",name:"AGNESE",               label:"Agnese",              cat:"",         color:"#a78bfa",dateCol:"Data",      presCol:"Presenza all - gare",actCol:"Attività"},
+  {id:"p2",name:"stefanelli-Mondelli",  label:"Stefanelli – Mondelli",cat:"Ragazzi",color:"#5b8def",dateCol:"Data",presCol:"Presenza all - gare",actCol:"Attività"},
+  {id:"p3",name:"Meneghin",             label:"Meneghin",            cat:"Lanci",    color:"#f5a623",dateCol:"Colonna 2", presCol:"Presenza all - gare",actCol:"Attività"},
+  {id:"p4",name:"SALTI",                label:"Salti",               cat:"Salti",    color:"#f472b6",dateCol:"Data",      presCol:"Presenza",           actCol:"Attività"}
 ];
 const DL = {};
 
@@ -226,6 +226,7 @@ function rG(cfg,st){
       <div class="kpi"><div class="kpi-label">Atleti</div><div class="kpi-val">${st.nAt}</div><div class="kpi-sub">nel gruppo</div></div>
       <div class="kpi"><div class="kpi-label">Media/sessione</div><div class="kpi-val" style="color:${cfg.color}">${st.med.toFixed(1)}</div><div class="kpi-sub">presenti</div></div>
     </div>
+    ${cfg.cat?`<div style="display:inline-block;font-size:.72rem;font-weight:600;padding:4px 12px;border-radius:99px;background:${cfg.color}22;color:${cfg.color};border:1px solid ${cfg.color}44;margin-bottom:.5rem">${cfg.cat}</div>`:""}
     <div class="section">&#128197; Presenze per mese</div>
     <div class="card"><div class="mch"><canvas id="mc-${cfg.id}"></canvas></div></div>
     <div class="section">&#127942; Podio</div>
