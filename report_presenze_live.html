@@ -119,20 +119,6 @@ select{font-family:"DM Sans",sans-serif}
   <div id="p4" class="panel"></div>
 </div>
 
-<!-- Modal atleta -->
-<div id="ath-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;padding:1rem;align-items:center;justify-content:center">
-  <div style="background:#1a1d27;border-radius:16px;border:1px solid rgba(255,255,255,.1);width:100%;max-width:380px;padding:20px;position:relative">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div>
-        <div id="modal-name" style="font-size:1rem;font-weight:600"></div>
-        <div id="modal-sub" style="font-size:.75rem;color:#8b90a8;margin-top:2px"></div>
-      </div>
-      <button onclick="closeModal()" style="background:rgba(255,255,255,.08);border:none;color:#eef0f8;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem">✕</button>
-    </div>
-    <div style="position:relative;height:160px"><canvas id="modal-chart"></canvas></div>
-  </div>
-</div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const SU = "https://script.google.com/macros/s/AKfycbxbpCDZHpAVBJuV6xWsOgnCQ6ERAdNRNTyNGJT5rW2Thqh6hxYdu2fCXWH66zu74dY-nQ/exec";
@@ -173,22 +159,8 @@ function pR(rows,cfg){
   const pr=alls.map(r=>r._p).filter(x=>x>0);
   const med=pr.length?pr.reduce((a,b)=>a+b,0)/pr.length:0;
   const a80=ath.filter(a=>alls.length>0&&a[1]/alls.length>=0.8).length;
-  // Presenza mensile per atleta
-  const athMonthly = {};
-  athC.forEach(col=>{
-    const nm=col.trim().replace(/^\[|\]$/g,"").trim();
-    athMonthly[nm]={};
-  });
-
   const mM={};
-  alls.forEach(r=>{const m=r._d.getMonth()+1;if(!mM[m])mM[m]={s:0,sum:0,sg:0,sumg:0};mM[m].s++;mM[m].sum+=r._p;
-    // Track per-athlete monthly
-    athC.forEach(col=>{
-      const nm=col.trim().replace(/^\[|\]$/g,"").trim();
-      if(!athMonthly[nm][m]) athMonthly[nm][m]={p:0,s:0};
-      athMonthly[nm][m].s++;
-      if((r[col]||"").trim()==="X") athMonthly[nm][m].p++;
-    });});
+  alls.forEach(r=>{const m=r._d.getMonth()+1;if(!mM[m])mM[m]={s:0,sum:0,sg:0,sumg:0};mM[m].s++;mM[m].sum+=r._p;});
   gare.forEach(r=>{const m=r._d.getMonth()+1;if(!mM[m])mM[m]={s:0,sum:0,sg:0,sumg:0};mM[m].sg=(mM[m].sg||0)+1;mM[m].sumg=(mM[m].sumg||0)+r._p;});
   const mK2=Object.keys(mM).sort((a,b)=>+a-+b);
   const lastTwo=mK2.slice(-2);
@@ -209,37 +181,12 @@ function pR(rows,cfg){
 
   const months={};
   Object.entries(mM).sort((a,b)=>+a[0]-+b[0]).forEach(([m,v])=>{months[m]={s:v.s,m:v.s>0?v.sum/v.s:0,sg:v.sg||0,mg:v.sg>0?v.sumg/v.sg:0};});
-  // Calcola assenze consecutive per ogni atleta
-  const sortedAlls = alls.slice().sort((a,b)=>a._d-b._d);
-  const lastSessions = sortedAlls.slice(-6); // ultime 6 sessioni
-  const absentees = [];
-  athC.forEach(col=>{
-    const nm=col.trim().replace(/^\[|\]$/g,"").trim();
-    // Conta assenze consecutive dalla fine
-    let streak=0;
-    let lastPresent=null;
-    for(let i=sortedAlls.length-1;i>=0;i--){
-      const r=sortedAlls[i];
-      if((r[col]||"").trim()==="X"){lastPresent=r._d;break;}
-      streak++;
-    }
-    if(streak>=2){
-      const daysSince=lastPresent?Math.round((new Date()-lastPresent)/86400000):null;
-      const lastDates=lastSessions.map(r=>({
-        date:r._d,
-        present:(r[col]||"").trim()==="X"
-      }));
-      absentees.push({name:nm,streak,daysSince,lastPresent,lastDates});
-    }
-  });
-  absentees.sort((a,b)=>b.streak-a.streak);
-
-  return{nA:alls.length,nG:gare.length,nAt:athC.length,med:med,a80:a80,mn:pr.length?Math.min(...pr):0,mx:pr.length?Math.max(...pr):0,ar:alls.length&&ath.length?Math.round(ath.reduce((s,a)=>s+a[1]/alls.length,0)/ath.length*1000)/10:0,ath:ath,athG:athG,mo:months,trend:athTrend,absentees:absentees,athMonthly:athMonthly};
+  return{nA:alls.length,nG:gare.length,nAt:athC.length,med:med,a80:a80,mn:pr.length?Math.min(...pr):0,mx:pr.length?Math.max(...pr):0,ar:alls.length&&ath.length?Math.round(ath.reduce((s,a)=>s+a[1]/alls.length,0)/ath.length*1000)/10:0,ath:ath,athG:athG,mo:months,trend:athTrend};
 }
 
 function rC(v){return v>=80?"var(--green)":v>=60?"var(--orange)":"var(--red)";}
 
-function aLH(list,color,tot,topN,trend,cfg,st){
+function aLH(list,color,tot,topN,trend){
   if(!list.length)return'<p class="en">Nessun dato</p>';
   const mx=list[0][1]||1;
   return'<div class="ch"><span style="width:18px"></span><span style="flex:0 0 130px">Atleta</span><span style="flex:1"></span><span style="width:20px"></span><span style="width:28px;text-align:right">Pres.</span><span style="width:34px;text-align:right">%</span></div>'+
@@ -248,20 +195,7 @@ function aLH(list,color,tot,topN,trend,cfg,st){
     const sep=i===topN-1&&list.length>topN?'<div class="divider"></div>':"";
     const t=trend&&trend[name];
     const arrow=t==="up"?'<span style="color:#3ecf8e;font-size:.85rem;flex-shrink:0">&#8679;</span>':t==="down"?'<span style="color:#f26464;font-size:.85rem;flex-shrink:0">&#8681;</span>':'<span style="color:#8b90a8;font-size:.85rem;flex-shrink:0">&#8680;</span>';
-    const nameEsc = name.replace(/"/g,'&quot;');
-    const topClass = iT ? " top" : "";
-    const nameColor = iT ? color : "var(--muted)";
-    const barColor = iT ? color : color+"55";
-    const pctColor = iT ? color : "var(--muted)";
-    return sep +
-      '<div class="ath-row">' +
-      '<div class="ar">'+(i+1)+'</div>' +
-      '<div class="an'+topClass+'" style="color:'+nameColor+';cursor:pointer" data-name="'+nameEsc+'" onclick="openAthModal(this.dataset.name)">'+name+'</div>' +
-      '<div class="at2"><div class="af" style="width:'+p+'%;background:'+barColor+';height:100%;border-radius:99px"></div></div>' +
-      arrow +
-      '<div class="anum">'+val+'</div>' +
-      '<div class="apct" style="color:'+pctColor+'">'+rP+'%</div>' +
-      '</div>';
+    return `${sep}<div class="ath-row"><div class="ar">${i+1}</div><div class="an${iT?" top":""}" style="color:${iT?color:"var(--muted)"}" title="${name}">${name}</div><div class="at2"><div class="af" style="width:${p}%;background:${iT?color:color+"55"};height:100%;border-radius:99px"></div></div>${arrow}<div class="anum">${val}</div><div class="apct" style="color:${iT?color:"var(--muted)"}">${rP}%</div></div>`;
   }).join("");
 }
 
@@ -278,58 +212,7 @@ function podiumHTML(ath,athG,color,nA,nG){
 function acc(t,m,c,o){const id="ac"+Math.random().toString(36).slice(2);return `<div class="accordion${o?" open":""}" id="${id}"><div class="ah" onclick="tA('${id}')"><div><span class="at">${t}</span><span class="am">${m}</span></div><span class="ai">&#9662;</span></div><div class="ab">${c}</div></div>`;}
 function tA(id){document.getElementById(id).classList.toggle("open");}
 
-function absenteesHTML(list){
-  if(!list.length) return '<p class="en" style="color:var(--green)">&#10003; Nessun atleta con assenze consecutive</p>';
-  
-  function fmtDate(d){if(!d)return"?";return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0");}
-  
-  const urgent = list.filter(a=>a.streak>=3);
-  const warn = list.filter(a=>a.streak===2);
-  
-  // Summary
-  let html = '<div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px">';
-  html += `<div style="flex:1;padding:10px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Urgenti</div><div style="font-family:'DM Mono',monospace;font-size:1.3rem;font-weight:500;color:var(--red)">${urgent.length}</div><div style="font-size:.6rem;color:var(--muted)">3+ assenze</div></div>`;
-  html += `<div style="flex:1;padding:10px;text-align:center"><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Attenzione</div><div style="font-family:'DM Mono',monospace;font-size:1.3rem;font-weight:500;color:var(--orange)">${warn.length}</div><div style="font-size:.6rem;color:var(--muted)">2 assenze</div></div>`;
-  html += '</div>';
-  
-  if(urgent.length){
-    html += '<div style="font-size:.7rem;color:var(--red);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:5px"><span>&#128308;</span> Da contattare subito</div>';
-    urgent.forEach(a=>{
-      const col = 'var(--red)';
-      html += absenteeCard(a, col, fmtDate);
-    });
-  }
-  if(warn.length){
-    html += '<div style="font-size:.7rem;color:var(--orange);font-weight:600;margin:10px 0 6px;display:flex;align-items:center;gap:5px"><span>&#9889;</span> Tenere d'occhio</div>';
-    warn.forEach(a=>{
-      html += absenteeCard(a, 'var(--orange)', fmtDate);
-    });
-  }
-  return html;
-}
-
-function absenteeCard(a, col, fmtDate){
-  const absDates = a.lastDates.filter(d=>!d.present);
-  let html = `<div style="border-radius:12px;padding:12px;margin-bottom:8px;background:${col==='var(--red)'?'rgba(242,100,100,.06)':'rgba(245,166,35,.06)'};border:1px solid ${col==='var(--red)'?'rgba(242,100,100,.25)':'rgba(245,166,35,.25)'}">`;
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">`;
-  html += `<div style="font-size:.83rem;font-weight:600;color:${col}">${a.name}</div>`;
-  html += `<span style="font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:99px;background:${col==='var(--red)'?'rgba(242,100,100,.15)':'rgba(245,166,35,.15)'};color:${col}">${a.streak} assenze</span>`;
-  html += '</div>';
-  // Calendar - only absent days
-  html += '<div style="display:flex;gap:4px;flex-wrap:wrap">';
-  absDates.forEach(d=>{
-    html += `<div style="padding:3px 7px;border-radius:6px;font-size:.65rem;font-weight:500;background:rgba(242,100,100,.15);color:var(--red);border:1px solid rgba(242,100,100,.3)">${fmtDate(d.date)}</div>`;
-  });
-  html += '</div>';
-  if(a.lastPresent){
-    html += `<div style="font-size:.7rem;color:var(--muted);margin-top:7px">&#128197; Ultima presenza: <strong style="color:var(--text)">${fmtDate(a.lastPresent)}</strong>${a.daysSince!==null?' · '+a.daysSince+' giorni fa':''}</div>`;
-  }
-  html += '</div>';
-  return html;
-}
-
 function rG(cfg,st){
-  window._cfg=cfg; window._st=st;
   const el=document.getElementById(cfg.id);
   const mK=Object.keys(st.mo).sort((a,b)=>+a-+b);
   const mL=mK.map(k=>MESI[k-1]);
@@ -348,12 +231,10 @@ function rG(cfg,st){
     <div class="card"><div class="mch"><canvas id="mc-${cfg.id}"></canvas></div></div>
     <div class="section">&#127942; Podio</div>
     ${acc("Top 3 presenze","allenamenti & gare",podiumHTML(st.ath,st.athG,cfg.color,st.nA,st.nG),false)}
-    <div class="section">&#9888;&#65039; Atleti da contattare</div>
-    ${acc("Assenze consecutive",`${st.absentees.length} atleti`,absenteesHTML(st.absentees),false)}
     <div class="section">&#11088; Presenze allenamenti</div>
-    ${acc("Tutti gli atleti",`${st.nAt} atleti · ${st.nA} sessioni`,aLH(st.ath,cfg.color,st.nA,5,st.trend,cfg,st),false)}
+    ${acc("Tutti gli atleti",`${st.nAt} atleti · ${st.nA} sessioni`,aLH(st.ath,cfg.color,st.nA,5,st.trend),false)}
     <div class="section">&#127941; Partecipazione gare</div>
-    ${acc("Tutti gli atleti – gare",`${st.nAt} atleti · ${st.nG} gare`,st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{},cfg,st):'<p class="en">Nessuna gara registrata</p>',false)}
+    ${acc("Tutti gli atleti – gare",`${st.nAt} atleti · ${st.nG} gare`,st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{}):'<p class="en">Nessuna gara registrata</p>',false)}
   `;
   new Chart(document.getElementById(`mc-${cfg.id}`),{
     type:"bar",
@@ -411,41 +292,6 @@ async function startReport(pid){
     const p=this.value;sG(p);const c=GC.find(g=>g.id===p);await lG(c);
   });
 }
-
-let modalChart = null;
-function openAthModal(name){
-  const cfg=window._cfg;
-  const st=window._st;
-  const modal = document.getElementById('ath-modal');
-  document.getElementById('modal-name').textContent = name;
-  const total = st.ath.find(([n])=>n===name);
-  const pct = total && st.nA>0 ? Math.round(total[1]/st.nA*100) : 0;
-  document.getElementById('modal-sub').textContent = `${total?total[1]:0} presenze su ${st.nA} allenamenti (${pct}%)`;
-  modal.style.display = 'flex';
-
-  const mKeys = Object.keys(st.mo).sort((a,b)=>+a-+b);
-  const labels = mKeys.map(k=>MESI[k-1]);
-  const athData = mKeys.map(k=>{
-    const md = st.athMonthly[name] && st.athMonthly[name][k];
-    return md && md.s>0 ? Math.round(md.p/md.s*100) : 0;
-  });
-  const avgData = mKeys.map(()=>Math.round(st.ar));
-
-  if(modalChart) modalChart.destroy();
-  modalChart = new Chart(document.getElementById('modal-chart'),{
-    type:'line',
-    data:{labels,datasets:[
-      {label:name,data:athData,borderColor:cfg.color,backgroundColor:cfg.color+'22',borderWidth:2,pointRadius:4,pointBackgroundColor:cfg.color,tension:.3,fill:true},
-      {label:'Media gruppo',data:avgData,borderColor:'rgba(255,255,255,.25)',borderDash:[4,4],borderWidth:1.5,pointRadius:0,tension:0}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#8b90a8',font:{size:10},boxWidth:10}}},scales:{x:{ticks:{color:'#8b90a8',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#8b90a8',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'},min:0,max:100}}}
-  });
-}
-function closeModal(){
-  document.getElementById('ath-modal').style.display='none';
-  if(modalChart){modalChart.destroy();modalChart=null;}
-}
-document.getElementById('ath-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 </script>
 </body>
 </html>
