@@ -230,24 +230,6 @@ function pR(rows, cfg) {
     });
   });
 
-  // Assenze consecutive
-  var sortedAlls = alls.slice().sort(function(a,b){ return a._d-b._d; });
-  var absentees = [];
-  athC.forEach(function(col){
-    var nm = col.trim().replace(/^\[|\]$/g,"").trim();
-    var streak=0, lastPresent=null;
-    for (var i=sortedAlls.length-1; i>=0; i--) {
-      var r = sortedAlls[i];
-      if ((r[col]||"").trim()==="X") { lastPresent=r._d; break; }
-      streak++;
-    }
-    if (streak >= 2) {
-      var daysSince = lastPresent ? Math.round((new Date()-lastPresent)/86400000) : null;
-      var absDates = sortedAlls.slice(-6).filter(function(r){ return (r[col]||"").trim()!=="X"; }).map(function(r){ return r._d; });
-      absentees.push({name:nm, streak:streak, daysSince:daysSince, lastPresent:lastPresent, absDates:absDates});
-    }
-  });
-  absentees.sort(function(a,b){ return b.streak-a.streak; });
 
   // Mesi
   var mM={};
@@ -269,7 +251,7 @@ function pR(rows, cfg) {
   return {nA:alls.length, nG:gare.length, nAt:athC.length, med:med, a80:a80,
     mn:pr.length?Math.min.apply(null,pr):0, mx:pr.length?Math.max.apply(null,pr):0,
     ar:alls.length&&ath.length?Math.round(ath.reduce(function(s,a){return s+a[1]/alls.length;},0)/ath.length*1000)/10:0,
-    ath:ath, athG:athG, mo:months, trend:athTrend, absentees:absentees, athMonthly:athMonthly};
+    ath:ath, athG:athG, mo:months, trend:athTrend, athMonthly:athMonthly};
 }
 
 function rC(v){ return v>=80?"var(--green)":v>=60?"var(--orange)":"var(--red)"; }
@@ -325,38 +307,6 @@ function podiumHTML(ath, athG, color, nA, nG) {
     '<div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Gare</div>' +
     (nG>0 ? sL(athG,"#f26464") : '<p class="en">Nessuna gara</p>') +
     '</div>';
-}
-
-function absenteesHTML(list) {
-  if (!list.length) return '<p class="en" style="color:var(--green)">&#10003; Nessun atleta con assenze consecutive</p>';
-  var urgent = list.filter(function(a){ return a.streak>=3; });
-  var warn = list.filter(function(a){ return a.streak===2; });
-  var html = '<div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px">';
-  html += '<div style="flex:1;padding:10px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Urgenti</div><div style="font-family:monospace;font-size:1.3rem;font-weight:500;color:var(--red)">'+urgent.length+'</div><div style="font-size:.6rem;color:var(--muted)">3+ assenze</div></div>';
-  html += '<div style="flex:1;padding:10px;text-align:center"><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Attenzione</div><div style="font-family:monospace;font-size:1.3rem;font-weight:500;color:var(--orange)">'+warn.length+'</div><div style="font-size:.6rem;color:var(--muted)">2 assenze</div></div>';
-  html += '</div>';
-  function card(a, col) {
-    var h = '<div style="border-radius:12px;padding:12px;margin-bottom:8px;background:'+col+'10;border:1px solid '+col+'33">';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-    h += '<div style="font-size:.83rem;font-weight:600;color:'+col+'">'+a.name+'</div>';
-    h += '<span style="font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:99px;background:'+col+'20;color:'+col+'">'+a.streak+' assenze</span>';
-    h += '</div>';
-    h += '<div style="display:flex;gap:4px;flex-wrap:wrap">';
-    a.absDates.forEach(function(d){ h += '<div style="padding:3px 7px;border-radius:6px;font-size:.65rem;font-weight:500;background:rgba(242,100,100,.12);color:var(--red);border:1px solid rgba(242,100,100,.25)">'+fmtD(d)+'</div>'; });
-    h += '</div>';
-    if (a.lastPresent) h += '<div style="font-size:.7rem;color:var(--muted);margin-top:7px">&#128197; Ultima presenza: <strong style="color:var(--text)">'+fmtD(a.lastPresent)+'</strong>'+(a.daysSince!==null?' &middot; '+a.daysSince+' gg fa':'')+' </div>';
-    h += '</div>';
-    return h;
-  }
-  if (urgent.length) {
-    html += '<div style="font-size:.7rem;color:var(--red);font-weight:600;margin-bottom:6px">&#128308; Da contattare subito</div>';
-    urgent.forEach(function(a){ html += card(a,"#f26464"); });
-  }
-  if (warn.length) {
-    html += '<div style="font-size:.7rem;color:var(--orange);font-weight:600;margin:10px 0 6px">&#9889; Tenere d&#39;occhio</div>';
-    warn.forEach(function(a){ html += card(a,"#f5a623"); });
-  }
-  return html;
 }
 
 function acc(t, m, c, o) {
@@ -424,8 +374,6 @@ function rG(cfg, st) {
     '<div class="card"><div class="mch"><canvas id="mc-'+cfg.id+'"></canvas></div></div>' +
     '<div class="section">&#127942; Podio</div>' +
     acc("Top 3 presenze","allenamenti &amp; gare",podiumHTML(st.ath,st.athG,cfg.color,st.nA,st.nG),false) +
-    '<div class="section">&#9888;&#65039; Atleti da contattare</div>' +
-    acc("Assenze consecutive",st.absentees.length+" atleti",absenteesHTML(st.absentees),false) +
     '<div class="section">&#11088; Presenze allenamenti</div>' +
     acc("Tutti gli atleti",st.nAt+" atleti &middot; "+st.nA+" sessioni",aLH(st.ath,cfg.color,st.nA,5,st.trend),false) +
     '<div class="section">&#127941; Partecipazione gare</div>' +
