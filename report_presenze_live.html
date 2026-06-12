@@ -248,7 +248,7 @@ function aLH(list,color,tot,topN,trend,cfg,st){
     const sep=i===topN-1&&list.length>topN?'<div class="divider"></div>':"";
     const t=trend&&trend[name];
     const arrow=t==="up"?'<span style="color:#3ecf8e;font-size:.85rem;flex-shrink:0">&#8679;</span>':t==="down"?'<span style="color:#f26464;font-size:.85rem;flex-shrink:0">&#8681;</span>':'<span style="color:#8b90a8;font-size:.85rem;flex-shrink:0">&#8680;</span>';
-    return `${sep}<div class="ath-row"><div class="ar">${i+1}</div><div class="an${iT?" top":""}" style="color:${iT?color:"var(--muted)"};cursor:pointer" title="Tocca per vedere il trend" onclick="openAthModal('${name.replace(/'/g,\"\\'\")}',cfg,st)">${name}</div><div class="at2"><div class="af" style="width:${p}%;background:${iT?color:color+"55"};height:100%;border-radius:99px"></div></div>${arrow}<div class="anum">${val}</div><div class="apct" style="color:${iT?color:"var(--muted)"}">${rP}%</div></div>`;
+    return `${sep}<div class="ath-row"><div class="ar">${i+1}</div><div class="an${iT?" top":""}" style="color:${iT?color:"var(--muted)"};cursor:pointer" title="Tocca per vedere il trend" onclick="openAthModal(this.dataset.name,_cfg,_st)" data-name="${name.replace(/"/g,'&quot;')}">${name}</div><div class="at2"><div class="af" style="width:${p}%;background:${iT?color:color+"55"};height:100%;border-radius:99px"></div></div>${arrow}<div class="anum">${val}</div><div class="apct" style="color:${iT?color:"var(--muted)"}">${rP}%</div></div>`;
   }).join("");
 }
 
@@ -316,6 +316,7 @@ function absenteeCard(a, col, fmtDate){
 }
 
 function rG(cfg,st){
+  window._cfg=cfg; window._st=st;
   const el=document.getElementById(cfg.id);
   const mK=Object.keys(st.mo).sort((a,b)=>+a-+b);
   const mL=mK.map(k=>MESI[k-1]);
@@ -400,6 +401,8 @@ async function startReport(pid){
 
 let modalChart = null;
 function openAthModal(name, cfg, st){
+  if(!cfg) cfg=window._cfg;
+  if(!st) st=window._st;
   const modal = document.getElementById('ath-modal');
   document.getElementById('modal-name').textContent = name;
   const total = st.ath.find(([n])=>n===name);
