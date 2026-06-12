@@ -220,13 +220,13 @@ function rG(cfg,st){
   const mGD=mK.map(k=>+(st.mo[k].mg||0).toFixed(1));
   const rc=rC(st.ar);
   el.innerHTML=`
-    <div class="kpi-grid">
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="kpi"><div class="kpi-label">Allenamenti</div><div class="kpi-val" style="color:${cfg.color}">${st.nA}</div><div class="kpi-sub">sessioni</div></div>
       <div class="kpi"><div class="kpi-label">Gare</div><div class="kpi-val" style="color:var(--red)">${st.nG}</div><div class="kpi-sub">competizioni</div></div>
       <div class="kpi"><div class="kpi-label">Atleti</div><div class="kpi-val">${st.nAt}</div><div class="kpi-sub">nel gruppo</div></div>
-      <div class="kpi"><div class="kpi-label">Media/sessione</div><div class="kpi-val" style="color:${cfg.color}">${st.med.toFixed(1)}</div><div class="kpi-sub">presenti</div></div>
+      <div class="kpi"><div class="kpi-label">Media</div><div class="kpi-val" style="color:${cfg.color}">${st.med.toFixed(1)}</div><div class="kpi-sub">per sessione</div></div>
     </div>
-    ${cfg.cat?`<div style="display:inline-block;font-size:.72rem;font-weight:600;padding:4px 12px;border-radius:99px;background:${cfg.color}22;color:${cfg.color};border:1px solid ${cfg.color}44;margin-bottom:.5rem">${cfg.cat}</div>`:""}
+    ${cfg.cat?`<div style="display:inline-block;font-size:.85rem;font-weight:600;padding:7px 18px;border-radius:99px;background:${cfg.color}22;color:${cfg.color};border:1.5px solid ${cfg.color}66;margin-bottom:.75rem;letter-spacing:.03em">${cfg.cat}</div>`:""}
     <div class="section">&#128197; Presenze per mese</div>
     <div class="card"><div class="mch"><canvas id="mc-${cfg.id}"></canvas></div></div>
     <div class="section">&#127942; Podio</div>
