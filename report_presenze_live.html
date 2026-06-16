@@ -419,22 +419,27 @@ var PODI_SHEETS = {
 };
 
 function parsePodi(csvText, groupId) {
-  var lines = csvText.split("\n");
-  if (lines.length < 2) return [];
-  var headers = sC(lines[0]);
+  var lines = csvText.split("\n").filter(function(l){ return l.trim(); });
+  if (lines.length < 3) return [];
+  
+  // Row 0 = title, Row 1 = headers, Row 2+ = data
+  var headers = sC(lines[1]);
   var results = [];
   var currentGara = null;
-  for (var i = 1; i < lines.length; i++) {
+  
+  for (var i = 2; i < lines.length; i++) {
     var vals = sC(lines[i]);
     var obj = {};
     headers.forEach(function(h, idx) { obj[h.trim()] = (vals[idx]||"").trim(); });
+    
     var gara = obj["Gara / Manifestazione"] || obj["Gara"] || "";
     var atleta = obj["Atleta"] || "";
     var cat = obj["Cat."] || obj["Categoria"] || "";
     var disc = obj["Disciplina"] || "";
     var pos = obj["Pos."] || obj["Piazzamento"] || "";
-    if (!atleta || atleta === "nan") continue;
-    if (gara && gara !== "nan") currentGara = gara;
+    
+    if (!atleta || atleta === "nan" || atleta === "") continue;
+    if (gara && gara !== "nan" && gara !== "") currentGara = gara;
     results.push({ gara: currentGara || "", atleta: atleta, cat: cat, disc: disc, pos: pos });
   }
   return results;
