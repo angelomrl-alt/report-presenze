@@ -377,7 +377,8 @@ function rG(cfg, st) {
     '<div class="section">&#11088; Presenze allenamenti</div>' +
     acc("Tutti gli atleti",st.nAt+" atleti &middot; "+st.nA+" sessioni",aLH(st.ath,cfg.color,st.nA,5,st.trend),false) +
     '<div class="section">&#127941; Partecipazione gare</div>' +
-    acc("Tutti gli atleti &ndash; gare",st.nAt+" atleti &middot; "+st.nG+" gare",st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{}):'<p class="en">Nessuna gara registrata</p>',false);
+    acc("Tutti gli atleti &ndash; gare",st.nAt+" atleti &middot; "+st.nG+" gare",st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{}):'<p class="en">Nessuna gara registrata</p>',false) +
+    (st.podi && st.podi.length ? '<div class="section">&#127942; Podi gare</div>' + acc("Risultati & podi",st.podi.length+" podi",podiHTML(st.podi,cfg.color),false) : "");
 
   new Chart(document.getElementById("mc-"+cfg.id),{
     type:"bar",
@@ -401,12 +402,75 @@ function sG(pid) {
   if (sel && cfg) sel.style.borderColor = cfg.color;
 }
 
-async function fetchCSV(sheetName) {
-  var url = SU + "?sheet=" + encodeURIComponent(sheetName);
+async function fetchCSV(sheetName, type) {
+  type = type || 'presenze';
+  var url = SU + "?sheet=" + encodeURIComponent(sheetName) + "&type=" + type;
   var r = await fetch(url);
   var json = await r.json();
   if (json.error) throw new Error(json.error);
   return json.data;
+}
+
+var PODI_SHEETS = {
+  "p0": "Marinella - Pancotto.",
+  "p1": null,
+  "p2": "Stefanelli - Mondelli",
+  "p3": "Meneghin",
+  "p4": null
+};
+
+function parsePodi(csvText, groupId) {
+  var lines = csvText.split("\n");
+  if (lines.length < 2) return [];
+  var headers = sC(lines[0]);
+  var results = [];
+  var currentGara = null;
+  for (var i = 1; i < lines.length; i++) {
+    var vals = sC(lines[i]);
+    var obj = {};
+    headers.forEach(function(h, idx) { obj[h.trim()] = (vals[idx]||"").trim(); });
+    var gara = obj["Gara / Manifestazione"] || obj["Gara"] || "";
+    var atleta = obj["Atleta"] || "";
+    var cat = obj["Cat."] || obj["Categoria"] || "";
+    var disc = obj["Disciplina"] || "";
+    var pos = obj["Pos."] || obj["Piazzamento"] || "";
+    if (!atleta || atleta === "nan") continue;
+    if (gara && gara !== "nan") currentGara = gara;
+    results.push({ gara: currentGara || "", atleta: atleta, cat: cat, disc: disc, pos: pos });
+  }
+  return results;
+}
+
+function podiHTML(podi, color) {
+  if (!podi || !podi.length) return '<p class="en">Nessun podio registrato</p>';
+  
+  var medal = {"1": "🥇", "1°": "🥇", "2": "🥈", "2°": "🥈", "3": "🥉", "3°": "🥉"};
+  
+  // Group by gara
+  var garaMap = {};
+  podi.forEach(function(p) {
+    if (!garaMap[p.gara]) garaMap[p.gara] = [];
+    garaMap[p.gara].push(p);
+  });
+  
+  var html = "";
+  Object.keys(garaMap).forEach(function(gara) {
+    html += '<div style="margin-bottom:14px">';
+    html += '<div style="font-size:.72rem;font-weight:600;color:' + color + ';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid ' + color + '33">' + gara + '</div>';
+    garaMap[gara].forEach(function(p) {
+      var med = medal[p.pos] || "";
+      var posColor = p.pos==="1"||p.pos==="1°" ? "#f5a623" : p.pos==="2"||p.pos==="2°" ? "#8b90a8" : "#cd7f32";
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">';
+      html += '<span style="font-size:1rem;width:22px;flex-shrink:0">' + med + '</span>';
+      html += '<span style="flex:1;font-size:.8rem;font-weight:500;color:var(--text)">' + p.atleta + '</span>';
+      if (p.cat) html += '<span style="font-size:.65rem;color:var(--muted);background:var(--surface);padding:1px 6px;border-radius:99px">' + p.cat + '</span>';
+      if (p.disc) html += '<span style="font-size:.72rem;color:var(--muted)">' + p.disc + '</span>';
+      html += '<span style="font-family:monospace;font-size:.75rem;font-weight:600;color:' + posColor + ';width:20px;text-align:right">' + p.pos + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  return html;
 }
 
 async function lG(cfg) {
@@ -414,9 +478,19 @@ async function lG(cfg) {
   var el = document.getElementById(cfg.id);
   el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:2rem;gap:12px;color:var(--muted)"><div class="spinner"></div>Caricamento...</div>';
   try {
-    var csv = await fetchCSV(cfg.name);
+    var csv = await fetchCSV(cfg.name, 'presenze');
     var rows = pC(csv);
     var st = pR(rows, cfg);
+    // Load podi if available
+    var podi = [];
+    var podiSheet = PODI_SHEETS[cfg.id];
+    if (podiSheet) {
+      try {
+        var podiCsv = await fetchCSV(podiSheet, 'podi');
+        podi = parsePodi(podiCsv, cfg.id);
+      } catch(e) { podi = []; }
+    }
+    st.podi = podi;
     rG(cfg, st);
     DL[cfg.id] = true;
   } catch(err) {
