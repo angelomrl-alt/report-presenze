@@ -403,8 +403,7 @@ function sG(pid) {
 }
 
 async function fetchCSV(sheetName, type) {
-  type = type || 'presenze';
-  var url = SU + "?sheet=" + encodeURIComponent(sheetName) + "&type=" + type;
+  var url = SU + "?sheet=" + encodeURIComponent(sheetName);
   var r = await fetch(url);
   var json = await r.json();
   if (json.error) throw new Error(json.error);
@@ -412,10 +411,10 @@ async function fetchCSV(sheetName, type) {
 }
 
 var PODI_SHEETS = {
-  "p0": "Marinella - Pancotto.",
+  "p0": "Cadetti",
   "p1": null,
-  "p2": "Stefanelli - Mondelli",
-  "p3": "Meneghin",
+  "p2": "Ragazzi",
+  "p3": "Lanci",
   "p4": null
 };
 
