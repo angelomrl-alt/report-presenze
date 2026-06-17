@@ -492,19 +492,20 @@ async function lG(cfg) {
   var el = document.getElementById(cfg.id);
   el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:2rem;gap:12px;color:var(--muted)"><div class="spinner"></div>Caricamento...</div>';
   try {
-    var csv = await fetchCSV(cfg.name, 'presenze');
+    var podiSheet = PODI_SHEETS[cfg.id];
+    
+    // Fetch presenze and podi in parallel
+    var presPromise = fetchCSV(cfg.name, 'presenze');
+    var podiPromise = podiSheet ? fetchCSV(podiSheet, 'podi').catch(function(){ return null; }) : Promise.resolve(null);
+    
+    var results = await Promise.all([presPromise, podiPromise]);
+    var csv = results[0];
+    var podiCsv = results[1];
+    
     var rows = pC(csv);
     var st = pR(rows, cfg);
-    // Load podi if available
-    var podi = [];
-    var podiSheet = PODI_SHEETS[cfg.id];
-    if (podiSheet) {
-      try {
-        var podiCsv = await fetchCSV(podiSheet, 'podi');
-        podi = parsePodi(podiCsv, cfg.id);
-      } catch(e) { podi = []; }
-    }
-    st.podi = podi;
+    st.podi = podiCsv ? parsePodi(podiCsv, cfg.id) : [];
+    
     rG(cfg, st);
     DL[cfg.id] = true;
   } catch(err) {
