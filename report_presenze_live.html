@@ -378,7 +378,7 @@ function rG(cfg, st) {
     acc("Tutti gli atleti",st.nAt+" atleti &middot; "+st.nA+" sessioni",aLH(st.ath,cfg.color,st.nA,5,st.trend),false) +
     '<div class="section">&#127941; Partecipazione gare</div>' +
     acc("Tutti gli atleti &ndash; gare",st.nAt+" atleti &middot; "+st.nG+" gare",st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{}):'<p class="en">Nessuna gara registrata</p>',false) +
-    (st.podi && st.podi.length ? '<div class="section">&#127942; Podi gare</div>' + acc("Risultati & podi",st.podi.length+" podi",podiHTML(st.podi,cfg.color),false) : "");
+    (st.podi && st.podi.length ? '<div class="section">&#127942; Podi gare</div>' + podiHTML(st.podi,cfg.color) : "");
 
   new Chart(document.getElementById("mc-"+cfg.id),{
     type:"bar",
@@ -450,29 +450,39 @@ function podiHTML(podi, color) {
   
   var medal = {"1": "🥇", "1°": "🥇", "2": "🥈", "2°": "🥈", "3": "🥉", "3°": "🥉"};
   
-  // Group by gara
-  var garaMap = {};
+  // Group by atleta
+  var athMap = {};
+  var athOrder = [];
   podi.forEach(function(p) {
-    if (!garaMap[p.gara]) garaMap[p.gara] = [];
-    garaMap[p.gara].push(p);
+    if (!athMap[p.atleta]) { athMap[p.atleta] = []; athOrder.push(p.atleta); }
+    athMap[p.atleta].push(p);
   });
   
   var html = "";
-  Object.keys(garaMap).forEach(function(gara) {
-    html += '<div style="margin-bottom:14px">';
-    html += '<div style="font-size:.72rem;font-weight:600;color:' + color + ';text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid ' + color + '33">' + gara + '</div>';
-    garaMap[gara].forEach(function(p) {
+  athOrder.forEach(function(atleta) {
+    var results = athMap[atleta];
+    var medals = results.map(function(p){ return medal[p.pos] || ""; }).join("");
+    var id = "pa" + Math.random().toString(36).slice(2);
+    
+    html += '<div class="accordion" id="' + id + '" style="margin-bottom:6px">';
+    html += '<div class="ah" onclick="tA(\'' + id + '\')" style="padding:10px 12px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">';
+    html += '<span style="font-size:.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + atleta + '</span>';
+    html += '</div>';
+    html += '<span style="font-size:.78rem;margin-left:6px;flex-shrink:0">' + medals + '</span>';
+    html += '<span style="font-family:monospace;font-size:.72rem;font-weight:700;color:' + color + ';background:' + color + '18;padding:2px 8px;border-radius:99px;margin-left:8px;flex-shrink:0">' + results.length + '</span>';
+    html += '<span class="ai" style="margin-left:6px">&#9662;</span>';
+    html += '</div>';
+    html += '<div class="ab">';
+    results.forEach(function(p) {
       var med = medal[p.pos] || "";
-      var posColor = p.pos==="1"||p.pos==="1°" ? "#f5a623" : p.pos==="2"||p.pos==="2°" ? "#8b90a8" : "#cd7f32";
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">';
-      html += '<span style="font-size:1rem;width:22px;flex-shrink:0">' + med + '</span>';
-      html += '<span style="flex:1;font-size:.8rem;font-weight:500;color:var(--text)">' + p.atleta + '</span>';
-      if (p.cat) html += '<span style="font-size:.65rem;color:var(--muted);background:var(--surface);padding:1px 6px;border-radius:99px">' + p.cat + '</span>';
-      if (p.disc) html += '<span style="font-size:.72rem;color:var(--muted)">' + p.disc + '</span>';
-      html += '<span style="font-family:monospace;font-size:.75rem;font-weight:600;color:' + posColor + ';width:20px;text-align:right">' + p.pos + '</span>';
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)">';
+      html += '<span style="font-size:.9rem;width:18px;flex-shrink:0">' + med + '</span>';
+      html += '<span style="font-size:.75rem;font-weight:500;color:var(--text);flex-shrink:0">' + (p.disc||"") + '</span>';
+      html += '<span style="font-size:.7rem;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + p.gara + '</span>';
       html += '</div>';
     });
-    html += '</div>';
+    html += '</div></div>';
   });
   return html;
 }
