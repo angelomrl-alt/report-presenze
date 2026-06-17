@@ -82,40 +82,42 @@ select{font-family:"DM Sans",sans-serif}
     <div style="font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px"><span>Seleziona allenatore</span><span style="flex:1;height:1px;background:rgba(255,255,255,.08)"></span></div>
     <div style="display:flex;flex-direction:column;gap:8px">
       <div onclick="startReport('p0')" style="position:relative;width:100%;padding:14px 16px 14px 14px;border-radius:16px;background:#1a1f30;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:13px;cursor:pointer;overflow:hidden">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#3ecf8e"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#5b8def"></div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:.92rem;font-weight:700;color:#3ecf8e">Marinella – Pancotto</div>
-          <div style="font-size:.7rem;color:var(--muted)">Cadetti</div>
-        </div>
-        <span style="font-size:1rem;color:var(--muted)">→</span>
-      </div>
-      <div onclick="startReport('p1')" style="position:relative;width:100%;padding:14px 16px 14px 14px;border-radius:16px;background:#1a1f30;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:13px;cursor:pointer;overflow:hidden">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#a78bfa"></div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:.92rem;font-weight:700;color:#a78bfa">Agnese</div>
+          <div style="font-size:.92rem;font-weight:700;color:#5b8def">Cadetti</div>
+          <div style="font-size:.7rem;color:var(--muted)">Braido – Pancotto</div>
         </div>
         <span style="font-size:1rem;color:var(--muted)">→</span>
       </div>
       <div onclick="startReport('p2')" style="position:relative;width:100%;padding:14px 16px 14px 14px;border-radius:16px;background:#1a1f30;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:13px;cursor:pointer;overflow:hidden">
         <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#5b8def"></div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:.92rem;font-weight:700;color:#5b8def">Stefanelli – Mondelli</div>
-          <div style="font-size:.7rem;color:var(--muted)">Ragazzi</div>
+          <div style="font-size:.92rem;font-weight:700;color:#5b8def">Ragazzi</div>
+          <div style="font-size:.7rem;color:var(--muted)">Stefanelli – Mondelli</div>
         </div>
         <span style="font-size:1rem;color:var(--muted)">→</span>
       </div>
       <div onclick="startReport('p3')" style="position:relative;width:100%;padding:14px 16px 14px 14px;border-radius:16px;background:#1a1f30;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:13px;cursor:pointer;overflow:hidden">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#f5a623"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#5b8def"></div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:.92rem;font-weight:700;color:#f5a623">Meneghin</div>
-          <div style="font-size:.7rem;color:var(--muted)">Lanci</div>
+          <div style="font-size:.92rem;font-weight:700;color:#5b8def">Lanci</div>
+          <div style="font-size:.7rem;color:var(--muted)">Meneghin</div>
+        </div>
+        <span style="font-size:1rem;color:var(--muted)">→</span>
+      </div>
+      <div onclick="startReport('p1')" style="position:relative;width:100%;padding:14px 16px 14px 14px;border-radius:16px;background:#1a1f30;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:13px;cursor:pointer;overflow:hidden">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#5b8def"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.92rem;font-weight:700;color:#5b8def">Velocità - Salti</div>
+          <div style="font-size:.7rem;color:var(--muted)">Tozzato</div>
         </div>
         <span style="font-size:1rem;color:var(--muted)">→</span>
       </div>
       <div onclick="startReport('p4')" style="position:relative;width:100%;padding:14px 16px 14px 14px;border-radius:16px;background:#1a1f30;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:13px;cursor:pointer;overflow:hidden">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#f472b6"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#5b8def"></div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:.92rem;font-weight:700;color:#f472b6">Salti</div>
+          <div style="font-size:.92rem;font-weight:700;color:#5b8def">Salti</div>
+          <div style="font-size:.7rem;color:var(--muted)">Mondelli - Tozzato</div>
         </div>
         <span style="font-size:1rem;color:var(--muted)">→</span>
       </div>
@@ -168,7 +170,7 @@ var SU = "https://script.google.com/macros/s/AKfycbxbpCDZHpAVBJuV6xWsOgnCQ6ERAdN
 var MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 var GIORNI = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
 var GC = [
-  {id:"p0",name:"Marinella - Pancotto", label:"Marinella – Pancotto",cat:"Cadetti",  color:"#3ecf8e",dateCol:"Data",      presCol:"presenza all - gare",actCol:"Attività"},
+  {id:"p0",name:"Marinella - Pancotto", label:"Braido – Pancotto",cat:"Cadetti",  color:"#3ecf8e",dateCol:"Data",      presCol:"presenza all - gare",actCol:"Attività"},
   {id:"p1",name:"AGNESE",               label:"Agnese",              cat:"",         color:"#a78bfa",dateCol:"Data",      presCol:"Presenza all - gare",actCol:"Attività"},
   {id:"p2",name:"stefanelli-Mondelli",  label:"Stefanelli – Mondelli",cat:"Ragazzi",color:"#5b8def",dateCol:"Data",presCol:"Presenza all - gare",actCol:"Attività"},
   {id:"p3",name:"Meneghin",             label:"Meneghin",            cat:"Lanci",    color:"#f5a623",dateCol:"Colonna 2", presCol:"Presenza all - gare",actCol:"Attività"},
