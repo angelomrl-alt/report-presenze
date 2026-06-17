@@ -372,13 +372,10 @@ function rG(cfg, st) {
     '</div>' +
     '<div class="section">&#128197; Presenze per mese</div>' +
     '<div class="card"><div class="mch"><canvas id="mc-'+cfg.id+'"></canvas></div></div>' +
-    '<div class="section">&#127942; Podio</div>' +
     acc("Top 3 presenze","allenamenti &amp; gare",podiumHTML(st.ath,st.athG,cfg.color,st.nA,st.nG),false) +
-    '<div class="section">&#11088; Presenze allenamenti</div>' +
-    acc("Tutti gli atleti",st.nAt+" atleti &middot; "+st.nA+" sessioni",aLH(st.ath,cfg.color,st.nA,5,st.trend),false) +
-    '<div class="section">&#127941; Partecipazione gare</div>' +
+    acc("Presenza allenamenti",st.nAt+" atleti &middot; "+st.nA+" sessioni",aLH(st.ath,cfg.color,st.nA,5,st.trend),false) +
     acc("Tutti gli atleti &ndash; gare",st.nAt+" atleti &middot; "+st.nG+" gare",st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{}):'<p class="en">Nessuna gara registrata</p>',false) +
-    (st.podi && st.podi.length ? '<div class="section">&#127942; Podi gare</div>' + acc("Risultati & podi",st.podi.length+" podi",podiHTML(st.podi,cfg.color),false) : "");
+    (st.podi && st.podi.length ? acc("Risultati & podi",st.podi.length+" podi",podiHTML(st.podi,cfg.color),false) : "");
 
   new Chart(document.getElementById("mc-"+cfg.id),{
     type:"bar",
