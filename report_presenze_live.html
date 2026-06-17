@@ -378,7 +378,7 @@ function rG(cfg, st) {
     acc("Tutti gli atleti",st.nAt+" atleti &middot; "+st.nA+" sessioni",aLH(st.ath,cfg.color,st.nA,5,st.trend),false) +
     '<div class="section">&#127941; Partecipazione gare</div>' +
     acc("Tutti gli atleti &ndash; gare",st.nAt+" atleti &middot; "+st.nG+" gare",st.nG>0?aLH(st.athG,"#f26464",st.nG,3,{}):'<p class="en">Nessuna gara registrata</p>',false) +
-    (st.podi && st.podi.length ? '<div class="section">&#127942; Podi gare</div>' + podiHTML(st.podi,cfg.color) : "");
+    (st.podi && st.podi.length ? '<div class="section">&#127942; Podi gare</div>' + acc("Risultati & podi",st.podi.length+" podi",podiHTML(st.podi,cfg.color),false) : "");
 
   new Chart(document.getElementById("mc-"+cfg.id),{
     type:"bar",
