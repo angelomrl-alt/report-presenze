@@ -312,12 +312,12 @@ function podiumHTML(ath, athG, color, nA, nG) {
 function acc(t, m, c, o) {
   var id = "ac"+Math.random().toString(36).slice(2);
   return '<div class="accordion'+(o?" open":"")+'" id="'+id+'">' +
-    '<div class="ah" onclick="tA(&quot;'+id+'&quot;)">' +
+    '<div class="ah" onclick="tA(&quot;'+id+'&quot;,event)">' +
     '<div><span class="at">'+t+'</span><span class="am">'+m+'</span></div>' +
     '<span class="ai">&#9662;</span>' +
     '</div><div class="ab">'+c+'</div></div>';
 }
-function tA(id){ document.getElementById(id).classList.toggle("open"); }
+function tA(id, event){ if(event) event.stopPropagation(); document.getElementById(id).classList.toggle("open"); }
 
 function openModal(idx) {
   if (!_st || !_cfg) return;
@@ -465,7 +465,7 @@ function podiHTML(podi, color) {
     var id = "pa" + Math.random().toString(36).slice(2);
     
     html += '<div class="accordion" id="' + id + '" style="margin-bottom:6px">';
-    html += '<div class="ah" onclick="tA(\'' + id + '\')" style="padding:10px 12px">';
+    html += '<div class="ah" onclick="tA(\'' + id + '\',event)" style="padding:10px 12px">';
     html += '<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">';
     html += '<span style="font-size:.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + atleta + '</span>';
     html += '</div>';
