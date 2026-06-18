@@ -58,24 +58,30 @@ select{font-family:"DM Sans",sans-serif}
     <h1 style="font-size:1.3rem;font-weight:600;margin:0 0 4px">Atletica Silca</h1>
     <p style="font-size:.85rem;color:var(--muted);margin:0">Stagione 25/26</p>
   </div>
-  <div style="width:100%;max-width:320px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-    <div style="position:relative;background:#1a1f30;border-radius:12px;padding:9px;border:1px solid rgba(255,255,255,0.08);text-align:center;overflow:hidden">
+  <div style="width:100%;max-width:320px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+    <div style="position:relative;background:#1a1f30;border-radius:12px;padding:8px 5px;border:1px solid rgba(255,255,255,0.08);text-align:center;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:#3ecf8e"></div>
-      <div style="font-size:.95rem;margin-bottom:4px">🏃</div>
-      <div style="font-family:monospace;font-size:1.3rem;font-weight:500;color:#3ecf8e;line-height:1">86</div>
-      <div style="font-size:.58rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Atleti</div>
+      <div style="font-size:.85rem;margin-bottom:3px">🏃</div>
+      <div style="font-family:monospace;font-size:1.1rem;font-weight:500;color:#3ecf8e;line-height:1">86</div>
+      <div style="font-size:.52rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.04em;margin-top:3px">Atleti</div>
     </div>
-    <div style="position:relative;background:#1a1f30;border-radius:12px;padding:9px;border:1px solid rgba(255,255,255,0.08);text-align:center;overflow:hidden">
+    <div style="position:relative;background:#1a1f30;border-radius:12px;padding:8px 5px;border:1px solid rgba(255,255,255,0.08);text-align:center;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:#f26464"></div>
-      <div style="font-size:.95rem;margin-bottom:4px">🏆</div>
-      <div style="font-family:monospace;font-size:1.3rem;font-weight:500;color:#f26464;line-height:1">49</div>
-      <div style="font-size:.58rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Gare</div>
+      <div style="font-size:.85rem;margin-bottom:3px">🏆</div>
+      <div style="font-family:monospace;font-size:1.1rem;font-weight:500;color:#f26464;line-height:1">49</div>
+      <div style="font-size:.52rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.04em;margin-top:3px">Gare</div>
     </div>
-    <div style="position:relative;background:#1a1f30;border-radius:12px;padding:9px;border:1px solid rgba(255,255,255,0.08);text-align:center;overflow:hidden">
+    <div id="podi-stat-box" style="position:relative;background:#1a1f30;border-radius:12px;padding:8px 5px;border:1px solid rgba(255,255,255,0.08);text-align:center;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:#f5a623"></div>
+      <div style="font-size:.85rem;margin-bottom:3px">🥇</div>
+      <div id="podi-tot-val" style="font-family:monospace;font-size:1.1rem;font-weight:500;color:#f5a623;line-height:1">&hellip;</div>
+      <div id="podi-tot-detail" style="font-size:.5rem;color:#8b90a8;letter-spacing:.02em;margin-top:3px">&nbsp;</div>
+    </div>
+    <div style="position:relative;background:#1a1f30;border-radius:12px;padding:8px 5px;border:1px solid rgba(255,255,255,0.08);text-align:center;overflow:hidden">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:#5b8def"></div>
-      <div style="font-size:.95rem;margin-bottom:4px">👥</div>
-      <div style="font-family:monospace;font-size:1.3rem;font-weight:500;color:#5b8def;line-height:1">258</div>
-      <div style="font-size:.58rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Partecipanti</div>
+      <div style="font-size:.85rem;margin-bottom:3px">👥</div>
+      <div style="font-family:monospace;font-size:1.1rem;font-weight:500;color:#5b8def;line-height:1">258</div>
+      <div style="font-size:.52rem;color:#8b90a8;text-transform:uppercase;letter-spacing:.04em;margin-top:3px">Partecip.</div>
     </div>
   </div>
   <div style="width:100%;max-width:320px">
@@ -456,6 +462,34 @@ var PODI_SHEETS = {
   "p4": null
 };
 
+async function loadGlobalPodiTotals() {
+  var sheets = Object.values(PODI_SHEETS).filter(function(s){ return s; });
+  var box = document.getElementById("podi-tot-val");
+  var detail = document.getElementById("podi-tot-detail");
+  try {
+    var results = await Promise.all(sheets.map(function(s){
+      return fetchCSV(s, 'podi').catch(function(){ return null; });
+    }));
+    var oro=0, argento=0, bronzo=0;
+    results.forEach(function(csv){
+      if (!csv) return;
+      var podi = parsePodi(csv, null);
+      podi.forEach(function(p){
+        var pos = (p.pos||"").replace("°","").trim();
+        if (pos==="1") oro++;
+        else if (pos==="2") argento++;
+        else if (pos==="3") bronzo++;
+      });
+    });
+    var tot = oro+argento+bronzo;
+    box.textContent = tot;
+    detail.innerHTML = '🥇'+oro+' 🥈'+argento+' 🥉'+bronzo;
+  } catch(err) {
+    box.textContent = "-";
+    detail.textContent = "";
+  }
+}
+
 function parsePodi(csvText, groupId) {
   var lines = csvText.split("\n").filter(function(l){ return l.trim(); });
   if (lines.length < 3) return [];
@@ -574,6 +608,8 @@ async function startReport(pid) {
     await lG(c);
   });
 }
+
+loadGlobalPodiTotals();
 </script>
 </body>
 </html>
