@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pista — Atletica Silca Conegliano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-track:#10131a;
+    --surface:#1a1f29;
+    --surface-2:#232936;
+    --primary:#3ecf8e;
+    --primary-ink:#0c2018;
+    --accent-lane:#f5a623;
+    --text:#f3f5f7;
+    --text-dim:#8b93a1;
+    --danger:#f4574a;
+    --c-cadetti:#3ecf8e;
+    --c-agnese:#a78bfa;
+    --c-ragazzi:#5b8def;
+    --c-lanci:#f5a623;
+    --c-salti:#f472b6;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg-track);
+    color:var(--text);
+    min-height:100vh;
+  }
+  h1,h2,h3,.eyebrow,.brand{font-family:'Oswald',sans-serif;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ---------- LOGIN ---------- */
+  .view-login{
+    min-height:100vh;
+    display:grid;
+    grid-template-columns:1.1fr 1fr;
+  }
+  @media (max-width:880px){
+    .view-login{grid-template-columns:1fr;}
+  }
+
+  .identity-panel{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(180deg,#10131a 0%,#161b24 100%);
+    padding:48px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-height:280px;
+  }
+  .lanes{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+  .lanes path{
+    fill:none;
+    stroke-width:7;
+    stroke-linecap:round;
+    stroke-dasharray:900;
+    stroke-dashoffset:900;
+    animation:draw 1.6s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  .lanes .tick{
+    stroke:#f3f5f7;
+    stroke-width:4;
+    stroke-dasharray:40;
+    stroke-dashoffset:40;
+    animation:draw 0.6s ease-out 1.3s forwards;
+  }
+  @keyframes draw{to{stroke-dashoffset:0;}}
+  @media (prefers-reduced-motion:reduce){
+    .lanes path{animation:none; stroke-dashoffset:0;}
+  }
+
+  .identity-content{position:relative; z-index:2; max-width:380px;}
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin:0 0 14px;
+    font-weight:500;
+  }
+  .brand{
+    font-size:clamp(48px,7vw,72px);
+    font-weight:700;
+    margin:0 0 14px;
+    letter-spacing:.01em;
+    color:var(--text);
+  }
+  .tagline{
+    font-size:16px;
+    color:var(--text-dim);
+    margin:0;
+    line-height:1.5;
+    max-width:300px;
+  }
+
+  .form-panel{
+    background:#f3f5f7;
+    color:#1a1f29;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:48px 32px;
+  }
+  .form-card{width:100%; max-width:360px;}
+  .form-card h2{
+    font-size:26px;
+    font-weight:600;
+    margin:0 0 28px;
+    color:#10131a;
+  }
+  .field{margin-bottom:18px;}
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:6px;
+    color:#3a4150;
+  }
+  .field input{
+    width:100%;
+    padding:12px 14px;
+    border:1.5px solid #d7dbe1;
+    border-radius:10px;
+    font-size:15px;
+    font-family:'Inter',sans-serif;
+    background:#fff;
+    color:#10131a;
+  }
+  .field input:focus{
+    outline:3px solid #bfeede;
+    border-color:var(--primary);
+  }
+  .error{
+    background:#fdeceb;
+    color:#b3261e;
+    border:1px solid #f6c6c2;
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13.5px;
+    margin-bottom:16px;
+  }
+  .btn-primary{
+    width:100%;
+    padding:13px 16px;
+    background:var(--primary);
+    color:var(--primary-ink);
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .btn-primary:hover{background:#34bf80;}
+  .btn-primary:disabled{opacity:.6; cursor:default;}
+  .btn-primary:focus-visible{outline:3px solid #1a1f29; outline-offset:2px;}
+
+  .help-text{
+    margin-top:24px;
+    font-size:13px;
+    color:#6b7280;
+    text-align:center;
+  }
+
+  .loading-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--text-dim);
+    font-size:14px;
+  }
+
+  /* ---------- DASHBOARDS ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 28px;
+    background:var(--surface);
+    border-bottom:1px solid #262d3a;
+  }
+  .topbar .brand-mini{
+    font-family:'Oswald',sans-serif;
+    font-size:20px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .role-tag{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    background:var(--surface-2);
+    color:var(--text-dim);
+    padding:4px 10px;
+    border-radius:20px;
+  }
+  .btn-logout{
+    background:none;
+    border:1px solid #343c4a;
+    color:var(--text-dim);
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .btn-logout:hover{color:var(--text); border-color:#4a5468;}
+
+  main{padding:32px 28px; max-width:1100px; margin:0 auto;}
+  main h2{font-size:22px; font-weight:600; margin:0 0 4px;}
+  main .sub{color:var(--text-dim); font-size:14px; margin:0 0 24px;}
+
+  .cards-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px;
+  }
+  .card{
+    background:var(--surface);
+    border:1px solid #262d3a;
+    border-radius:var(--radius);
+    padding:20px;
+  }
+  .card h3{font-size:15px; font-weight:600; margin:0 0 6px;}
+  .card p{font-size:13px; color:var(--text-dim); margin:0; line-height:1.5;}
+  .card .dot{
+    width:10px;height:10px;border-radius:50%;
+    display:inline-block; margin-bottom:10px;
+  }
+
+  .groups-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:16px;
+  }
+  .group-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:20px;
+    border-left:4px solid transparent;
+  }
+  .group-card h3{margin:0 0 2px; font-size:16px; font-weight:600;}
+  .group-card .coach{font-size:12.5px; color:var(--text-dim); margin:0 0 14px;}
+  .group-card .count{font-family:'Oswald',sans-serif; font-size:28px; font-weight:700;}
+  .group-card .count-label{font-size:11.5px; color:var(--text-dim); margin-left:4px;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===================== CARICAMENTO ===================== -->
+  <section id="view-loading" class="view active">
+    <div class="loading-screen">Caricamento…</div>
+  </section>
+
+  <!-- ===================== LOGIN ===================== -->
+  <section id="view-login" class="view">
+    <div class="view-login">
+      <div class="identity-panel">
+        <svg class="lanes" viewBox="0 0 600 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <path d="M -40 60  C 220 70,  280 260, 560 480" stroke="#3ecf8e"/>
+          <path d="M -40 130 C 220 140, 290 320, 560 540" stroke="#a78bfa"/>
+          <path d="M -40 200 C 220 210, 300 380, 560 600" stroke="#5b8def"/>
+          <path d="M -40 270 C 220 280, 310 440, 560 660" stroke="#f5a623"/>
+          <path d="M -40 340 C 220 350, 320 500, 560 720" stroke="#f472b6"/>
+          <line class="tick" x1="540" y1="450" x2="580" y2="510"/>
+        </svg>
+        <div class="identity-content">
+          <p class="eyebrow">Atletica Silca Conegliano</p>
+          <h1 class="brand">Pista</h1>
+          <p class="tagline">Ogni gruppo, una sola linea di partenza. Presenze, gare e risultati di tutta la società, in un posto solo.</p>
+        </div>
+      </div>
+
+      <div class="form-panel">
+        <div class="form-card">
+          <h2>Accedi</h2>
+          <form id="login-form">
+            <div class="field">
+              <label for="username">Username</label>
+              <input type="text" id="username" autocomplete="username" required>
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input type="password" id="password" autocomplete="current-password" required>
+            </div>
+            <div class="error" id="login-error" hidden>Username o password non corretti.</div>
+            <button type="submit" class="btn-primary" id="login-btn">Accedi</button>
+          </form>
+          <p class="help-text">Problemi di accesso? Contatta la società.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HOME ALLENATORE ===================== -->
+  <section id="view-coach" class="view">
+    <header class="topbar">
+      <div class="brand-mini">🏃 Pista <span class="role-tag">Allenatore</span></div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2 id="coach-group-name">—</h2>
+      <p class="sub" id="coach-group-sub">—</p>
+      <div class="cards-grid">
+        <div class="card">
+          <span class="dot" style="background:var(--c-cadetti)"></span>
+          <h3>Registra presenze</h3>
+          <p>Segna chi c'era oggi, allenamento o gara.</p>
+        </div>
+        <div class="card">
+          <span class="dot" style="background:var(--c-ragazzi)"></span>
+          <h3>Report del gruppo</h3>
+          <p>KPI, grafico mensile, podio e trend atleti.</p>
+        </div>
+        <div class="card">
+          <span class="dot" style="background:var(--c-lanci)"></span>
+          <h3>Risultati gare</h3>
+          <p>Inserisci e consulta prestazioni e personal best.</p>
+        </div>
+        <div class="card">
+          <span class="dot" style="background:var(--danger)"></span>
+          <h3>Da contattare</h3>
+          <p>Atleti con assenze consecutive da seguire.</p>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===================== HOME SOCIETÀ ===================== -->
+  <section id="view-admin" class="view">
+    <header class="topbar">
+      <div class="brand-mini">🏃 Pista <span class="role-tag">Società</span></div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2>Tutti i gruppi</h2>
+      <p class="sub">86 atleti · 49 gare · 258 partecipanti</p>
+      <div class="groups-grid" id="groups-grid"></div>
+    </main>
+  </section>
+
+  <!-- ===================== ACCOUNT NON CONFIGURATO ===================== -->
+  <section id="view-unconfigured" class="view">
+    <div class="loading-screen" style="flex-direction:column; gap:16px;">
+      <p>Il tuo account esiste ma non è ancora collegato a nessun gruppo.<br>Contatta la società per completare la configurazione.</p>
+      <button class="btn-logout" data-logout style="width:auto;">Esci</button>
+    </div>
+  </section>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+  // --- Configurazione Firebase del progetto "Atletica Conegliano" ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyBC4J41PLitcvb8TWubg_4SHwmlo7VW6mw",
+    authDomain: "atletica-conegliano.firebaseapp.com",
+    projectId: "atletica-conegliano",
+    storageBucket: "atletica-conegliano.firebasestorage.app",
+    messagingSenderId: "577994171567",
+    appId: "1:577994171567:web:8a034154d8d4a68e2a605a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Username -> "email finta" per Firebase Auth (l'utente non la vede mai)
+  const EMAIL_DOMAIN = "pista.local";
+  function usernameToEmail(username){
+    return username.trim().toLowerCase().replace(/\s+/g,"") + "@" + EMAIL_DOMAIN;
+  }
+
+  // Dati dei gruppi (gli stessi della società, usati per le schermate)
+  const GRUPPI = {
+    p0: { nome:"Cadetti", coach:"Marinella, Pancotto", colore:"var(--c-cadetti)", atleti:36 },
+    p1: { nome:"Agnese",  coach:"Agnese",               colore:"var(--c-agnese)", atleti:19 },
+    p2: { nome:"Ragazzi", coach:"Stefanelli, Mondelli",  colore:"var(--c-ragazzi)", atleti:19 },
+    p3: { nome:"Lanci",   coach:"Meneghin",              colore:"var(--c-lanci)",  atleti:7  },
+    p4: { nome:"Salti",   coach:"Salti",                 colore:"var(--c-salti)", atleti:5  }
+  };
+
+  function showView(id){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function renderGroupsGrid(){
+    const grid = document.getElementById('groups-grid');
+    grid.innerHTML = Object.values(GRUPPI).map(g => `
+      <div class="group-card" style="border-color:${g.colore}">
+        <h3>${g.nome}</h3>
+        <p class="coach">${g.coach}</p>
+        <span class="count">${g.atleti}</span><span class="count-label">atleti</span>
+      </div>
+    `).join('');
+  }
+
+  // --- Stato di accesso: ad ogni avvio controlla se c'è già una sessione attiva ---
+  onAuthStateChanged(auth, async (user) => {
+    if(!user){
+      showView('view-login');
+      return;
+    }
+    try{
+      const snap = await getDoc(doc(db, "utenti", user.uid));
+      if(!snap.exists()){
+        showView('view-unconfigured');
+        return;
+      }
+      const dati = snap.data();
+      if(dati.ruolo === "societa"){
+        renderGroupsGrid();
+        showView('view-admin');
+      } else if(dati.ruolo === "allenatore"){
+        const g = GRUPPI[dati.gruppoId];
+        document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
+        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${g.atleti} atleti` : "";
+        showView('view-coach');
+      } else {
+        showView('view-unconfigured');
+      }
+    } catch(err){
+      console.error(err);
+      showView('view-unconfigured');
+    }
+  });
+
+  // --- Login ---
+  document.getElementById('login-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const errorBox = document.getElementById('login-error');
+    const btn = document.getElementById('login-btn');
+    errorBox.hidden = true;
+
+    const u = document.getElementById('username').value;
+    const p = document.getElementById('password').value;
+
+    btn.disabled = true;
+    btn.textContent = "Accesso in corso…";
+    try{
+      await signInWithEmailAndPassword(auth, usernameToEmail(u), p);
+      // onAuthStateChanged si occupa di mostrare la schermata giusta
+    } catch(err){
+      errorBox.hidden = false;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Accedi";
+    }
+  });
+
+  // --- Logout ---
+  document.querySelectorAll('[data-logout]').forEach(btn => {
+    btn.addEventListener('click', async function(){
+      await signOut(auth);
+      document.getElementById('login-form').reset();
+    });
+  });
+</script>
+
+</body>
+</html>
