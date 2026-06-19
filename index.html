@@ -170,6 +170,20 @@
   .btn-primary:disabled{opacity:.6; cursor:default;}
   .btn-primary:focus-visible{outline:3px solid #1a1f29; outline-offset:2px;}
 
+  .btn-secondary{
+    background:var(--surface-2);
+    color:var(--text);
+    border:1px solid #343c4a;
+    border-radius:10px;
+    padding:12px 18px;
+    font-size:14px;
+    font-weight:600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-secondary:hover{border-color:#4a5468;}
+
   .help-text{
     margin-top:24px;
     font-size:13px;
@@ -225,6 +239,17 @@
   }
   .btn-logout:hover{color:var(--text); border-color:#4a5468;}
 
+  .btn-back{
+    background:none;
+    border:none;
+    color:var(--text);
+    font-size:20px;
+    cursor:pointer;
+    padding:0 4px 0 0;
+    line-height:1;
+  }
+  .btn-back:hover{color:var(--primary);}
+
   main{padding:32px 28px; max-width:1100px; margin:0 auto;}
   main h2{font-size:22px; font-weight:600; margin:0 0 4px;}
   main .sub{color:var(--text-dim); font-size:14px; margin:0 0 24px;}
@@ -240,6 +265,8 @@
     border-radius:var(--radius);
     padding:20px;
   }
+  .card.clickable{cursor:pointer; transition:border-color .15s;}
+  .card.clickable:hover{border-color:#3a4456;}
   .card h3{font-size:15px; font-weight:600; margin:0 0 6px;}
   .card p{font-size:13px; color:var(--text-dim); margin:0; line-height:1.5;}
   .card .dot{
@@ -262,6 +289,125 @@
   .group-card .coach{font-size:12.5px; color:var(--text-dim); margin:0 0 14px;}
   .group-card .count{font-family:'Oswald',sans-serif; font-size:28px; font-weight:700;}
   .group-card .count-label{font-size:11.5px; color:var(--text-dim); margin-left:4px;}
+
+  /* ---------- REGISTRA PRESENZE ---------- */
+  .presenze-controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    align-items:flex-end;
+    margin-bottom:24px;
+    padding:18px;
+    background:var(--surface);
+    border:1px solid #262d3a;
+    border-radius:var(--radius);
+  }
+  .field-inline label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .field-inline input[type="date"]{
+    background:var(--surface-2);
+    border:1px solid #343c4a;
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .tipo-toggle{display:flex; gap:8px;}
+  .tipo-btn{
+    background:var(--surface-2);
+    border:1px solid #343c4a;
+    color:var(--text-dim);
+    padding:9px 16px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .tipo-btn.active{
+    background:var(--primary);
+    color:var(--primary-ink);
+    border-color:var(--primary);
+  }
+
+  .roster-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .roster-empty{
+    color:var(--text-dim);
+    font-size:14px;
+    padding:24px;
+    text-align:center;
+    background:var(--surface);
+    border:1px dashed #343c4a;
+    border-radius:var(--radius);
+  }
+  .roster-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--surface);
+    border:1px solid #262d3a;
+    border-radius:10px;
+    padding:12px 16px;
+    gap:12px;
+  }
+  .roster-item .nome{font-size:14.5px; font-weight:500;}
+  .presence-pill{
+    border:none;
+    border-radius:20px;
+    padding:8px 16px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    min-width:84px;
+    background:var(--surface-2);
+    color:var(--text-dim);
+    border:1px solid #343c4a;
+  }
+  .presence-pill.presente{
+    background:var(--primary);
+    color:var(--primary-ink);
+    border-color:var(--primary);
+  }
+
+  .add-atleta-form{
+    display:flex;
+    gap:10px;
+    margin-bottom:28px;
+  }
+  .add-atleta-form input{
+    flex:1;
+    padding:11px 14px;
+    border-radius:10px;
+    border:1px solid #343c4a;
+    background:var(--surface);
+    color:var(--text);
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .add-atleta-form input::placeholder{color:#5a6273;}
+
+  .save-bar{
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .save-feedback{
+    font-size:13.5px;
+    color:var(--primary);
+    font-weight:600;
+  }
 </style>
 </head>
 <body>
@@ -323,7 +469,7 @@
       <h2 id="coach-group-name">—</h2>
       <p class="sub" id="coach-group-sub">—</p>
       <div class="cards-grid">
-        <div class="card">
+        <div class="card clickable" id="card-presenze">
           <span class="dot" style="background:var(--c-cadetti)"></span>
           <h3>Registra presenze</h3>
           <p>Segna chi c'era oggi, allenamento o gara.</p>
@@ -331,18 +477,58 @@
         <div class="card">
           <span class="dot" style="background:var(--c-ragazzi)"></span>
           <h3>Report del gruppo</h3>
-          <p>KPI, grafico mensile, podio e trend atleti.</p>
+          <p>KPI, grafico mensile, podio e trend atleti. (presto)</p>
         </div>
         <div class="card">
           <span class="dot" style="background:var(--c-lanci)"></span>
           <h3>Risultati gare</h3>
-          <p>Inserisci e consulta prestazioni e personal best.</p>
+          <p>Inserisci e consulta prestazioni e personal best. (presto)</p>
         </div>
         <div class="card">
           <span class="dot" style="background:var(--danger)"></span>
           <h3>Da contattare</h3>
-          <p>Atleti con assenze consecutive da seguire.</p>
+          <p>Atleti con assenze consecutive da seguire. (presto)</p>
         </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===================== REGISTRA PRESENZE ===================== -->
+  <section id="view-presenze" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-coach" aria-label="Torna alla home">←</button>
+        🏃 Pista <span class="role-tag">Presenze</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2 id="presenze-group-name">—</h2>
+      <p class="sub">Tocca un atleta per segnarlo presente, poi salva.</p>
+
+      <div class="presenze-controls">
+        <div class="field-inline">
+          <label for="presenze-data">Data</label>
+          <input type="date" id="presenze-data">
+        </div>
+        <div class="tipo-toggle">
+          <button type="button" class="tipo-btn active" data-tipo="allenamento">Allenamento</button>
+          <button type="button" class="tipo-btn" data-tipo="gara">Gara</button>
+        </div>
+      </div>
+
+      <div id="roster-list" class="roster-list">
+        <div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>
+      </div>
+
+      <form id="add-atleta-form" class="add-atleta-form">
+        <input type="text" id="nuovo-atleta" placeholder="Nome e cognome nuovo atleta" required>
+        <button type="submit" class="btn-secondary">+ Aggiungi atleta</button>
+      </form>
+
+      <div class="save-bar">
+        <button id="salva-presenze-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva presenze</button>
+        <span id="save-feedback" class="save-feedback"></span>
       </div>
     </main>
   </section>
@@ -376,7 +562,7 @@
     getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc
+    getFirestore, doc, getDoc, collection, addDoc, query, where, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Configurazione Firebase del progetto "Atletica Conegliano" ---
@@ -408,6 +594,12 @@
     p4: { nome:"Salti",   coach:"Salti",                 colore:"var(--c-salti)", atleti:5  }
   };
 
+  let currentGruppoId = null;
+  let rosterDocs = [];           // [{id, nome}]
+  let presenzaMap = new Map();   // atletaId -> bool (presente)
+  let rosterUnsub = null;
+  let tipoSelezionato = "allenamento";
+
   function showView(id){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -422,6 +614,51 @@
         <span class="count">${g.atleti}</span><span class="count-label">atleti</span>
       </div>
     `).join('');
+  }
+
+  function renderRoster(){
+    const list = document.getElementById('roster-list');
+    if(rosterDocs.length === 0){
+      list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>';
+      return;
+    }
+    list.innerHTML = rosterDocs.map(a => {
+      const presente = presenzaMap.get(a.id) === true;
+      return `
+        <div class="roster-item">
+          <span class="nome">${a.nome}</span>
+          <button type="button" class="presence-pill ${presente ? 'presente' : ''}" data-id="${a.id}">
+            ${presente ? 'Presente' : 'Assente'}
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.presence-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        presenzaMap.set(id, !(presenzaMap.get(id) === true));
+        renderRoster();
+      });
+    });
+  }
+
+  function apriPresenze(){
+    const g = GRUPPI[currentGruppoId];
+    document.getElementById('presenze-group-name').textContent = g ? g.nome : "Il tuo gruppo";
+    document.getElementById('presenze-data').value = new Date().toISOString().slice(0,10);
+    document.getElementById('save-feedback').textContent = "";
+
+    if(rosterUnsub) rosterUnsub();
+    presenzaMap.clear();
+
+    const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
+    rosterUnsub = onSnapshot(q, snap => {
+      rosterDocs = snap.docs.map(d => ({ id: d.id, nome: d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      renderRoster();
+    });
+
+    showView('view-presenze');
   }
 
   // --- Stato di accesso: ad ogni avvio controlla se c'è già una sessione attiva ---
@@ -441,6 +678,7 @@
         renderGroupsGrid();
         showView('view-admin');
       } else if(dati.ruolo === "allenatore"){
+        currentGruppoId = dati.gruppoId;
         const g = GRUPPI[dati.gruppoId];
         document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
         document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${g.atleti} atleti` : "";
@@ -468,7 +706,6 @@
     btn.textContent = "Accesso in corso…";
     try{
       await signInWithEmailAndPassword(auth, usernameToEmail(u), p);
-      // onAuthStateChanged si occupa di mostrare la schermata giusta
     } catch(err){
       errorBox.hidden = false;
     } finally {
@@ -480,9 +717,70 @@
   // --- Logout ---
   document.querySelectorAll('[data-logout]').forEach(btn => {
     btn.addEventListener('click', async function(){
+      if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
       await signOut(auth);
       document.getElementById('login-form').reset();
     });
+  });
+
+  // --- Navigazione Registra presenze ---
+  document.getElementById('card-presenze').addEventListener('click', apriPresenze);
+  document.getElementById('back-to-coach').addEventListener('click', () => {
+    if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
+    showView('view-coach');
+  });
+
+  // --- Toggle Allenamento / Gara ---
+  document.querySelectorAll('.tipo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tipoSelezionato = btn.dataset.tipo;
+    });
+  });
+
+  // --- Aggiungi atleta al gruppo ---
+  document.getElementById('add-atleta-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const input = document.getElementById('nuovo-atleta');
+    const nome = input.value.trim();
+    if(!nome) return;
+    await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome });
+    input.value = "";
+  });
+
+  // --- Salva presenze ---
+  document.getElementById('salva-presenze-btn').addEventListener('click', async function(){
+    const feedback = document.getElementById('save-feedback');
+    if(rosterDocs.length === 0){
+      feedback.textContent = "Aggiungi almeno un atleta prima di salvare.";
+      return;
+    }
+    const presenti = rosterDocs.filter(a => presenzaMap.get(a.id) === true).map(a => a.nome);
+    const assenti  = rosterDocs.filter(a => presenzaMap.get(a.id) !== true).map(a => a.nome);
+    const data = document.getElementById('presenze-data').value;
+
+    const btn = this;
+    btn.disabled = true;
+    try{
+      await addDoc(collection(db,'presenze'), {
+        gruppoId: currentGruppoId,
+        data,
+        tipo: tipoSelezionato,
+        presenti,
+        assenti,
+        registratoDa: auth.currentUser.uid,
+        creatoIl: serverTimestamp()
+      });
+      feedback.textContent = "Presenze salvate ✓";
+      presenzaMap.clear();
+      renderRoster();
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore nel salvataggio, riprova.";
+    } finally {
+      btn.disabled = false;
+    }
   });
 </script>
 
