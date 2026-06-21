@@ -1955,7 +1955,18 @@
       sessioni.push({ data: dataISO, tipo, garaNome: tipo === 'gara' ? attivitaText : null, presenti, assenti });
     });
 
-    return { idxData, headerData: header[idxData], atletiNomi, sessioni };
+    // Se ci sono più righe per lo stesso giorno (correzioni/rinvii del modulo), tiene solo l'ultima:
+    // le righe del foglio sono in ordine cronologico di invio, quindi l'ultima è la versione più recente.
+    const dedupMap = new Map();
+    let duplicatiTrovati = 0;
+    sessioni.forEach(s => {
+      const chiave = s.tipo === 'allenamento' ? `A|${s.data}` : `G|${s.data}|${s.garaNome}`;
+      if(dedupMap.has(chiave)) duplicatiTrovati++;
+      dedupMap.set(chiave, s);
+    });
+    const sessioniDedup = Array.from(dedupMap.values()).sort((a,b) => a.data.localeCompare(b.data));
+
+    return { idxData, headerData: header[idxData], atletiNomi, sessioni: sessioniDedup, duplicatiTrovati };
   }
 
   function renderAnteprimaImporta(risultato){
@@ -1974,6 +1985,7 @@
         Colonna data riconosciuta: <strong>"${risultato.headerData}"</strong><br>
         Atleti rilevati (<strong>${risultato.atletiNomi.length}</strong>): ${risultato.atletiNomi.join(', ')}<br>
         Sessioni valide trovate: <strong>${risultato.sessioni.length}</strong> (${nAllenamenti} allenamenti, ${nGare} gare)
+        ${risultato.duplicatiTrovati > 0 ? `<br><span style="color:var(--accent-lane);">${risultato.duplicatiTrovati} righe erano correzioni/rinvii dello stesso giorno: tenuta solo l'ultima sottomissione per ciascuna.</span>` : ''}
       </div>
       <table class="importa-tabella">
         <tr><th>Data</th><th>Tipo</th><th>Gara</th><th>Presenti</th></tr>
