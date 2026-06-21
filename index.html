@@ -1021,8 +1021,10 @@
   // Stato per il Report del gruppo
   let reportAtletiUnsub = null;
   let reportPresenzeUnsub = null;
+  let reportRisultatiUnsub = null;
   let reportAtletiDocs = [];     // [{id, nome}]
   let reportSessioni = [];       // [{data, tipo, presenti:[nomi]}]
+  let reportRisultatiDocs = [];  // [{data, atleta, ...}]
 
   // Stato per la Gestione atleti (Società)
   let adminRosterGruppoId = null;
@@ -1115,6 +1117,7 @@
 
     if(reportAtletiUnsub) reportAtletiUnsub();
     if(reportPresenzeUnsub) reportPresenzeUnsub();
+    if(reportRisultatiUnsub) reportRisultatiUnsub();
 
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     reportAtletiUnsub = onSnapshot(qAtleti, snap => {
@@ -1128,34 +1131,66 @@
       renderReport();
     });
 
+    const qRisultatiReport = query(collection(db,'risultati'), where('gruppoId','==', currentGruppoId));
+    reportRisultatiUnsub = onSnapshot(qRisultatiReport, snap => {
+      reportRisultatiDocs = snap.docs.map(d => d.data());
+      renderReport();
+    });
+
     showView('view-report');
   }
 
   function calcolaReport(){
     const sessioni = reportSessioni;
+    const risultati = reportRisultatiDocs;
+
+    // Giorni di gara "veri": da presenze (tipo=gara) E da risultati inseriti, uniti senza doppi conteggi
+    const raceDatesByAthlete = new Map(); // nome -> Set(data)
+    const raceDatesByMonth = new Map();   // chiave mese -> Set(data)
+    function aggiungiGiornoGara(data, nome){
+      if(!data) return;
+      const chiave = data.slice(0,7);
+      if(!raceDatesByMonth.has(chiave)) raceDatesByMonth.set(chiave, new Set());
+      raceDatesByMonth.get(chiave).add(data);
+      if(nome){
+        if(!raceDatesByAthlete.has(nome)) raceDatesByAthlete.set(nome, new Set());
+        raceDatesByAthlete.get(nome).add(data);
+      }
+    }
+    sessioni.filter(s => s.tipo === 'gara').forEach(s => {
+      aggiungiGiornoGara(s.data, null);
+      (s.presenti || []).forEach(nome => aggiungiGiornoGara(s.data, nome));
+    });
+    risultati.forEach(r => aggiungiGiornoGara(r.data, r.atleta));
+
+    const raceDatesAll = new Set();
+    raceDatesByMonth.forEach(set => set.forEach(d => raceDatesAll.add(d)));
+
     const nAllenamenti = sessioni.filter(s => s.tipo === 'allenamento').length;
-    const nGare = sessioni.filter(s => s.tipo === 'gara').length;
+    const nGare = raceDatesAll.size;
     const totalePresenzeSegnate = sessioni.reduce((acc,s) => acc + (s.presenti ? s.presenti.length : 0), 0);
     const media = sessioni.length ? (totalePresenzeSegnate / sessioni.length) : 0;
 
     // Raggruppa per mese (chiave YYYY-MM)
     const mesiMap = new Map(); // chiave -> {allenamenti, gare}
-    sessioni.forEach(s => {
-      if(!s.data) return;
-      const chiave = s.data.slice(0,7);
+    function assicuraMese(chiave){
       if(!mesiMap.has(chiave)) mesiMap.set(chiave, {allenamenti:0, gare:0});
-      const m = mesiMap.get(chiave);
-      if(s.tipo === 'gara') m.gare++; else m.allenamenti++;
+      return mesiMap.get(chiave);
+    }
+    sessioni.forEach(s => {
+      if(!s.data || s.tipo !== 'allenamento') return;
+      assicuraMese(s.data.slice(0,7)).allenamenti++;
     });
+    raceDatesByMonth.forEach((set, chiave) => { assicuraMese(chiave).gare = set.size; });
+
     const mesiOrdinati = Array.from(mesiMap.keys()).sort();
     const mensile = mesiOrdinati.map(chiave => {
       const [anno, mese] = chiave.split('-');
       return { chiave, label: `${MESI[parseInt(mese,10)-1]} ${anno}`, ...mesiMap.get(chiave) };
     });
 
-    // Conteggi per atleta
+    // Conteggi allenamenti per atleta (per podio, lista e trend)
     const contiAllenamenti = new Map(); // nome -> {totale, perMese: Map(chiave->n)}
-    const contiGare = new Map();
     function incrementa(map, nome, chiaveMese){
       if(!map.has(nome)) map.set(nome, { totale:0, perMese:new Map() });
       const rec = map.get(nome);
@@ -1163,15 +1198,11 @@
       rec.perMese.set(chiaveMese, (rec.perMese.get(chiaveMese)||0)+1);
     }
     sessioni.forEach(s => {
-      if(!s.data || !s.presenti) return;
+      if(!s.data || s.tipo !== 'allenamento' || !s.presenti) return;
       const chiave = s.data.slice(0,7);
-      s.presenti.forEach(nome => {
-        if(s.tipo === 'gara') incrementa(contiGare, nome, chiave);
-        else incrementa(contiAllenamenti, nome, chiave);
-      });
+      s.presenti.forEach(nome => incrementa(contiAllenamenti, nome, chiave));
     });
 
-    // Liste complete (tutti gli atleti del roster, anche con 0 presenze)
     const mesiConDati = mesiOrdinati; // già ordinati cronologicamente
     const ultimoMese = mesiConDati[mesiConDati.length - 1];
     const penultimoMese = mesiConDati[mesiConDati.length - 2];
@@ -1188,9 +1219,10 @@
       return { nome:a.nome, totale, trend };
     }).sort((a,b) => b.totale - a.totale || a.nome.localeCompare(b.nome));
 
+    // Partecipazione gare per atleta: presenze "gara" + risultati inseriti, giorni unici
     const listaGare = reportAtletiDocs.map(a => {
-      const rec = contiGare.get(a.nome);
-      return { nome:a.nome, totale: rec ? rec.totale : 0 };
+      const set = raceDatesByAthlete.get(a.nome);
+      return { nome:a.nome, totale: set ? set.size : 0 };
     }).sort((a,b) => b.totale - a.totale || a.nome.localeCompare(b.nome));
 
     const podioAllenamenti = listaAllenamenti.filter(a => a.totale > 0).slice(0,3);
@@ -1579,6 +1611,7 @@
       if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
       if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
       if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
+      if(reportRisultatiUnsub) { reportRisultatiUnsub(); reportRisultatiUnsub = null; }
       if(adminRosterUnsub) { adminRosterUnsub(); adminRosterUnsub = null; }
       if(risultatiAtletiUnsub) { risultatiAtletiUnsub(); risultatiAtletiUnsub = null; }
       if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
@@ -1601,6 +1634,7 @@
   document.getElementById('back-to-coach-from-report').addEventListener('click', () => {
     if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
     if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
+    if(reportRisultatiUnsub) { reportRisultatiUnsub(); reportRisultatiUnsub = null; }
     showView('view-coach');
   });
 
