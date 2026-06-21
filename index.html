@@ -1093,6 +1093,16 @@
     // Se la Home Società o la Gestione gruppi sono aperte, aggiorna a video senza bisogno di ricaricare
     if(document.getElementById('view-admin').classList.contains('active')) renderGroupsGrid();
     if(document.getElementById('view-admin-gruppi').classList.contains('active')) renderAdminGruppiList();
+    // Se un allenatore ha la sessione aperta, aggiorna anche le sue etichette (nome/allenatore del gruppo)
+    if(currentGruppoId && GRUPPI[currentGruppoId]){
+      const g = GRUPPI[currentGruppoId];
+      ['coach-group-name','presenze-group-name','risultati-group-name','report-group-name'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.textContent = g.nome;
+      });
+      const reportCat = document.getElementById('report-categoria');
+      if(reportCat) reportCat.textContent = g.categoria || "—";
+    }
   });
 
   let currentGruppoId = null;
