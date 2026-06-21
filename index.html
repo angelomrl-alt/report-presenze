@@ -397,6 +397,68 @@
     margin-bottom:16px;
   }
 
+  /* ---------- GARA (presenze + risultati combinati) ---------- */
+  .gara-roster{display:flex; flex-direction:column; gap:8px;}
+  .gara-atleta-block{
+    background:var(--surface);
+    border:1px solid #262d3a;
+    border-radius:10px;
+    padding:12px 16px;
+  }
+  .gara-atleta-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .gara-atleta-header .nome{font-size:14.5px; font-weight:500;}
+  .partecipa-pill{
+    border:1px solid #343c4a;
+    border-radius:20px;
+    padding:7px 14px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    background:var(--surface-2);
+    color:var(--text-dim);
+    min-width:104px;
+  }
+  .partecipa-pill.partecipa{
+    background:var(--primary);
+    color:var(--primary-ink);
+    border-color:var(--primary);
+  }
+  .gara-risultati-rows{margin-top:12px; display:flex; flex-direction:column; gap:8px;}
+  .gara-risultato-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .gara-risultato-row select,
+  .gara-risultato-row input{
+    background:var(--surface-2);
+    border:1px solid #343c4a;
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:13.5px;
+    font-family:'Inter',sans-serif;
+  }
+  .gr-disciplina{flex:1.3; min-width:120px;}
+  .gr-prestazione{flex:1; min-width:100px;}
+  .gr-piazzamento{width:64px;}
+  .gr-remove{
+    background:none;
+    border:1px solid #4a3030;
+    color:#e0a39c;
+    border-radius:8px;
+    padding:0 12px;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .gr-remove:hover{border-color:var(--danger); color:var(--danger);}
+  .gr-add{align-self:flex-start; padding:8px 14px; font-size:12.5px;}
+
   .add-atleta-form{
     display:flex;
     gap:10px;
@@ -778,8 +840,8 @@
         </div>
         <div class="card clickable" id="card-risultati">
           <span class="dot" style="background:var(--c-lanci)"></span>
-          <h3>Risultati gare</h3>
-          <p>Inserisci e consulta prestazioni e personal best.</p>
+          <h3>Gara</h3>
+          <p>Segna chi ha partecipato e inserisci subito i risultati.</p>
         </div>
       </div>
     </main>
@@ -796,16 +858,12 @@
     </header>
     <main>
       <h2 id="presenze-group-name">—</h2>
-      <p class="sub">Tutti partono "Presente": tocca solo chi non c'è oggi, poi salva.</p>
+      <p class="sub">Per gli allenamenti. Tutti partono "Presente": tocca solo chi non c'è oggi, poi salva.</p>
 
       <div class="presenze-controls">
         <div class="field-inline">
           <label for="presenze-data">Data</label>
           <input type="date" id="presenze-data">
-        </div>
-        <div class="tipo-toggle">
-          <button type="button" class="tipo-btn active" data-tipo="allenamento">Allenamento</button>
-          <button type="button" class="tipo-btn" data-tipo="gara">Gara</button>
         </div>
       </div>
 
@@ -875,56 +933,47 @@
     </main>
   </section>
 
-  <!-- ===================== RISULTATI GARE ===================== -->
+  <!-- ===================== GARA ===================== -->
   <section id="view-risultati" class="view">
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-coach-from-risultati" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Risultati gare</span>
+        🏃 Pista <span class="role-tag">Gara</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
       <h2 id="risultati-group-name">—</h2>
-      <p class="sub">Inserisci un risultato: lo vedi subito nello storico e nei migliori per disciplina.</p>
+      <p class="sub">Segna chi ha partecipato e inserisci subito le prestazioni di chi gareggia.</p>
 
-      <form id="risultato-form">
-        <div class="risultato-grid">
-          <div class="field-inline">
-            <label for="risultato-data">Data</label>
-            <input type="date" id="risultato-data" required>
-          </div>
-          <div class="field-inline">
-            <label for="risultato-atleta">Atleta</label>
-            <select id="risultato-atleta" required></select>
-          </div>
-          <div class="field-inline" style="flex:1.4;">
-            <label for="risultato-disciplina">Disciplina</label>
-            <select id="risultato-disciplina" required></select>
-            <span class="dettagli" id="risultato-disciplina-tipo" style="display:block; margin-top:4px;"></span>
-          </div>
-          <div class="field-inline">
-            <label for="risultato-prestazione">Prestazione</label>
-            <input type="text" id="risultato-prestazione" placeholder="es. 11.85 o 1:02.30" required>
-          </div>
-          <div class="field-inline">
-            <label for="risultato-piazzamento">Piazzamento</label>
-            <input type="number" id="risultato-piazzamento" min="1" placeholder="es. 3">
-          </div>
-          <div class="field-inline" style="flex:1.4;">
-            <label for="risultato-gara">Gara</label>
-            <input type="text" id="risultato-gara" placeholder="es. Trofeo Serena Wines">
-          </div>
-          <div class="field-inline" style="flex:1.2;">
-            <label for="risultato-luogo">Luogo</label>
-            <input type="text" id="risultato-luogo" placeholder="es. Ponzano">
-          </div>
+      <div class="risultato-grid" style="margin-bottom:16px;">
+        <div class="field-inline">
+          <label for="gara-data">Data</label>
+          <input type="date" id="gara-data">
         </div>
-        <div class="save-bar" style="margin-top:16px;">
-          <button type="submit" class="btn-primary" style="width:auto; padding:13px 28px;">Salva risultato</button>
-          <span id="risultato-feedback" class="save-feedback"></span>
+        <div class="field-inline" style="flex:1.4;">
+          <label for="gara-nome">Nome gara</label>
+          <input type="text" id="gara-nome" placeholder="es. Trofeo Serena Wines">
         </div>
-      </form>
+        <div class="field-inline" style="flex:1.2;">
+          <label for="gara-luogo">Luogo</label>
+          <input type="text" id="gara-luogo" placeholder="es. Ponzano">
+        </div>
+      </div>
+
+      <div id="gara-esistente-banner" class="info-banner" style="display:none;">
+        📋 Per questo giorno esiste già una gara registrata: la stai modificando, non duplicando.
+      </div>
+
+      <div id="gara-roster" class="gara-roster">
+        <div class="roster-empty">Nessun atleta ancora.</div>
+      </div>
+
+      <div class="save-bar" style="margin-top:20px;">
+        <button type="button" id="salva-gara-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva gara</button>
+        <button type="button" id="nuova-gara-btn" class="btn-secondary">Nuova registrazione</button>
+        <span id="gara-feedback" class="save-feedback"></span>
+      </div>
 
       <details class="report-section" open style="margin-top:28px;">
         <summary>📋 Storico risultati</summary>
@@ -1138,6 +1187,8 @@
   let reportAtletiDocs = [];     // [{id, nome}]
   let reportSessioni = [];       // [{data, tipo, presenti:[nomi]}]
   let reportRisultatiDocs = [];  // [{data, atleta, ...}]
+  let reportGareUnsub = null;
+  let reportGareDocs = [];       // [{data, partecipanti:[nomi]}]
 
   // Stato per la Gestione atleti (Società)
   let adminRosterGruppoId = null;
@@ -1151,6 +1202,10 @@
   let risultatiDocs = [];        // [{id, data, atleta, disciplina, tipoMisura, prestazione, piazzamento, gara, luogo}]
   let risultatiDisciplineUnsub = null;
   let risultatiDisciplineDocs = []; // [{id, nome, tipoMisura}]
+
+  // Stato per la schermata Gara (presenze + risultati combinati)
+  let garaDocIdAttuale = null;
+  let garaPartecipanti = new Map(); // atletaId -> [{disciplina, prestazione, piazzamento, docId?}]
 
   // Stato per Gestione discipline (Società)
   let adminDisciplineUnsub = null;
@@ -1328,6 +1383,12 @@
       renderReport();
     });
 
+    const qGareReport = query(collection(db,'gare'), where('gruppoId','==', currentGruppoId));
+    reportGareUnsub = onSnapshot(qGareReport, snap => {
+      reportGareDocs = snap.docs.map(d => d.data());
+      renderReport();
+    });
+
     showView('view-report');
   }
 
@@ -1351,6 +1412,10 @@
     sessioni.filter(s => s.tipo === 'gara').forEach(s => {
       aggiungiGiornoGara(s.data, null);
       (s.presenti || []).forEach(nome => aggiungiGiornoGara(s.data, nome));
+    });
+    reportGareDocs.forEach(g => {
+      aggiungiGiornoGara(g.data, null);
+      (g.partecipanti || []).forEach(nome => aggiungiGiornoGara(g.data, nome));
     });
     risultati.forEach(r => aggiungiGiornoGara(r.data, r.atleta));
 
@@ -1602,19 +1667,128 @@
     return isNaN(val) ? null : val;
   }
 
-  function aggiornaEtichettaTipoDisciplina(){
-    const select = document.getElementById('risultato-disciplina');
-    const etichetta = document.getElementById('risultato-disciplina-tipo');
-    const trovata = risultatiDisciplineDocs.find(d => d.nome === select.value);
-    etichetta.textContent = trovata ? (trovata.tipoMisura === 'misura' ? 'Vince il valore più alto' : 'Vince il valore più basso') : '';
+  function renderGaraRoster(){
+    const cont = document.getElementById('gara-roster');
+    if(risultatiAtletiDocs.length === 0){
+      cont.innerHTML = '<div class="roster-empty">Nessun atleta ancora.</div>';
+      return;
+    }
+
+    cont.innerHTML = risultatiAtletiDocs.map(a => {
+      const righe = garaPartecipanti.get(a.id);
+      const partecipa = righe !== undefined;
+      return `
+        <div class="gara-atleta-block">
+          <div class="gara-atleta-header">
+            <span class="nome">${a.nome}</span>
+            <button type="button" class="partecipa-pill ${partecipa ? 'partecipa' : ''}" data-id="${a.id}">
+              ${partecipa ? 'Partecipa' : 'Non partecipa'}
+            </button>
+          </div>
+          ${partecipa ? `
+            <div class="gara-risultati-rows">
+              ${righe.map((r,i) => `
+                <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
+                  <select class="gr-disciplina">
+                    <option value="">Disciplina…</option>
+                    ${risultatiDisciplineDocs.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
+                  </select>
+                  <input type="text" class="gr-prestazione" placeholder="Prestazione" value="${r.prestazione||''}">
+                  <input type="number" class="gr-piazzamento" placeholder="Pos." min="1" value="${r.piazzamento||''}">
+                  <button type="button" class="gr-remove" data-id="${a.id}" data-idx="${i}">✕</button>
+                </div>
+              `).join('')}
+              <button type="button" class="btn-secondary gr-add" data-id="${a.id}">+ Aggiungi prestazione</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    cont.querySelectorAll('.partecipa-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if(garaPartecipanti.has(id)) garaPartecipanti.delete(id);
+        else garaPartecipanti.set(id, [{disciplina:'', prestazione:'', piazzamento:''}]);
+        renderGaraRoster();
+      });
+    });
+
+    cont.querySelectorAll('.gr-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        garaPartecipanti.get(btn.dataset.id).push({disciplina:'', prestazione:'', piazzamento:''});
+        renderGaraRoster();
+      });
+    });
+
+    cont.querySelectorAll('.gr-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const arr = garaPartecipanti.get(btn.dataset.id);
+        arr.splice(parseInt(btn.dataset.idx,10), 1);
+        if(arr.length === 0) arr.push({disciplina:'', prestazione:'', piazzamento:''});
+        renderGaraRoster();
+      });
+    });
+
+    cont.querySelectorAll('.gara-risultato-row').forEach(row => {
+      const rec = garaPartecipanti.get(row.dataset.id)[parseInt(row.dataset.idx,10)];
+      row.querySelector('.gr-disciplina').addEventListener('change', e => { rec.disciplina = e.target.value; });
+      row.querySelector('.gr-prestazione').addEventListener('input', e => { rec.prestazione = e.target.value; });
+      row.querySelector('.gr-piazzamento').addEventListener('input', e => { rec.piazzamento = e.target.value; });
+    });
+  }
+
+  async function controllaGaraEsistente(){
+    const data = document.getElementById('gara-data').value;
+    const banner = document.getElementById('gara-esistente-banner');
+    if(!data || !currentGruppoId) return;
+
+    garaDocIdAttuale = null;
+    garaPartecipanti.clear();
+    document.getElementById('gara-nome').value = '';
+    document.getElementById('gara-luogo').value = '';
+    banner.style.display = 'none';
+
+    try{
+      const qGara = query(collection(db,'gare'), where('gruppoId','==', currentGruppoId), where('data','==', data));
+      const snapGara = await getDocs(qGara);
+
+      if(!snapGara.empty){
+        const docSnap = snapGara.docs[0];
+        garaDocIdAttuale = docSnap.id;
+        const dati = docSnap.data();
+        document.getElementById('gara-nome').value = dati.nome || '';
+        document.getElementById('gara-luogo').value = dati.luogo || '';
+        banner.style.display = 'block';
+
+        const qRisultatiGiorno = query(collection(db,'risultati'), where('gruppoId','==', currentGruppoId), where('data','==', data));
+        const snapRisultatiGiorno = await getDocs(qRisultatiGiorno);
+        const risultatiPerNome = new Map();
+        snapRisultatiGiorno.docs.forEach(d => {
+          const r = d.data();
+          if(!risultatiPerNome.has(r.atleta)) risultatiPerNome.set(r.atleta, []);
+          risultatiPerNome.get(r.atleta).push({ disciplina:r.disciplina, prestazione:r.prestazione, piazzamento:r.piazzamento||'', docId:d.id });
+        });
+
+        (dati.partecipanti || []).forEach(nome => {
+          const atleta = risultatiAtletiDocs.find(a => a.nome === nome);
+          if(atleta){
+            const righe = risultatiPerNome.get(nome);
+            garaPartecipanti.set(atleta.id, (righe && righe.length) ? righe : [{disciplina:'', prestazione:'', piazzamento:''}]);
+          }
+        });
+      }
+    } catch(err){
+      console.error('Errore controllaGaraEsistente:', err);
+    }
+    renderGaraRoster();
   }
 
   function apriRisultati(){
     const g = GRUPPI[currentGruppoId];
     document.getElementById('risultati-group-name').textContent = g ? g.nome : "Il tuo gruppo";
-    document.getElementById('risultato-feedback').textContent = "";
-    document.getElementById('risultato-form').reset();
-    document.getElementById('risultato-data').value = new Date().toISOString().slice(0,10);
+    document.getElementById('gara-feedback').textContent = "";
+    document.getElementById('gara-data').value = new Date().toISOString().slice(0,10);
 
     if(risultatiAtletiUnsub) risultatiAtletiUnsub();
     if(risultatiUnsub) risultatiUnsub();
@@ -1623,26 +1797,12 @@
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     risultatiAtletiUnsub = onSnapshot(qAtleti, snap => {
       risultatiAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
-      const select = document.getElementById('risultato-atleta');
-      const selezionato = select.value;
-      select.innerHTML = risultatiAtletiDocs.map(a => `<option value="${a.nome}">${a.nome}</option>`).join('');
-      if(risultatiAtletiDocs.some(a => a.nome === selezionato)) select.value = selezionato;
+      controllaGaraEsistente();
     });
 
     risultatiDisciplineUnsub = onSnapshot(collection(db,'discipline'), snap => {
       risultatiDisciplineDocs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b)=>a.nome.localeCompare(b.nome));
-      const select = document.getElementById('risultato-disciplina');
-      const submitBtn = document.querySelector('#risultato-form button[type="submit"]');
-      const selezionata = select.value;
-      if(risultatiDisciplineDocs.length === 0){
-        select.innerHTML = '<option value="">Nessuna disciplina configurata</option>';
-        submitBtn.disabled = true;
-      } else {
-        select.innerHTML = risultatiDisciplineDocs.map(d => `<option value="${d.nome}">${d.nome}</option>`).join('');
-        if(risultatiDisciplineDocs.some(d => d.nome === selezionata)) select.value = selezionata;
-        submitBtn.disabled = false;
-      }
-      aggiornaEtichettaTipoDisciplina();
+      renderGaraRoster();
     });
 
     const qRisultati = query(collection(db,'risultati'), where('gruppoId','==', currentGruppoId));
@@ -1863,6 +2023,7 @@
       if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
       if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
       if(reportRisultatiUnsub) { reportRisultatiUnsub(); reportRisultatiUnsub = null; }
+      if(reportGareUnsub) { reportGareUnsub(); reportGareUnsub = null; }
       if(adminRosterUnsub) { adminRosterUnsub(); adminRosterUnsub = null; }
       if(risultatiAtletiUnsub) { risultatiAtletiUnsub(); risultatiAtletiUnsub = null; }
       if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
@@ -1886,6 +2047,7 @@
     if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
     if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
     if(reportRisultatiUnsub) { reportRisultatiUnsub(); reportRisultatiUnsub = null; }
+    if(reportGareUnsub) { reportGareUnsub(); reportGareUnsub = null; }
     showView('view-coach');
   });
 
@@ -1897,46 +2059,82 @@
     showView('view-coach');
   });
 
-  document.getElementById('risultato-form').addEventListener('submit', async function(e){
-    e.preventDefault();
-    const feedback = document.getElementById('risultato-feedback');
-    const disciplinaScelta = document.getElementById('risultato-disciplina').value;
-    const disciplinaInfo = risultatiDisciplineDocs.find(d => d.nome === disciplinaScelta);
-    if(!disciplinaInfo){
-      feedback.textContent = "Scegli una disciplina valida (chiedi alla società di crearle).";
+  document.getElementById('salva-gara-btn').addEventListener('click', async function(){
+    const feedback = document.getElementById('gara-feedback');
+    const data = document.getElementById('gara-data').value;
+    const nome = document.getElementById('gara-nome').value.trim();
+    const luogo = document.getElementById('gara-luogo').value.trim();
+
+    if(!data){
+      feedback.textContent = "Inserisci la data della gara.";
       return;
     }
-    const dati = {
-      gruppoId: currentGruppoId,
-      data: document.getElementById('risultato-data').value,
-      atleta: document.getElementById('risultato-atleta').value,
-      disciplina: disciplinaScelta,
-      tipoMisura: disciplinaInfo.tipoMisura,
-      prestazione: document.getElementById('risultato-prestazione').value.trim(),
-      piazzamento: document.getElementById('risultato-piazzamento').value || null,
-      gara: document.getElementById('risultato-gara').value.trim(),
-      luogo: document.getElementById('risultato-luogo').value.trim(),
-      registratoDa: auth.currentUser.uid,
-      creatoIl: serverTimestamp()
-    };
-    if(!dati.atleta){
-      feedback.textContent = "Aggiungi prima almeno un atleta al gruppo.";
+    if(garaPartecipanti.size === 0){
+      feedback.textContent = "Segna almeno un atleta come partecipante.";
       return;
     }
+
+    const btn = this;
+    btn.disabled = true;
     try{
-      await addDoc(collection(db,'risultati'), dati);
-      feedback.textContent = "Risultato salvato ✓";
-      document.getElementById('risultato-prestazione').value = "";
-      document.getElementById('risultato-piazzamento').value = "";
-      document.getElementById('risultato-gara').value = "";
-      document.getElementById('risultato-luogo').value = "";
+      const partecipantiNomi = Array.from(garaPartecipanti.keys())
+        .map(id => risultatiAtletiDocs.find(a => a.id === id))
+        .filter(Boolean)
+        .map(a => a.nome);
+
+      if(garaDocIdAttuale){
+        await updateDoc(doc(db,'gare', garaDocIdAttuale), { nome, luogo, partecipanti: partecipantiNomi });
+      } else {
+        const nuovaGara = await addDoc(collection(db,'gare'), {
+          gruppoId: currentGruppoId, data, nome, luogo, partecipanti: partecipantiNomi,
+          registratoDa: auth.currentUser.uid, creatoIl: serverTimestamp()
+        });
+        garaDocIdAttuale = nuovaGara.id;
+        document.getElementById('gara-esistente-banner').style.display = 'block';
+      }
+
+      const scritture = [];
+      garaPartecipanti.forEach((righe, atletaId) => {
+        const atleta = risultatiAtletiDocs.find(a => a.id === atletaId);
+        if(!atleta) return;
+        righe.forEach(r => {
+          if(!r.disciplina || !r.prestazione) return;
+          const disciplinaInfo = risultatiDisciplineDocs.find(d => d.nome === r.disciplina);
+          const datiRisultato = {
+            gruppoId: currentGruppoId, data, atleta: atleta.nome,
+            disciplina: r.disciplina, tipoMisura: disciplinaInfo ? disciplinaInfo.tipoMisura : 'tempo',
+            prestazione: r.prestazione, piazzamento: r.piazzamento || null,
+            gara: nome, luogo
+          };
+          if(r.docId){
+            scritture.push(updateDoc(doc(db,'risultati', r.docId), datiRisultato));
+          } else {
+            scritture.push(
+              addDoc(collection(db,'risultati'), { ...datiRisultato, registratoDa: auth.currentUser.uid, creatoIl: serverTimestamp() })
+                .then(ref => { r.docId = ref.id; })
+            );
+          }
+        });
+      });
+      await Promise.all(scritture);
+
+      feedback.textContent = `Gara salvata ✓ (${partecipantiNomi.length} partecipanti)`;
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore nel salvataggio, riprova.";
+    } finally {
+      btn.disabled = false;
     }
   });
 
-  document.getElementById('risultato-disciplina').addEventListener('change', aggiornaEtichettaTipoDisciplina);
+  document.getElementById('nuova-gara-btn').addEventListener('click', () => {
+    document.getElementById('gara-data').value = new Date().toISOString().slice(0,10);
+    document.getElementById('gara-feedback').textContent = "";
+    controllaGaraEsistente();
+  });
+
+  document.getElementById('gara-data').addEventListener('change', controllaGaraEsistente);
+  document.getElementById('gara-data').addEventListener('input', controllaGaraEsistente);
 
   // --- Navigazione Gestione atleti (Società) ---
   document.getElementById('back-to-admin').addEventListener('click', () => {
@@ -1974,16 +2172,6 @@
     } finally {
       btn.disabled = false;
     }
-  });
-
-  // --- Toggle Allenamento / Gara (solo dentro Registra presenze) ---
-  document.querySelectorAll('.presenze-controls .tipo-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.presenze-controls .tipo-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      tipoSelezionato = btn.dataset.tipo;
-      controllaRegistrazioneEsistente();
-    });
   });
 
   document.getElementById('presenze-data').addEventListener('change', controllaRegistrazioneEsistente);
