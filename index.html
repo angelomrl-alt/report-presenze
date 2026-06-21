@@ -295,14 +295,62 @@
   .group-stats .count{font-family:'Oswald',sans-serif; font-size:20px; font-weight:700;}
   .group-stats .count-label{display:block; font-size:10.5px; color:var(--text-dim); margin:0;}
 
-  .admin-podi-grid{display:flex; flex-direction:column; gap:14px;}
-  .admin-podi-card{
+  .gestione-dropdown-wrap{position:relative; display:inline-block;}
+  .gestione-menu{
+    display:none;
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
+    background:var(--surface);
+    border:1px solid #343c4a;
+    border-radius:10px;
+    padding:6px;
+    min-width:230px;
+    z-index:20;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  .gestione-menu.open{display:block;}
+  .gestione-menu button{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:14px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .gestione-menu button:hover{background:var(--surface-2);}
+
+  .gruppi-tendine-list{display:flex; flex-direction:column; gap:10px;}
+  .gruppo-tendina{
     background:var(--surface);
     border:1px solid #262d3a;
     border-radius:var(--radius);
-    padding:18px 20px;
+    padding:0 18px;
   }
-  .admin-podi-card h4{margin:0 0 14px; font-size:15px; font-weight:600;}
+  .gruppo-tendina summary{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:16px 0;
+    cursor:pointer;
+    list-style:none;
+  }
+  .gruppo-tendina summary::-webkit-details-marker{display:none;}
+  .gruppo-tendina[open] summary{border-bottom:1px solid #262d3a;}
+  .gruppo-tendina-titolo{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .gruppo-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+  .gruppo-tendina-nome{font-weight:600; font-size:15px;}
+  .gruppo-tendina-sub{font-size:13px; color:var(--text-dim);}
+  .gruppo-tendina-caret{color:var(--text-dim); font-size:13px; flex-shrink:0;}
+  .gruppo-tendina-body{padding:16px 0 18px;}
+  .gruppo-tendina-stats{display:flex; gap:24px; margin-bottom:16px; font-size:13px; color:var(--text-dim);}
+  .gruppo-tendina-stats strong{color:var(--text); font-weight:600; font-family:'Oswald',sans-serif; font-size:15px;}
 
   /* ---------- REGISTRA PRESENZE ---------- */
   .presenze-controls{
@@ -1011,19 +1059,23 @@
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
-      <h2>Andamento società</h2>
-      <p class="sub">Un colpo d'occhio su tutti i gruppi — clicca un gruppo per gestire gli atleti.</p>
-
-      <div class="kpi-grid" id="admin-kpi-grid"></div>
-
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
-        <button type="button" class="btn-secondary" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
-        <button type="button" class="btn-secondary" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div>
+          <h2>Andamento società</h2>
+          <p class="sub">Un colpo d'occhio su tutti i gruppi — clicca la freccia per le statistiche, il bottone per gestire gli atleti.</p>
+        </div>
+        <div class="gestione-dropdown-wrap">
+          <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
+          <div class="gestione-menu" id="gestione-menu">
+            <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
+            <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
+          </div>
+        </div>
       </div>
-      <div class="groups-grid" id="groups-grid"></div>
 
-      <h3 class="section-title" style="margin-top:32px;">🏆 Podi per gruppo</h3>
-      <div id="admin-podi" class="admin-podi-grid"></div>
+      <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
+
+      <div id="gruppi-tendine" class="gruppi-tendine-list" style="margin-top:24px;"></div>
     </main>
   </section>
 
@@ -1269,8 +1321,6 @@
   }
 
   async function renderGroupsGrid(){
-    const grid = document.getElementById('groups-grid');
-
     const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
       getDocs(collection(db,'atleti')),
       getDocs(collection(db,'presenze')),
@@ -1335,21 +1385,6 @@
       <div class="kpi-card"><span class="kpi-value">${Object.keys(GRUPPI).length}</span><span class="kpi-label">Gruppi attivi</span></div>
     `;
 
-    grid.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `
-      <div class="group-card clickable" data-gruppo="${id}" style="border-color:${g.colore}">
-        <h3>${g.nome}</h3>
-        <p class="coach">${g.coach || ''}</p>
-        <div class="group-stats">
-          <div><span class="count">${conteggiAtleti[id] || 0}</span><span class="count-label">atleti</span></div>
-          <div><span class="count">${conteggiAllenamenti[id] || 0}</span><span class="count-label">allen.</span></div>
-          <div><span class="count">${conteggiGare[id] || 0}</span><span class="count-label">gare</span></div>
-        </div>
-      </div>
-    `).join('');
-    grid.querySelectorAll('.group-card').forEach(card => {
-      card.addEventListener('click', () => apriAdminRoster(card.dataset.gruppo));
-    });
-
     function top3(map){
       return Array.from((map || new Map()).entries()).sort((a,b) => b[1]-a[1]).slice(0,3);
     }
@@ -1369,21 +1404,42 @@
       `;
     }
 
-    document.getElementById('admin-podi').innerHTML = Object.entries(GRUPPI).map(([id,g]) => {
+    const cont = document.getElementById('gruppi-tendine');
+    cont.innerHTML = Object.entries(GRUPPI).map(([id,g]) => {
       const podioAllenamenti = top3(contiAllenamentiAtleta[id]);
       const mappaGare = new Map();
       (garaDatePerAtleta[id] || new Map()).forEach((set, nome) => mappaGare.set(nome, set.size));
       const podioGare = top3(mappaGare);
       return `
-        <div class="admin-podi-card" style="border-left:4px solid ${g.colore}">
-          <h4>${g.nome}</h4>
-          <div class="podio-grid">
-            ${podioMiniHtml('Allenamenti', podioAllenamenti)}
-            ${podioMiniHtml('Gare', podioGare)}
+        <details class="gruppo-tendina">
+          <summary>
+            <span class="gruppo-tendina-titolo">
+              <span class="gruppo-dot" style="background:${g.colore}"></span>
+              <span class="gruppo-tendina-nome">${g.nome}</span>
+              <span class="gruppo-tendina-sub">${g.coach || ''} · ${conteggiAtleti[id] || 0} atleti</span>
+            </span>
+            <span class="gruppo-tendina-caret">▾</span>
+          </summary>
+          <div class="gruppo-tendina-body">
+            <div class="gruppo-tendina-stats">
+              <span><strong>${conteggiAllenamenti[id] || 0}</strong> allenamenti</span>
+              <span><strong>${conteggiGare[id] || 0}</strong> gare</span>
+            </div>
+            <div class="podio-grid">
+              ${podioMiniHtml('Allenamenti', podioAllenamenti)}
+              ${podioMiniHtml('Gare', podioGare)}
+            </div>
+            <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-top:16px;">
+              👥 Gestisci atleti ${g.nome}
+            </button>
           </div>
-        </div>
+        </details>
       `;
     }).join('');
+
+    cont.querySelectorAll('.gruppo-gestisci-btn').forEach(btn => {
+      btn.addEventListener('click', () => apriAdminRoster(btn.dataset.gruppo));
+    });
   }
 
   function renderRoster(){
@@ -2331,8 +2387,20 @@
     });
   });
 
+  // --- Menu a tendina "Gestione" (Società) ---
+  document.getElementById('btn-gestione-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('gestione-menu').classList.toggle('open');
+  });
+  document.addEventListener('click', () => {
+    document.getElementById('gestione-menu').classList.remove('open');
+  });
+
   // --- Navigazione Gestione gruppi (Società) ---
-  document.getElementById('btn-gestisci-gruppi').addEventListener('click', apriAdminGruppi);
+  document.getElementById('btn-gestisci-gruppi').addEventListener('click', () => {
+    document.getElementById('gestione-menu').classList.remove('open');
+    apriAdminGruppi();
+  });
   document.getElementById('back-to-admin-from-gruppi').addEventListener('click', () => {
     showView('view-admin');
   });
@@ -2359,7 +2427,10 @@
   });
 
   // --- Navigazione Gestione discipline (Società) ---
-  document.getElementById('btn-gestisci-discipline').addEventListener('click', apriAdminDiscipline);
+  document.getElementById('btn-gestisci-discipline').addEventListener('click', () => {
+    document.getElementById('gestione-menu').classList.remove('open');
+    apriAdminDiscipline();
+  });
   document.getElementById('back-to-admin-from-discipline').addEventListener('click', () => {
     if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
     showView('view-admin');
