@@ -291,6 +291,9 @@
   .group-card .coach{font-size:12.5px; color:var(--text-dim); margin:0 0 14px;}
   .group-card .count{font-family:'Oswald',sans-serif; font-size:28px; font-weight:700;}
   .group-card .count-label{font-size:11.5px; color:var(--text-dim); margin-left:4px;}
+  .group-stats{display:flex; gap:18px; margin-top:8px;}
+  .group-stats .count{font-family:'Oswald',sans-serif; font-size:20px; font-weight:700;}
+  .group-stats .count-label{display:block; font-size:10.5px; color:var(--text-dim); margin:0;}
 
   /* ---------- REGISTRA PRESENZE ---------- */
   .presenze-controls{
@@ -999,8 +1002,11 @@
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
-      <h2>Tutti i gruppi</h2>
-      <p class="sub"><span id="admin-totale-atleti">0</span> atleti totali · clicca un gruppo per gestire gli atleti</p>
+      <h2>Andamento società</h2>
+      <p class="sub">Un colpo d'occhio su tutti i gruppi — clicca un gruppo per gestire gli atleti.</p>
+
+      <div class="kpi-grid" id="admin-kpi-grid"></div>
+
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
         <button type="button" class="btn-secondary" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
         <button type="button" class="btn-secondary" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
@@ -1252,19 +1258,58 @@
 
   async function renderGroupsGrid(){
     const grid = document.getElementById('groups-grid');
-    const snapAtleti = await getDocs(collection(db,'atleti'));
-    const conteggi = {};
+
+    const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
+      getDocs(collection(db,'atleti')),
+      getDocs(collection(db,'presenze')),
+      getDocs(collection(db,'gare')),
+      getDocs(collection(db,'risultati'))
+    ]);
+
+    const conteggiAtleti = {};
     snapAtleti.docs.forEach(d => {
       const gid = d.data().gruppoId;
-      conteggi[gid] = (conteggi[gid] || 0) + 1;
+      conteggiAtleti[gid] = (conteggiAtleti[gid] || 0) + 1;
     });
-    document.getElementById('admin-totale-atleti').textContent = snapAtleti.size;
+
+    const conteggiAllenamenti = {};
+    snapPresenze.docs.forEach(d => {
+      const p = d.data();
+      if(p.tipo === 'allenamento') conteggiAllenamenti[p.gruppoId] = (conteggiAllenamenti[p.gruppoId] || 0) + 1;
+    });
+
+    // Giorni di gara unici per gruppo: presenze (tipo=gara) + raccolta gare + risultati, senza doppi conteggi
+    const garaDatePerGruppo = {}; // gruppoId -> Set(data)
+    function aggiungiGaraData(gid, data){
+      if(!gid || !data) return;
+      if(!garaDatePerGruppo[gid]) garaDatePerGruppo[gid] = new Set();
+      garaDatePerGruppo[gid].add(data);
+    }
+    snapPresenze.docs.forEach(d => { const p = d.data(); if(p.tipo === 'gara') aggiungiGaraData(p.gruppoId, p.data); });
+    snapGare.docs.forEach(d => { const g = d.data(); aggiungiGaraData(g.gruppoId, g.data); });
+    snapRisultati.docs.forEach(d => { const r = d.data(); aggiungiGaraData(r.gruppoId, r.data); });
+    const conteggiGare = {};
+    Object.keys(garaDatePerGruppo).forEach(gid => { conteggiGare[gid] = garaDatePerGruppo[gid].size; });
+
+    const totaleAllenamenti = Object.values(conteggiAllenamenti).reduce((a,b) => a+b, 0);
+    const totaleGare = Object.values(conteggiGare).reduce((a,b) => a+b, 0);
+
+    document.getElementById('admin-kpi-grid').innerHTML = `
+      <div class="kpi-card"><span class="kpi-value">${snapAtleti.size}</span><span class="kpi-label">Atleti totali</span></div>
+      <div class="kpi-card"><span class="kpi-value">${totaleAllenamenti}</span><span class="kpi-label">Allenamenti registrati</span></div>
+      <div class="kpi-card"><span class="kpi-value">${totaleGare}</span><span class="kpi-label">Partecipazioni a gare</span></div>
+      <div class="kpi-card"><span class="kpi-value">${Object.keys(GRUPPI).length}</span><span class="kpi-label">Gruppi attivi</span></div>
+    `;
 
     grid.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `
       <div class="group-card clickable" data-gruppo="${id}" style="border-color:${g.colore}">
         <h3>${g.nome}</h3>
         <p class="coach">${g.coach || ''}</p>
-        <span class="count">${conteggi[id] || 0}</span><span class="count-label">atleti</span>
+        <div class="group-stats">
+          <div><span class="count">${conteggiAtleti[id] || 0}</span><span class="count-label">atleti</span></div>
+          <div><span class="count">${conteggiAllenamenti[id] || 0}</span><span class="count-label">allen.</span></div>
+          <div><span class="count">${conteggiGare[id] || 0}</span><span class="count-label">gare</span></div>
+        </div>
       </div>
     `).join('');
     grid.querySelectorAll('.group-card').forEach(card => {
