@@ -1226,6 +1226,12 @@
         </div>
       </div>
 
+      <div style="margin-bottom:20px;">
+        <button type="button" class="btn-remove" id="importa-svuota-btn">🗑️ Svuota presenze e gare di questo gruppo</button>
+        <span id="importa-svuota-feedback" class="save-feedback"></span>
+        <p class="empty-note" style="margin-top:6px;">Usalo se hai dati di prova da pulire prima di importare lo storico vero. Cancella solo il gruppo selezionato sopra.</p>
+      </div>
+
       <div id="importa-anteprima"></div>
 
       <div class="save-bar" style="margin-top:16px;">
@@ -2601,6 +2607,33 @@
     showView('view-admin');
   });
 
+  document.getElementById('importa-svuota-btn').addEventListener('click', async function(){
+    const gruppoId = document.getElementById('importa-gruppo').value;
+    const nomeGruppo = GRUPPI[gruppoId] ? GRUPPI[gruppoId].nome : gruppoId;
+    const feedback = document.getElementById('importa-svuota-feedback');
+    if(!confirm(`Eliminare TUTTE le presenze e le gare già registrate per "${nomeGruppo}"? Questa azione non si può annullare.`)) return;
+
+    const btn = this;
+    btn.disabled = true;
+    feedback.textContent = "Eliminazione in corso…";
+    try{
+      const qP = query(collection(db,'presenze'), where('gruppoId','==', gruppoId));
+      const snapP = await getDocs(qP);
+      await Promise.all(snapP.docs.map(d => deleteDoc(doc(db,'presenze', d.id))));
+
+      const qG = query(collection(db,'gare'), where('gruppoId','==', gruppoId));
+      const snapG = await getDocs(qG);
+      await Promise.all(snapG.docs.map(d => deleteDoc(doc(db,'gare', d.id))));
+
+      feedback.textContent = `Eliminate ${snapP.size} presenze e ${snapG.size} gare di "${nomeGruppo}". Ora puoi importare il CSV.`;
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore durante l'eliminazione: " + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   document.getElementById('importa-file').addEventListener('change', function(e){
     const file = e.target.files[0];
     if(!file) return;
@@ -2627,6 +2660,7 @@
         const collezione = s.tipo === 'allenamento' ? 'presenze' : 'gare';
         const condizioni = [where('gruppoId','==', gruppoId), where('data','==', s.data)];
         if(s.tipo === 'allenamento') condizioni.push(where('tipo','==', 'allenamento'));
+        else condizioni.push(where('nome','==', s.garaNome));
         const qEsistente = query(collection(db, collezione), ...condizioni);
         const snapEsistente = await getDocs(qEsistente);
         if(!snapEsistente.empty){ saltate++; continue; }
