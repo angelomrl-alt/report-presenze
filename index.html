@@ -1445,6 +1445,7 @@
           <input type="text" class="g-categoria" value="${g.categoria || ''}" placeholder="Categoria (badge)">
           <input type="text" class="g-coach" value="${g.coach || ''}" placeholder="Allenatore/i">
           <span class="g-conteggio">${conteggi[id] || 0} atleti</span>
+          <button type="button" class="btn-secondary g-copia-id" data-id="${id}" title="Copia l'ID, serve per collegare l'account allenatore">ID: ${id}</button>
           <button type="button" class="btn-secondary g-salva">Salva</button>
           <button type="button" class="btn-remove g-elimina">Elimina</button>
         </div>
@@ -1453,6 +1454,17 @@
 
     list.querySelectorAll('.gruppo-edit-row').forEach(row => {
       const id = row.dataset.id;
+      row.querySelector('.g-copia-id').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        try{
+          await navigator.clipboard.writeText(id);
+          const originale = btn.textContent;
+          btn.textContent = "Copiato ✓";
+          setTimeout(() => { btn.textContent = originale; }, 1500);
+        } catch(err){
+          alert('ID gruppo: ' + id);
+        }
+      });
       row.querySelector('.g-colore').addEventListener('change', async (e) => {
         await updateDoc(doc(db,'gruppi', id), { colore: e.target.value });
       });
