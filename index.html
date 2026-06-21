@@ -437,6 +437,40 @@
   }
   .btn-edit-icon:hover{opacity:1;}
 
+  /* ---------- GESTIONE GRUPPI ---------- */
+  .gruppi-edit-list{display:flex; flex-direction:column; gap:10px;}
+  .gruppo-edit-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    background:var(--surface);
+    border:1px solid #262d3a;
+    border-radius:var(--radius);
+    padding:14px 16px;
+  }
+  .gruppo-edit-row input[type="text"]{
+    background:var(--surface-2);
+    border:1px solid #343c4a;
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .gruppo-edit-row .g-nome{width:140px;}
+  .gruppo-edit-row .g-categoria{width:110px;}
+  .gruppo-edit-row .g-coach{flex:1; min-width:160px;}
+  .gruppo-edit-row input[type="color"]{
+    width:36px; height:36px;
+    border:1px solid #343c4a;
+    border-radius:8px;
+    background:none;
+    padding:2px;
+    cursor:pointer;
+  }
+  .gruppo-edit-row .g-conteggio{font-size:12.5px; color:var(--text-dim); white-space:nowrap;}
+
   /* ---------- RISULTATI GARE ---------- */
   .risultato-grid{
     display:flex;
@@ -893,9 +927,39 @@
     </header>
     <main>
       <h2>Tutti i gruppi</h2>
-      <p class="sub">86 atleti · 49 gare · 258 partecipanti · clicca un gruppo per gestire gli atleti</p>
-      <button type="button" class="btn-secondary" id="btn-gestisci-discipline" style="margin-bottom:24px;">⚙️ Gestisci discipline gara</button>
+      <p class="sub"><span id="admin-totale-atleti">0</span> atleti totali · clicca un gruppo per gestire gli atleti</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
+        <button type="button" class="btn-secondary" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
+        <button type="button" class="btn-secondary" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
+      </div>
       <div class="groups-grid" id="groups-grid"></div>
+    </main>
+  </section>
+
+  <!-- ===================== GESTIONE GRUPPI (Società) ===================== -->
+  <section id="view-admin-gruppi" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-admin-from-gruppi" aria-label="Torna alla home">←</button>
+        🏃 Pista <span class="role-tag">Gruppi</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2>Gestione gruppi</h2>
+      <p class="sub">Modifica nome, categoria, allenatore e colore di ogni gruppo. Per "dividere" un gruppo, crea un nuovo gruppo qui sotto e poi sposta gli atleti interessati nella sezione Gestione atleti.</p>
+
+      <div id="gruppi-seed-box" style="display:none; margin-bottom:20px;">
+        <p class="empty-note">Nessun gruppo configurato ancora.</p>
+        <button type="button" class="btn-secondary" id="btn-seed-gruppi">Crea i 5 gruppi attuali (Cadetti, Agnese, Ragazzi, Lanci, Salti)</button>
+      </div>
+
+      <div id="gruppi-edit-list" class="gruppi-edit-list"></div>
+
+      <form id="nuovo-gruppo-form" class="add-atleta-form" style="margin-top:24px;">
+        <input type="text" id="nuovo-gruppo-nome" placeholder="Nome nuovo gruppo, es. Cadetti B" required>
+        <button type="submit" class="btn-secondary">+ Nuovo gruppo</button>
+      </form>
     </main>
   </section>
 
@@ -991,7 +1055,7 @@
     getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc, getDocs, collection, addDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
+    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Configurazione Firebase del progetto "Atletica Conegliano" ---
@@ -1014,14 +1078,22 @@
     return username.trim().toLowerCase().replace(/\s+/g,"") + "@" + EMAIL_DOMAIN;
   }
 
-  // Dati dei gruppi (gli stessi della società, usati per le schermate)
-  const GRUPPI = {
-    p0: { nome:"Cadetti", categoria:"Cadetti", coach:"Marinella, Pancotto", colore:"var(--c-cadetti)", atleti:36 },
-    p1: { nome:"Agnese",  categoria:"—",       coach:"Agnese",               colore:"var(--c-agnese)", atleti:19 },
-    p2: { nome:"Ragazzi", categoria:"Ragazzi", coach:"Stefanelli, Mondelli",  colore:"var(--c-ragazzi)", atleti:19 },
-    p3: { nome:"Lanci",   categoria:"Lanci",   coach:"Meneghin",              colore:"var(--c-lanci)",  atleti:7  },
-    p4: { nome:"Salti",   categoria:"Salti",   coach:"Salti",                 colore:"var(--c-salti)", atleti:5  }
-  };
+  // Dati dei gruppi: ora vivono su Firestore (collezione "gruppi"), modificabili dalla Società.
+  // GRUPPI viene popolato e aggiornato in automatico dalla sottoscrizione più sotto.
+  let GRUPPI = {};
+  let risolviGruppiPronti;
+  const gruppiPronti = new Promise(res => { risolviGruppiPronti = res; });
+  let primaVoltaGruppi = true;
+
+  onSnapshot(collection(db,'gruppi'), snap => {
+    const nuovo = {};
+    snap.docs.forEach(d => { nuovo[d.id] = d.data(); });
+    GRUPPI = nuovo;
+    if(primaVoltaGruppi){ primaVoltaGruppi = false; risolviGruppiPronti(); }
+    // Se la Home Società o la Gestione gruppi sono aperte, aggiorna a video senza bisogno di ricaricare
+    if(document.getElementById('view-admin').classList.contains('active')) renderGroupsGrid();
+    if(document.getElementById('view-admin-gruppi').classList.contains('active')) renderAdminGruppiList();
+  });
 
   let currentGruppoId = null;
   let rosterDocs = [];           // [{id, nome}]
@@ -1084,13 +1156,21 @@
     await Promise.all(snapR.docs.map(d => updateDoc(doc(db,'risultati', d.id), { atleta: nuovoNome })));
   }
 
-  function renderGroupsGrid(){
+  async function renderGroupsGrid(){
     const grid = document.getElementById('groups-grid');
+    const snapAtleti = await getDocs(collection(db,'atleti'));
+    const conteggi = {};
+    snapAtleti.docs.forEach(d => {
+      const gid = d.data().gruppoId;
+      conteggi[gid] = (conteggi[gid] || 0) + 1;
+    });
+    document.getElementById('admin-totale-atleti').textContent = snapAtleti.size;
+
     grid.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `
       <div class="group-card clickable" data-gruppo="${id}" style="border-color:${g.colore}">
         <h3>${g.nome}</h3>
-        <p class="coach">${g.coach}</p>
-        <span class="count">${g.atleti}</span><span class="count-label">atleti</span>
+        <p class="coach">${g.coach || ''}</p>
+        <span class="count">${conteggi[id] || 0}</span><span class="count-label">atleti</span>
       </div>
     `).join('');
     grid.querySelectorAll('.group-card').forEach(card => {
@@ -1323,7 +1403,63 @@
   }
 
 
-  // --- Gestione discipline (Società) ---
+  // --- Gestione gruppi (Società) ---
+  const COLORI_SEED = { p0:"#3ecf8e", p1:"#a78bfa", p2:"#5b8def", p3:"#f5a623", p4:"#f472b6" };
+
+  async function apriAdminGruppi(){
+    showView('view-admin-gruppi');
+    await renderAdminGruppiList();
+  }
+
+  async function renderAdminGruppiList(){
+    const seedBox = document.getElementById('gruppi-seed-box');
+    const list = document.getElementById('gruppi-edit-list');
+    const idGruppi = Object.keys(GRUPPI);
+
+    seedBox.style.display = idGruppi.length === 0 ? 'block' : 'none';
+
+    const snapAtleti = await getDocs(collection(db,'atleti'));
+    const conteggi = {};
+    snapAtleti.docs.forEach(d => {
+      const gid = d.data().gruppoId;
+      conteggi[gid] = (conteggi[gid] || 0) + 1;
+    });
+
+    list.innerHTML = idGruppi.map(id => {
+      const g = GRUPPI[id];
+      const colore = (g.colore && g.colore.startsWith('#')) ? g.colore : '#3ecf8e';
+      return `
+        <div class="gruppo-edit-row" data-id="${id}">
+          <input type="color" class="g-colore" value="${colore}">
+          <input type="text" class="g-nome" value="${g.nome || ''}" placeholder="Nome gruppo">
+          <input type="text" class="g-categoria" value="${g.categoria || ''}" placeholder="Categoria (badge)">
+          <input type="text" class="g-coach" value="${g.coach || ''}" placeholder="Allenatore/i">
+          <span class="g-conteggio">${conteggi[id] || 0} atleti</span>
+          <button type="button" class="btn-secondary g-salva">Salva</button>
+          <button type="button" class="btn-remove g-elimina">Elimina</button>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.gruppo-edit-row').forEach(row => {
+      const id = row.dataset.id;
+      row.querySelector('.g-salva').addEventListener('click', async () => {
+        await updateDoc(doc(db,'gruppi', id), {
+          nome: row.querySelector('.g-nome').value.trim(),
+          categoria: row.querySelector('.g-categoria').value.trim(),
+          coach: row.querySelector('.g-coach').value.trim(),
+          colore: row.querySelector('.g-colore').value
+        });
+      });
+      row.querySelector('.g-elimina').addEventListener('click', async () => {
+        if(confirm(`Eliminare il gruppo "${GRUPPI[id].nome}"? Gli atleti, gli account allenatore e i dati già collegati a questo gruppo NON verranno cancellati, ma resteranno orfani. Procedere?`)){
+          await deleteDoc(doc(db,'gruppi', id));
+        }
+      });
+    });
+  }
+
+
   function apriAdminDiscipline(){
     document.getElementById('discipline-bulk-feedback').textContent = "";
     document.getElementById('discipline-bulk-tempo').value = "";
@@ -1586,6 +1722,7 @@
       showView('view-login');
       return;
     }
+    await gruppiPronti;
     try{
       const snap = await getDoc(doc(db, "utenti", user.uid));
       if(!snap.exists()){
@@ -1600,7 +1737,9 @@
         currentGruppoId = dati.gruppoId;
         const g = GRUPPI[dati.gruppoId];
         document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
-        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${g.atleti} atleti` : "";
+        const qConteggio = query(collection(db,'atleti'), where('gruppoId','==', dati.gruppoId));
+        const snapConteggio = await getDocs(qConteggio);
+        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${snapConteggio.size} atleti` : "";
         showView('view-coach');
       } else {
         showView('view-unconfigured');
@@ -1769,6 +1908,33 @@
       btn.classList.add('active');
       tipoDiscSelezionato = btn.dataset.tipodisc;
     });
+  });
+
+  // --- Navigazione Gestione gruppi (Società) ---
+  document.getElementById('btn-gestisci-gruppi').addEventListener('click', apriAdminGruppi);
+  document.getElementById('back-to-admin-from-gruppi').addEventListener('click', () => {
+    showView('view-admin');
+  });
+
+  document.getElementById('btn-seed-gruppi').addEventListener('click', async function(){
+    this.disabled = true;
+    this.textContent = "Creazione in corso…";
+    await Promise.all([
+      setDoc(doc(db,'gruppi','p0'), { nome:"Cadetti", categoria:"Cadetti", coach:"Marinella, Pancotto", colore: COLORI_SEED.p0 }),
+      setDoc(doc(db,'gruppi','p1'), { nome:"Agnese",  categoria:"—",       coach:"Agnese",               colore: COLORI_SEED.p1 }),
+      setDoc(doc(db,'gruppi','p2'), { nome:"Ragazzi", categoria:"Ragazzi", coach:"Stefanelli, Mondelli", colore: COLORI_SEED.p2 }),
+      setDoc(doc(db,'gruppi','p3'), { nome:"Lanci",   categoria:"Lanci",   coach:"Meneghin",             colore: COLORI_SEED.p3 }),
+      setDoc(doc(db,'gruppi','p4'), { nome:"Salti",   categoria:"Salti",   coach:"Salti",                colore: COLORI_SEED.p4 })
+    ]);
+  });
+
+  document.getElementById('nuovo-gruppo-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const input = document.getElementById('nuovo-gruppo-nome');
+    const nome = input.value.trim();
+    if(!nome) return;
+    await addDoc(collection(db,'gruppi'), { nome, categoria:"", coach:"", colore:"#3ecf8e" });
+    input.value = "";
   });
 
   // --- Navigazione Gestione discipline (Società) ---
