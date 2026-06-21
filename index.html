@@ -822,6 +822,7 @@
   <section id="view-coach" class="view">
     <header class="topbar">
       <div class="brand-mini">🏃 Pista <span class="role-tag">Allenatore</span></div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -854,6 +855,7 @@
         <button class="btn-back" id="back-to-coach" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Presenze</span>
       </div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -895,6 +897,7 @@
         <button class="btn-back" id="back-to-coach-from-report" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Report</span>
       </div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -940,6 +943,7 @@
         <button class="btn-back" id="back-to-coach-from-risultati" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Gara</span>
       </div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -991,6 +995,7 @@
   <section id="view-admin" class="view">
     <header class="topbar">
       <div class="brand-mini">🏃 Pista <span class="role-tag">Società</span></div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1011,6 +1016,7 @@
         <button class="btn-back" id="back-to-admin-from-gruppi" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Gruppi</span>
       </div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1038,6 +1044,7 @@
         <button class="btn-back" id="back-to-admin-from-discipline" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Discipline</span>
       </div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1082,6 +1089,7 @@
         <button class="btn-back" id="back-to-admin" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Gestione atleti</span>
       </div>
+      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1120,7 +1128,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
   import {
-    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+    EmailAuthProvider, reauthenticateWithCredential, updatePassword
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
     getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
@@ -2031,6 +2040,29 @@
       if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
       await signOut(auth);
       document.getElementById('login-form').reset();
+    });
+  });
+
+  document.querySelectorAll('.btn-cambia-password').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if(!auth.currentUser) return;
+      const attuale = prompt('Per sicurezza, inserisci prima la password attuale:');
+      if(!attuale) return;
+      const nuova = prompt('Scrivi la nuova password (almeno 6 caratteri):');
+      if(!nuova) return;
+      if(nuova.length < 6){
+        alert('La nuova password deve avere almeno 6 caratteri. Riprova.');
+        return;
+      }
+      try{
+        const cred = EmailAuthProvider.credential(auth.currentUser.email, attuale);
+        await reauthenticateWithCredential(auth.currentUser, cred);
+        await updatePassword(auth.currentUser, nuova);
+        alert('Password aggiornata ✓');
+      } catch(err){
+        console.error(err);
+        alert('Password attuale sbagliata, o errore: ' + err.message);
+      }
     });
   });
 
