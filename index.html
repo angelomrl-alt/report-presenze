@@ -285,6 +285,8 @@
     padding:20px;
     border-left:4px solid transparent;
   }
+  .group-card.clickable{cursor:pointer; transition:transform .12s, border-color .15s;}
+  .group-card.clickable:hover{transform:translateY(-2px);}
   .group-card h3{margin:0 0 2px; font-size:16px; font-weight:600;}
   .group-card .coach{font-size:12.5px; color:var(--text-dim); margin:0 0 14px;}
   .group-card .count{font-family:'Oswald',sans-serif; font-size:28px; font-weight:700;}
@@ -397,6 +399,32 @@
     font-family:'Inter',sans-serif;
   }
   .add-atleta-form input::placeholder{color:#5a6273;}
+
+  .admin-textarea{
+    width:100%;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1px solid #343c4a;
+    background:var(--surface);
+    color:var(--text);
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+    resize:vertical;
+  }
+  .admin-textarea::placeholder{color:#5a6273;}
+
+  .btn-remove{
+    background:none;
+    border:1px solid #4a3030;
+    color:#e0a39c;
+    padding:7px 14px;
+    border-radius:8px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .btn-remove:hover{border-color:var(--danger); color:var(--danger);}
 
   .save-bar{
     display:flex;
@@ -627,11 +655,6 @@
           <h3>Risultati gare</h3>
           <p>Inserisci e consulta prestazioni e personal best. (presto)</p>
         </div>
-        <div class="card">
-          <span class="dot" style="background:var(--danger)"></span>
-          <h3>Da contattare</h3>
-          <p>Atleti con assenze consecutive da seguire. (presto)</p>
-        </div>
       </div>
     </main>
   </section>
@@ -729,8 +752,40 @@
     </header>
     <main>
       <h2>Tutti i gruppi</h2>
-      <p class="sub">86 atleti · 49 gare · 258 partecipanti</p>
+      <p class="sub">86 atleti · 49 gare · 258 partecipanti · clicca un gruppo per gestire gli atleti</p>
       <div class="groups-grid" id="groups-grid"></div>
+    </main>
+  </section>
+
+  <!-- ===================== GESTIONE ATLETI (Società) ===================== -->
+  <section id="view-admin-roster" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-admin" aria-label="Torna alla home">←</button>
+        🏃 Pista <span class="role-tag">Gestione atleti</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2 id="admin-roster-group-name">—</h2>
+      <p class="sub" id="admin-roster-group-sub">—</p>
+
+      <div id="admin-roster-list" class="roster-list">
+        <div class="roster-empty">Nessun atleta ancora.</div>
+      </div>
+
+      <form id="admin-add-atleta-form" class="add-atleta-form">
+        <input type="text" id="admin-nuovo-atleta" placeholder="Nome e cognome nuovo atleta" required>
+        <button type="submit" class="btn-secondary">+ Aggiungi</button>
+      </form>
+
+      <h3 class="section-title" style="margin-top:28px;">Aggiungi più atleti insieme</h3>
+      <p class="sub" style="margin-bottom:12px;">Scrivi (o incolla) un nome per riga, poi clicca "Aggiungi tutti".</p>
+      <textarea id="admin-bulk-atleti" class="admin-textarea" rows="8" placeholder="Barbato Leonardo&#10;Rossi Marco&#10;..."></textarea>
+      <div class="save-bar" style="margin-top:12px;">
+        <button id="admin-bulk-add-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Aggiungi tutti</button>
+        <span id="admin-bulk-feedback" class="save-feedback"></span>
+      </div>
     </main>
   </section>
 
@@ -750,7 +805,7 @@
     getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc, collection, addDoc, query, where, onSnapshot, serverTimestamp
+    getFirestore, doc, getDoc, collection, addDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Configurazione Firebase del progetto "Atletica Conegliano" ---
@@ -794,6 +849,11 @@
   let reportAtletiDocs = [];     // [{id, nome}]
   let reportSessioni = [];       // [{data, tipo, presenti:[nomi]}]
 
+  // Stato per la Gestione atleti (Società)
+  let adminRosterGruppoId = null;
+  let adminRosterUnsub = null;
+  let adminRosterDocs = [];      // [{id, nome}]
+
   const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
   function showView(id){
@@ -803,13 +863,16 @@
 
   function renderGroupsGrid(){
     const grid = document.getElementById('groups-grid');
-    grid.innerHTML = Object.values(GRUPPI).map(g => `
-      <div class="group-card" style="border-color:${g.colore}">
+    grid.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `
+      <div class="group-card clickable" data-gruppo="${id}" style="border-color:${g.colore}">
         <h3>${g.nome}</h3>
         <p class="coach">${g.coach}</p>
         <span class="count">${g.atleti}</span><span class="count-label">atleti</span>
       </div>
     `).join('');
+    grid.querySelectorAll('.group-card').forEach(card => {
+      card.addEventListener('click', () => apriAdminRoster(card.dataset.gruppo));
+    });
   }
 
   function renderRoster(){
@@ -951,6 +1014,47 @@
     };
   }
 
+  function apriAdminRoster(gruppoId){
+    adminRosterGruppoId = gruppoId;
+    const g = GRUPPI[gruppoId];
+    document.getElementById('admin-roster-group-name').textContent = g ? g.nome : "Gruppo";
+    document.getElementById('admin-roster-group-sub').textContent = g ? g.coach : "";
+    document.getElementById('admin-bulk-feedback').textContent = "";
+    document.getElementById('admin-bulk-atleti').value = "";
+
+    if(adminRosterUnsub) adminRosterUnsub();
+    const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
+    adminRosterUnsub = onSnapshot(q, snap => {
+      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      renderAdminRosterList();
+    });
+
+    showView('view-admin-roster');
+  }
+
+  function renderAdminRosterList(){
+    const list = document.getElementById('admin-roster-list');
+    if(adminRosterDocs.length === 0){
+      list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungili qui sotto.</div>';
+      return;
+    }
+    list.innerHTML = adminRosterDocs.map(a => `
+      <div class="roster-item">
+        <span class="nome">${a.nome}</span>
+        <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(confirm(`Rimuovere l'atleta dalla lista?`)){
+          await deleteDoc(doc(db,'atleti', btn.dataset.id));
+        }
+      });
+    });
+  }
+
+
   function renderReport(){
     const d = calcolaReport();
 
@@ -1091,6 +1195,7 @@
       if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
       if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
       if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
+      if(adminRosterUnsub) { adminRosterUnsub(); adminRosterUnsub = null; }
       await signOut(auth);
       document.getElementById('login-form').reset();
     });
@@ -1109,6 +1214,44 @@
     if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
     if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
     showView('view-coach');
+  });
+
+  // --- Navigazione Gestione atleti (Società) ---
+  document.getElementById('back-to-admin').addEventListener('click', () => {
+    if(adminRosterUnsub) { adminRosterUnsub(); adminRosterUnsub = null; }
+    showView('view-admin');
+  });
+
+  document.getElementById('admin-add-atleta-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const input = document.getElementById('admin-nuovo-atleta');
+    const nome = input.value.trim();
+    if(!nome) return;
+    await addDoc(collection(db,'atleti'), { gruppoId: adminRosterGruppoId, nome });
+    input.value = "";
+  });
+
+  document.getElementById('admin-bulk-add-btn').addEventListener('click', async function(){
+    const textarea = document.getElementById('admin-bulk-atleti');
+    const feedback = document.getElementById('admin-bulk-feedback');
+    const nomi = textarea.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+    if(nomi.length === 0){
+      feedback.textContent = "Scrivi almeno un nome.";
+      return;
+    }
+    const btn = this;
+    btn.disabled = true;
+    feedback.textContent = "Aggiunta in corso…";
+    try{
+      await Promise.all(nomi.map(nome => addDoc(collection(db,'atleti'), { gruppoId: adminRosterGruppoId, nome })));
+      feedback.textContent = `${nomi.length} atleti aggiunti ✓`;
+      textarea.value = "";
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore durante l'aggiunta, riprova.";
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   // --- Toggle Allenamento / Gara ---
