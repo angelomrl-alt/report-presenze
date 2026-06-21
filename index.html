@@ -1212,8 +1212,13 @@
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
-      <h2>Importa storico presenze</h2>
-      <p class="sub">Carica il CSV esportato dal vecchio Google Sheet di un gruppo: l'app riconosce automaticamente date, allenamenti e gare.</p>
+      <h2>Importa storico</h2>
+      <p class="sub">Carica il CSV esportato dal vecchio Google Sheet di un gruppo: l'app riconosce automaticamente la struttura.</p>
+
+      <div class="tipo-toggle" style="margin-bottom:16px;">
+        <button type="button" class="tipo-btn importa-modo-btn active" data-modo="presenze">📋 Presenze (allenamenti/gare)</button>
+        <button type="button" class="tipo-btn importa-modo-btn" data-modo="podi">🏆 Podi (risultati gara)</button>
+      </div>
 
       <div class="risultato-grid" style="margin-bottom:20px;">
         <div class="field-inline" style="flex:1.5;">
@@ -1902,6 +1907,8 @@
 
   // --- Importa storico (Società) ---
   let importaSessioniParse = [];
+  let importaModalita = 'presenze';
+  let importaRisultatiParse = [];
   const DATA_PATTERN = /^\d{2}\/\d{2}\/\d{4}$/;
 
   function apriImporta(){
@@ -1912,6 +1919,10 @@
     document.getElementById('importa-confirm-btn').style.display = 'none';
     document.getElementById('importa-feedback').textContent = '';
     importaSessioniParse = [];
+    importaRisultatiParse = [];
+    importaModalita = 'presenze';
+    document.querySelectorAll('.importa-modo-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.importa-modo-btn[data-modo="presenze"]').classList.add('active');
     showView('view-importa');
   }
 
@@ -1970,6 +1981,39 @@
     return { idxData, headerData: header[idxData], atletiNomi, sessioni: sessioniDedup, duplicatiTrovati };
   }
 
+  function trovaNomeNelRoster(nomeCSV, rosterNomi){
+    const pulito = nomeCSV.trim().replace(/\s+/g,' ');
+    const target = pulito.toLowerCase();
+    let trovato = rosterNomi.find(n => n.toLowerCase() === target);
+    if(trovato) return trovato;
+    // Prova a invertire l'ordine "Nome Cognome" <-> "Cognome Nome" (capita spesso nei vecchi fogli)
+    const parti = pulito.split(' ');
+    if(parti.length === 2){
+      const invertito = `${parti[1]} ${parti[0]}`.toLowerCase();
+      trovato = rosterNomi.find(n => n.toLowerCase() === invertito);
+      if(trovato) return trovato;
+    }
+    return pulito; // nessuna corrispondenza: tiene il testo originale del CSV
+  }
+
+  function analizzaCSVPodi(rows, rosterNomi){
+    const risultati = [];
+    let nonRiconosciuti = 0;
+    rows.slice(2).forEach(r => {
+      const gara = (r[0] || '').trim();
+      const atletaCSV = (r[1] || '').trim();
+      const disciplina = (r[3] || '').trim();
+      const posTesto = (r[4] || '').trim();
+      if(!atletaCSV || !disciplina || !posTesto) return;
+      const piazzamento = parseInt(posTesto.replace(/\D/g,''), 10);
+      if(isNaN(piazzamento)) return;
+      const atleta = trovaNomeNelRoster(atletaCSV, rosterNomi);
+      if(atleta === atletaCSV.trim().replace(/\s+/g,' ') && !rosterNomi.some(n => n.toLowerCase() === atleta.toLowerCase())) nonRiconosciuti++;
+      risultati.push({ gara, atleta, disciplina, piazzamento, posTesto: posTesto.includes('°') ? posTesto : posTesto + '°' });
+    });
+    return { risultati, nonRiconosciuti };
+  }
+
   function renderAnteprimaImporta(risultato){
     const cont = document.getElementById('importa-anteprima');
     const nAllenamenti = risultato.sessioni.filter(s => s.tipo === 'allenamento').length;
@@ -2000,6 +2044,34 @@
         `).join('')}
       </table>
       ${risultato.sessioni.length > 5 ? `<p class="empty-note">… e altre ${risultato.sessioni.length - 5} sessioni.</p>` : ''}
+    `;
+    document.getElementById('importa-confirm-btn').style.display = 'inline-block';
+  }
+
+  function renderAnteprimaImportaPodi(risultato){
+    const cont = document.getElementById('importa-anteprima');
+    if(risultato.risultati.length === 0){
+      cont.innerHTML = '<p class="importa-warn">Non ho trovato nessuna riga valida in questo file. Controlla che sia il CSV giusto.</p>';
+      document.getElementById('importa-confirm-btn').style.display = 'none';
+      return;
+    }
+    cont.innerHTML = `
+      <div class="importa-riepilogo">
+        Risultati trovati: <strong>${risultato.risultati.length}</strong>
+        ${risultato.nonRiconosciuti > 0 ? `<br><span style="color:var(--accent-lane);">${risultato.nonRiconosciuti} nomi non corrispondono esattamente al roster del gruppo — verranno importati col testo del CSV, correggibili dopo con la matita ✏️.</span>` : ''}
+      </div>
+      <table class="importa-tabella">
+        <tr><th>Gara</th><th>Atleta</th><th>Disciplina</th><th>Pos.</th></tr>
+        ${risultato.risultati.slice(0,8).map(r => `
+          <tr>
+            <td>${r.gara}</td>
+            <td>${r.atleta}</td>
+            <td>${r.disciplina}</td>
+            <td>${r.posTesto}</td>
+          </tr>
+        `).join('')}
+      </table>
+      ${risultato.risultati.length > 8 ? `<p class="empty-note">… e altri ${risultato.risultati.length - 8} risultati.</p>` : ''}
     `;
     document.getElementById('importa-confirm-btn').style.display = 'inline-block';
   }
@@ -2620,6 +2692,20 @@
     showView('view-admin');
   });
 
+  document.querySelectorAll('.importa-modo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.importa-modo-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      importaModalita = btn.dataset.modo;
+      document.getElementById('importa-file').value = '';
+      document.getElementById('importa-anteprima').innerHTML = '';
+      document.getElementById('importa-confirm-btn').style.display = 'none';
+      document.getElementById('importa-feedback').textContent = '';
+      importaSessioniParse = [];
+      importaRisultatiParse = [];
+    });
+  });
+
   document.getElementById('importa-svuota-btn').addEventListener('click', async function(){
     const gruppoId = document.getElementById('importa-gruppo').value;
     const nomeGruppo = GRUPPI[gruppoId] ? GRUPPI[gruppoId].nome : gruppoId;
@@ -2650,12 +2736,22 @@
   document.getElementById('importa-file').addEventListener('change', function(e){
     const file = e.target.files[0];
     if(!file) return;
+    const gruppoId = document.getElementById('importa-gruppo').value;
     const reader = new FileReader();
-    reader.onload = function(ev){
+    reader.onload = async function(ev){
       const parsed = Papa.parse(ev.target.result, { skipEmptyLines: true });
-      const risultato = analizzaCSV(parsed.data);
-      importaSessioniParse = risultato.sessioni;
-      renderAnteprimaImporta(risultato);
+      if(importaModalita === 'presenze'){
+        const risultato = analizzaCSV(parsed.data);
+        importaSessioniParse = risultato.sessioni;
+        renderAnteprimaImporta(risultato);
+      } else {
+        const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
+        const snapAtleti = await getDocs(qAtleti);
+        const rosterNomi = snapAtleti.docs.map(d => d.data().nome);
+        const risultato = analizzaCSVPodi(parsed.data, rosterNomi);
+        importaRisultatiParse = risultato.risultati;
+        renderAnteprimaImportaPodi(risultato);
+      }
     };
     reader.readAsText(file, 'UTF-8');
   });
@@ -2663,6 +2759,38 @@
   document.getElementById('importa-confirm-btn').addEventListener('click', async function(){
     const feedback = document.getElementById('importa-feedback');
     const gruppoId = document.getElementById('importa-gruppo').value;
+
+    if(importaModalita === 'podi'){
+      if(importaRisultatiParse.length === 0) return;
+      const btn = this;
+      btn.disabled = true;
+      let importati = 0, saltati = 0;
+      try{
+        for(const r of importaRisultatiParse){
+          const qEsistente = query(collection(db,'risultati'),
+            where('gruppoId','==', gruppoId), where('atleta','==', r.atleta),
+            where('disciplina','==', r.disciplina), where('gara','==', r.gara)
+          );
+          const snapEsistente = await getDocs(qEsistente);
+          if(!snapEsistente.empty){ saltati++; continue; }
+          await addDoc(collection(db,'risultati'), {
+            gruppoId, data: '', atleta: r.atleta, disciplina: r.disciplina,
+            tipoMisura: 'misura', prestazione: r.posTesto + ' posto', piazzamento: r.piazzamento,
+            gara: r.gara, luogo: '',
+            registratoDa: auth.currentUser.uid, creatoIl: serverTimestamp()
+          });
+          importati++;
+        }
+        feedback.textContent = `Importati ${importati} podi. ${saltati} già esistenti, saltati.`;
+      } catch(err){
+        console.error(err);
+        feedback.textContent = "Errore durante l'importazione: " + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+      return;
+    }
+
     if(importaSessioniParse.length === 0) return;
 
     const btn = this;
