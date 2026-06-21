@@ -426,6 +426,56 @@
   }
   .btn-remove:hover{border-color:var(--danger); color:var(--danger);}
 
+  /* ---------- RISULTATI GARE ---------- */
+  .risultato-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+    padding:18px;
+    background:var(--surface);
+    border:1px solid #262d3a;
+    border-radius:var(--radius);
+  }
+  .risultato-grid .field-inline{flex:1; min-width:120px;}
+  .field-inline select,
+  .field-inline input[type="text"],
+  .field-inline input[type="number"]{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid #343c4a;
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  .field-inline select{appearance:none;}
+  .field-inline input::placeholder{color:#5a6273;}
+
+  .risultati-list{display:flex; flex-direction:column; gap:8px;}
+  .risultato-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--surface-2);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13.5px;
+  }
+  .risultato-row .principale{font-weight:600; display:flex; align-items:center; gap:8px;}
+  .risultato-row .dettagli{color:var(--text-dim); font-size:12.5px;}
+  .pb-badge{
+    background:var(--primary);
+    color:var(--primary-ink);
+    font-size:10.5px;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:10px;
+    letter-spacing:.03em;
+  }
+
   .save-bar{
     display:flex;
     align-items:center;
@@ -650,10 +700,10 @@
           <h3>Report del gruppo</h3>
           <p>KPI, grafico mensile, podio e trend atleti.</p>
         </div>
-        <div class="card">
+        <div class="card clickable" id="card-risultati">
           <span class="dot" style="background:var(--c-lanci)"></span>
           <h3>Risultati gare</h3>
-          <p>Inserisci e consulta prestazioni e personal best. (presto)</p>
+          <p>Inserisci e consulta prestazioni e personal best.</p>
         </div>
       </div>
     </main>
@@ -740,6 +790,75 @@
       <details class="report-section">
         <summary>🏅 Partecipazione gare</summary>
         <div class="atleti-list" id="lista-gare"></div>
+      </details>
+    </main>
+  </section>
+
+  <!-- ===================== RISULTATI GARE ===================== -->
+  <section id="view-risultati" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-coach-from-risultati" aria-label="Torna alla home">←</button>
+        🏃 Pista <span class="role-tag">Risultati gare</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2 id="risultati-group-name">—</h2>
+      <p class="sub">Inserisci un risultato: lo vedi subito nello storico e nei migliori per disciplina.</p>
+
+      <form id="risultato-form">
+        <div class="risultato-grid">
+          <div class="field-inline">
+            <label for="risultato-data">Data</label>
+            <input type="date" id="risultato-data" required>
+          </div>
+          <div class="field-inline">
+            <label for="risultato-atleta">Atleta</label>
+            <select id="risultato-atleta" required></select>
+          </div>
+          <div class="field-inline" style="flex:1.4;">
+            <label for="risultato-disciplina">Disciplina</label>
+            <input type="text" id="risultato-disciplina" placeholder="es. 100m, Salto in lungo" required>
+          </div>
+          <div class="field-inline">
+            <label>Tipo misura</label>
+            <div class="tipo-toggle">
+              <button type="button" class="tipo-btn tipomisura-btn active" data-tipomisura="tempo">Tempo</button>
+              <button type="button" class="tipo-btn tipomisura-btn" data-tipomisura="misura">Misura</button>
+            </div>
+          </div>
+          <div class="field-inline">
+            <label for="risultato-prestazione">Prestazione</label>
+            <input type="text" id="risultato-prestazione" placeholder="es. 11.85 o 1:02.30" required>
+          </div>
+          <div class="field-inline">
+            <label for="risultato-piazzamento">Piazzamento</label>
+            <input type="number" id="risultato-piazzamento" min="1" placeholder="es. 3">
+          </div>
+          <div class="field-inline" style="flex:1.4;">
+            <label for="risultato-gara">Gara</label>
+            <input type="text" id="risultato-gara" placeholder="es. Trofeo Serena Wines">
+          </div>
+          <div class="field-inline" style="flex:1.2;">
+            <label for="risultato-luogo">Luogo</label>
+            <input type="text" id="risultato-luogo" placeholder="es. Ponzano">
+          </div>
+        </div>
+        <div class="save-bar" style="margin-top:16px;">
+          <button type="submit" class="btn-primary" style="width:auto; padding:13px 28px;">Salva risultato</button>
+          <span id="risultato-feedback" class="save-feedback"></span>
+        </div>
+      </form>
+
+      <details class="report-section" open style="margin-top:28px;">
+        <summary>📋 Storico risultati</summary>
+        <div id="risultati-storico" class="risultati-list"></div>
+      </details>
+
+      <details class="report-section">
+        <summary>🏆 Migliori per disciplina</summary>
+        <div id="risultati-top-disciplina" class="podio-grid"></div>
       </details>
     </main>
   </section>
@@ -853,6 +972,13 @@
   let adminRosterGruppoId = null;
   let adminRosterUnsub = null;
   let adminRosterDocs = [];      // [{id, nome}]
+
+  // Stato per Risultati gare
+  let risultatiUnsub = null;
+  let risultatiAtletiUnsub = null;
+  let risultatiAtletiDocs = [];  // [{id, nome}]
+  let risultatiDocs = [];        // [{id, data, atleta, disciplina, tipoMisura, prestazione, piazzamento, gara, luogo}]
+  let tipoMisuraSelezionato = "tempo";
 
   const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
@@ -1055,6 +1181,139 @@
   }
 
 
+  // --- Risultati gare ---
+  function parsePrestazione(str){
+    if(!str) return null;
+    str = str.trim().replace(',', '.');
+    if(str.includes(':')){
+      const parti = str.split(':');
+      if(parti.length === 2){
+        const min = parseFloat(parti[0]);
+        const sec = parseFloat(parti[1]);
+        if(!isNaN(min) && !isNaN(sec)) return min*60 + sec;
+      }
+      return null;
+    }
+    const val = parseFloat(str);
+    return isNaN(val) ? null : val;
+  }
+
+  function apriRisultati(){
+    const g = GRUPPI[currentGruppoId];
+    document.getElementById('risultati-group-name').textContent = g ? g.nome : "Il tuo gruppo";
+    document.getElementById('risultato-feedback').textContent = "";
+    document.getElementById('risultato-form').reset();
+    document.getElementById('risultato-data').value = new Date().toISOString().slice(0,10);
+    document.querySelectorAll('.tipomisura-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.tipomisura-btn[data-tipomisura="tempo"]').classList.add('active');
+    tipoMisuraSelezionato = "tempo";
+
+    if(risultatiAtletiUnsub) risultatiAtletiUnsub();
+    if(risultatiUnsub) risultatiUnsub();
+
+    const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
+    risultatiAtletiUnsub = onSnapshot(qAtleti, snap => {
+      risultatiAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      const select = document.getElementById('risultato-atleta');
+      const selezionato = select.value;
+      select.innerHTML = risultatiAtletiDocs.map(a => `<option value="${a.nome}">${a.nome}</option>`).join('');
+      if(risultatiAtletiDocs.some(a => a.nome === selezionato)) select.value = selezionato;
+    });
+
+    const qRisultati = query(collection(db,'risultati'), where('gruppoId','==', currentGruppoId));
+    risultatiUnsub = onSnapshot(qRisultati, snap => {
+      risultatiDocs = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      renderRisultati();
+    });
+
+    showView('view-risultati');
+  }
+
+  function calcolaPB(){
+    // chiave atleta||disciplina -> miglior valore numerico
+    const best = new Map();
+    risultatiDocs.forEach(r => {
+      const val = parsePrestazione(r.prestazione);
+      if(val === null) return;
+      const key = r.atleta + '||' + r.disciplina;
+      const cur = best.get(key);
+      const migliore = cur === undefined || (r.tipoMisura === 'misura' ? val > cur : val < cur);
+      if(migliore) best.set(key, val);
+    });
+    return best;
+  }
+
+  function renderRisultati(){
+    const best = calcolaPB();
+
+    // Storico, più recenti prima
+    const storico = document.getElementById('risultati-storico');
+    if(risultatiDocs.length === 0){
+      storico.innerHTML = '<p class="empty-note">Nessun risultato ancora.</p>';
+    } else {
+      const ordinati = [...risultatiDocs].sort((a,b) => (b.data||'').localeCompare(a.data||''));
+      storico.innerHTML = ordinati.map(r => {
+        const val = parsePrestazione(r.prestazione);
+        const key = r.atleta + '||' + r.disciplina;
+        const isPB = val !== null && best.get(key) === val;
+        return `
+          <div class="risultato-row">
+            <span class="principale">
+              ${r.atleta} · ${r.disciplina} · ${r.prestazione}
+              ${isPB ? '<span class="pb-badge">PB</span>' : ''}
+            </span>
+            <span class="dettagli">
+              ${r.data || ''}${r.piazzamento ? ' · ' + r.piazzamento + '° posto' : ''}${r.gara ? ' · ' + r.gara : ''}${r.luogo ? ' · ' + r.luogo : ''}
+              <button type="button" class="btn-remove" data-id="${r.id}" style="margin-left:10px;">Rimuovi</button>
+            </span>
+          </div>
+        `;
+      }).join('');
+      storico.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if(confirm('Rimuovere questo risultato?')){
+            await deleteDoc(doc(db,'risultati', btn.dataset.id));
+          }
+        });
+      });
+    }
+
+    // Migliori per disciplina (PB di ogni atleta, top 3 per disciplina)
+    const perDisciplina = new Map(); // disciplina -> {tipoMisura, atleti: Map(nome -> {val, raw})}
+    risultatiDocs.forEach(r => {
+      const val = parsePrestazione(r.prestazione);
+      if(val === null) return;
+      if(!perDisciplina.has(r.disciplina)) perDisciplina.set(r.disciplina, { tipoMisura: r.tipoMisura, atleti: new Map() });
+      const entry = perDisciplina.get(r.disciplina);
+      const cur = entry.atleti.get(r.atleta);
+      const migliore = !cur || (entry.tipoMisura === 'misura' ? val > cur.val : val < cur.val);
+      if(migliore) entry.atleti.set(r.atleta, { val, raw:r.prestazione });
+    });
+
+    const topDiv = document.getElementById('risultati-top-disciplina');
+    if(perDisciplina.size === 0){
+      topDiv.innerHTML = '<p class="empty-note">Nessun risultato ancora.</p>';
+    } else {
+      topDiv.innerHTML = Array.from(perDisciplina.entries()).map(([disciplina, entry]) => {
+        const lista = Array.from(entry.atleti.entries())
+          .sort((a,b) => entry.tipoMisura === 'misura' ? b[1].val - a[1].val : a[1].val - b[1].val)
+          .slice(0,3);
+        return `
+          <div class="podio-col">
+            <h4>${disciplina}</h4>
+            ${lista.map(([nome, d], i) => `
+              <div class="podio-row">
+                <span><span class="medaglia">${['🥇','🥈','🥉'][i]}</span>${nome}</span>
+                <span class="conteggio">${d.raw}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+
   function renderReport(){
     const d = calcolaReport();
 
@@ -1196,6 +1455,8 @@
       if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
       if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
       if(adminRosterUnsub) { adminRosterUnsub(); adminRosterUnsub = null; }
+      if(risultatiAtletiUnsub) { risultatiAtletiUnsub(); risultatiAtletiUnsub = null; }
+      if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
       await signOut(auth);
       document.getElementById('login-form').reset();
     });
@@ -1214,6 +1475,48 @@
     if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
     if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
     showView('view-coach');
+  });
+
+  // --- Navigazione Risultati gare ---
+  document.getElementById('card-risultati').addEventListener('click', apriRisultati);
+  document.getElementById('back-to-coach-from-risultati').addEventListener('click', () => {
+    if(risultatiAtletiUnsub) { risultatiAtletiUnsub(); risultatiAtletiUnsub = null; }
+    if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
+    showView('view-coach');
+  });
+
+  document.getElementById('risultato-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const feedback = document.getElementById('risultato-feedback');
+    const dati = {
+      gruppoId: currentGruppoId,
+      data: document.getElementById('risultato-data').value,
+      atleta: document.getElementById('risultato-atleta').value,
+      disciplina: document.getElementById('risultato-disciplina').value.trim(),
+      tipoMisura: tipoMisuraSelezionato,
+      prestazione: document.getElementById('risultato-prestazione').value.trim(),
+      piazzamento: document.getElementById('risultato-piazzamento').value || null,
+      gara: document.getElementById('risultato-gara').value.trim(),
+      luogo: document.getElementById('risultato-luogo').value.trim(),
+      registratoDa: auth.currentUser.uid,
+      creatoIl: serverTimestamp()
+    };
+    if(!dati.atleta){
+      feedback.textContent = "Aggiungi prima almeno un atleta al gruppo.";
+      return;
+    }
+    try{
+      await addDoc(collection(db,'risultati'), dati);
+      feedback.textContent = "Risultato salvato ✓";
+      document.getElementById('risultato-disciplina').value = "";
+      document.getElementById('risultato-prestazione').value = "";
+      document.getElementById('risultato-piazzamento').value = "";
+      document.getElementById('risultato-gara').value = "";
+      document.getElementById('risultato-luogo').value = "";
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore nel salvataggio, riprova.";
+    }
   });
 
   // --- Navigazione Gestione atleti (Società) ---
@@ -1254,12 +1557,21 @@
     }
   });
 
-  // --- Toggle Allenamento / Gara ---
-  document.querySelectorAll('.tipo-btn').forEach(btn => {
+  // --- Toggle Allenamento / Gara (solo dentro Registra presenze) ---
+  document.querySelectorAll('.presenze-controls .tipo-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.presenze-controls .tipo-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       tipoSelezionato = btn.dataset.tipo;
+    });
+  });
+
+  // --- Toggle Tempo / Misura (solo dentro Risultati gare) ---
+  document.querySelectorAll('.tipomisura-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tipomisura-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tipoMisuraSelezionato = btn.dataset.tipomisura;
     });
   });
 
