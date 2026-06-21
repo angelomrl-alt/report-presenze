@@ -811,6 +811,7 @@
 
       <div class="save-bar">
         <button id="salva-presenze-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva presenze</button>
+        <button type="button" id="nuova-registrazione-btn" class="btn-secondary">Nuova registrazione</button>
         <span id="save-feedback" class="save-feedback"></span>
       </div>
     </main>
@@ -2045,15 +2046,20 @@
         registratoDa: auth.currentUser.uid,
         creatoIl: serverTimestamp()
       });
-      feedback.textContent = "Presenze salvate ✓";
-      presenzaMap.clear();
-      renderRoster();
+      feedback.textContent = `Presenze salvate ✓ (${assenti.length} assenti su ${rosterDocs.length})`;
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore nel salvataggio, riprova.";
     } finally {
       btn.disabled = false;
     }
+  });
+
+  document.getElementById('nuova-registrazione-btn').addEventListener('click', () => {
+    presenzaMap.clear();
+    document.getElementById('presenze-data').value = new Date().toISOString().slice(0,10);
+    document.getElementById('save-feedback').textContent = "";
+    renderRoster();
   });
 </script>
 
