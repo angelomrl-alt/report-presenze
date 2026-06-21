@@ -1432,8 +1432,10 @@
     const conteggiGare = {};
     Object.keys(garaDatePerGruppo).forEach(gid => { conteggiGare[gid] = garaDatePerGruppo[gid].size; });
 
-    const totaleAllenamenti = Object.values(conteggiAllenamenti).reduce((a,b) => a+b, 0);
-    const totaleGare = Object.values(conteggiGare).reduce((a,b) => a+b, 0);
+    // Gare totali = eventi distinti a livello società (non la somma per gruppo, evita di contare più volte la stessa gara)
+    const garaDateSocieta = new Set();
+    Object.values(garaDatePerGruppo).forEach(set => set.forEach(d => garaDateSocieta.add(d)));
+    const totaleGare = garaDateSocieta.size;
 
     let oro = 0, argento = 0, bronzo = 0;
     snapRisultati.docs.forEach(d => {
@@ -1445,8 +1447,7 @@
 
     document.getElementById('admin-kpi-grid').innerHTML = `
       <div class="kpi-card"><span class="kpi-value">${snapAtleti.size}</span><span class="kpi-label">Atleti totali</span></div>
-      <div class="kpi-card"><span class="kpi-value">${totaleAllenamenti}</span><span class="kpi-label">Allenamenti registrati</span></div>
-      <div class="kpi-card"><span class="kpi-value">${totaleGare}</span><span class="kpi-label">Partecipazioni a gare</span></div>
+      <div class="kpi-card"><span class="kpi-value">${totaleGare}</span><span class="kpi-label">Gare totali</span></div>
       <div class="kpi-card">
         <div class="kpi-medaglie">
           <span>🥇 ${oro}</span><span>🥈 ${argento}</span><span>🥉 ${bronzo}</span>
