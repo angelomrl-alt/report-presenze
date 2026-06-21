@@ -1443,12 +1443,14 @@
 
     list.querySelectorAll('.gruppo-edit-row').forEach(row => {
       const id = row.dataset.id;
+      row.querySelector('.g-colore').addEventListener('change', async (e) => {
+        await updateDoc(doc(db,'gruppi', id), { colore: e.target.value });
+      });
       row.querySelector('.g-salva').addEventListener('click', async () => {
         await updateDoc(doc(db,'gruppi', id), {
           nome: row.querySelector('.g-nome').value.trim(),
           categoria: row.querySelector('.g-categoria').value.trim(),
-          coach: row.querySelector('.g-coach').value.trim(),
-          colore: row.querySelector('.g-colore').value
+          coach: row.querySelector('.g-coach').value.trim()
         });
       });
       row.querySelector('.g-elimina').addEventListener('click', async () => {
