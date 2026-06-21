@@ -426,6 +426,17 @@
   }
   .btn-remove:hover{border-color:var(--danger); color:var(--danger);}
 
+  .btn-edit-icon{
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-size:13px;
+    padding:2px 4px;
+    opacity:.6;
+    vertical-align:middle;
+  }
+  .btn-edit-icon:hover{opacity:1;}
+
   /* ---------- RISULTATI GARE ---------- */
   .risultato-grid{
     display:flex;
@@ -980,7 +991,7 @@
     getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc, collection, addDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
+    getFirestore, doc, getDoc, getDocs, collection, addDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Configurazione Firebase del progetto "Atletica Conegliano" ---
@@ -1051,6 +1062,28 @@
     document.getElementById(id).classList.add('active');
   }
 
+  // Corregge il nome di un atleta e allinea anche presenze e risultati già registrati con il nome vecchio
+  async function rinominaAtleta(atletaId, gruppoId, vecchioNome, nuovoNome){
+    nuovoNome = nuovoNome.trim();
+    if(!nuovoNome || nuovoNome === vecchioNome) return;
+
+    await updateDoc(doc(db,'atleti', atletaId), { nome: nuovoNome });
+
+    const qP = query(collection(db,'presenze'), where('gruppoId','==', gruppoId));
+    const snapP = await getDocs(qP);
+    await Promise.all(snapP.docs.map(async (d) => {
+      const dati = d.data();
+      let cambiato = false;
+      const presenti = (dati.presenti || []).map(n => { if(n === vecchioNome){ cambiato = true; return nuovoNome; } return n; });
+      const assenti = (dati.assenti || []).map(n => { if(n === vecchioNome){ cambiato = true; return nuovoNome; } return n; });
+      if(cambiato) await updateDoc(doc(db,'presenze', d.id), { presenti, assenti });
+    }));
+
+    const qR = query(collection(db,'risultati'), where('gruppoId','==', gruppoId), where('atleta','==', vecchioNome));
+    const snapR = await getDocs(qR);
+    await Promise.all(snapR.docs.map(d => updateDoc(doc(db,'risultati', d.id), { atleta: nuovoNome })));
+  }
+
   function renderGroupsGrid(){
     const grid = document.getElementById('groups-grid');
     grid.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `
@@ -1075,13 +1108,21 @@
       const presente = presenzaMap.get(a.id) === true;
       return `
         <div class="roster-item">
-          <span class="nome">${a.nome}</span>
+          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button></span>
           <button type="button" class="presence-pill ${presente ? 'presente' : ''}" data-id="${a.id}">
             ${presente ? 'Presente' : 'Assente'}
           </button>
         </div>
       `;
     }).join('');
+
+    list.querySelectorAll('.btn-edit-icon').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const nuovo = prompt('Correggi il nome (aggiorna anche presenze e risultati già salvati):', btn.dataset.nome);
+        if(nuovo) await rinominaAtleta(btn.dataset.id, currentGruppoId, btn.dataset.nome, nuovo);
+      });
+    });
 
     list.querySelectorAll('.presence-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1260,10 +1301,17 @@
     }
     list.innerHTML = adminRosterDocs.map(a => `
       <div class="roster-item">
-        <span class="nome">${a.nome}</span>
+        <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button></span>
         <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
       </div>
     `).join('');
+
+    list.querySelectorAll('.btn-edit-icon').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const nuovo = prompt('Correggi il nome (aggiorna anche presenze e risultati già salvati):', btn.dataset.nome);
+        if(nuovo) await rinominaAtleta(btn.dataset.id, adminRosterGruppoId, btn.dataset.nome, nuovo);
+      });
+    });
 
     list.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
