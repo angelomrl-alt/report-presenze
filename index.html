@@ -387,6 +387,15 @@
     color:#fff;
     border-color:var(--danger);
   }
+  .info-banner{
+    background:rgba(245,166,35,.12);
+    border:1px solid var(--accent-lane);
+    color:var(--accent-lane);
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:13px;
+    margin-bottom:16px;
+  }
 
   .add-atleta-form{
     display:flex;
@@ -800,6 +809,10 @@
         </div>
       </div>
 
+      <div id="presenze-esistente-banner" class="info-banner" style="display:none;">
+        📋 Per questo giorno esiste già una registrazione: la stai modificando, non duplicando.
+      </div>
+
       <div id="roster-list" class="roster-list">
         <div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>
       </div>
@@ -1116,6 +1129,7 @@
   let presenzaMap = new Map();   // atletaId -> bool (presente)
   let rosterUnsub = null;
   let tipoSelezionato = "allenamento";
+  let presenzeDocIdAttuale = null; // se non-null, il Salva aggiorna questo documento invece di crearne uno nuovo
 
   // Stato per il Report del gruppo
   let reportAtletiUnsub = null;
@@ -1230,11 +1244,50 @@
     });
   }
 
+  async function controllaRegistrazioneEsistente(){
+    const data = document.getElementById('presenze-data').value;
+    const banner = document.getElementById('presenze-esistente-banner');
+    const feedback = document.getElementById('save-feedback');
+    if(!data || !currentGruppoId) return;
+
+    feedback.textContent = "Controllo registrazioni…";
+    try{
+      const q = query(collection(db,'presenze'),
+        where('gruppoId','==', currentGruppoId),
+        where('data','==', data),
+        where('tipo','==', tipoSelezionato)
+      );
+      const snap = await getDocs(q);
+      presenzaMap.clear();
+
+      if(!snap.empty){
+        const docSnap = snap.docs[0];
+        presenzeDocIdAttuale = docSnap.id;
+        const dati = docSnap.data();
+        (dati.assenti || []).forEach(nome => {
+          const atleta = rosterDocs.find(a => a.nome === nome);
+          if(atleta) presenzaMap.set(atleta.id, false);
+        });
+        banner.style.display = 'block';
+      } else {
+        presenzeDocIdAttuale = null;
+        banner.style.display = 'none';
+      }
+      feedback.textContent = "";
+    } catch(err){
+      console.error('Errore controllaRegistrazioneEsistente:', err);
+      feedback.textContent = "Errore nel controllo: " + err.message;
+    }
+    renderRoster();
+  }
+
   function apriPresenze(){
     const g = GRUPPI[currentGruppoId];
     document.getElementById('presenze-group-name').textContent = g ? g.nome : "Il tuo gruppo";
     document.getElementById('presenze-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('save-feedback').textContent = "";
+    presenzeDocIdAttuale = null;
+    document.getElementById('presenze-esistente-banner').style.display = 'none';
 
     if(rosterUnsub) rosterUnsub();
     presenzaMap.clear();
@@ -1242,7 +1295,7 @@
     const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     rosterUnsub = onSnapshot(q, snap => {
       rosterDocs = snap.docs.map(d => ({ id: d.id, nome: d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
-      renderRoster();
+      controllaRegistrazioneEsistente();
     });
 
     showView('view-presenze');
@@ -1929,9 +1982,12 @@
       document.querySelectorAll('.presenze-controls .tipo-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       tipoSelezionato = btn.dataset.tipo;
+      controllaRegistrazioneEsistente();
     });
   });
 
+  document.getElementById('presenze-data').addEventListener('change', controllaRegistrazioneEsistente);
+  document.getElementById('presenze-data').addEventListener('input', controllaRegistrazioneEsistente);
   // --- Toggle Tempo / Misura (solo dentro Gestione discipline) ---
   document.querySelectorAll('.tipodisc-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2037,15 +2093,21 @@
     const btn = this;
     btn.disabled = true;
     try{
-      await addDoc(collection(db,'presenze'), {
-        gruppoId: currentGruppoId,
-        data,
-        tipo: tipoSelezionato,
-        presenti,
-        assenti,
-        registratoDa: auth.currentUser.uid,
-        creatoIl: serverTimestamp()
-      });
+      if(presenzeDocIdAttuale){
+        await updateDoc(doc(db,'presenze', presenzeDocIdAttuale), { tipo: tipoSelezionato, presenti, assenti });
+      } else {
+        const nuovoDoc = await addDoc(collection(db,'presenze'), {
+          gruppoId: currentGruppoId,
+          data,
+          tipo: tipoSelezionato,
+          presenti,
+          assenti,
+          registratoDa: auth.currentUser.uid,
+          creatoIl: serverTimestamp()
+        });
+        presenzeDocIdAttuale = nuovoDoc.id;
+        document.getElementById('presenze-esistente-banner').style.display = 'block';
+      }
       feedback.textContent = `Presenze salvate ✓ (${assenti.length} assenti su ${rosterDocs.length})`;
     } catch(err){
       console.error(err);
@@ -2056,10 +2118,9 @@
   });
 
   document.getElementById('nuova-registrazione-btn').addEventListener('click', () => {
-    presenzaMap.clear();
     document.getElementById('presenze-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('save-feedback').textContent = "";
-    renderRoster();
+    controllaRegistrazioneEsistente();
   });
 </script>
 
