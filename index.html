@@ -382,6 +382,11 @@
     color:var(--primary-ink);
     border-color:var(--primary);
   }
+  .presence-pill.assente{
+    background:var(--danger);
+    color:#fff;
+    border-color:var(--danger);
+  }
 
   .add-atleta-form{
     display:flex;
@@ -782,7 +787,7 @@
     </header>
     <main>
       <h2 id="presenze-group-name">—</h2>
-      <p class="sub">Tocca un atleta per segnarlo presente, poi salva.</p>
+      <p class="sub">Tutti partono "Presente": tocca solo chi non c'è oggi, poi salva.</p>
 
       <div class="presenze-controls">
         <div class="field-inline">
@@ -1195,11 +1200,11 @@
       return;
     }
     list.innerHTML = rosterDocs.map(a => {
-      const presente = presenzaMap.get(a.id) === true;
+      const presente = presenzaMap.get(a.id) !== false; // di default presente, finché non viene toccato
       return `
         <div class="roster-item">
           <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button></span>
-          <button type="button" class="presence-pill ${presente ? 'presente' : ''}" data-id="${a.id}">
+          <button type="button" class="presence-pill ${presente ? 'presente' : 'assente'}" data-id="${a.id}">
             ${presente ? 'Presente' : 'Assente'}
           </button>
         </div>
@@ -1217,7 +1222,8 @@
     list.querySelectorAll('.presence-pill').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        presenzaMap.set(id, !(presenzaMap.get(id) === true));
+        const eraPresente = presenzaMap.get(id) !== false;
+        presenzaMap.set(id, !eraPresente);
         renderRoster();
       });
     });
@@ -2023,8 +2029,8 @@
       feedback.textContent = "Aggiungi almeno un atleta prima di salvare.";
       return;
     }
-    const presenti = rosterDocs.filter(a => presenzaMap.get(a.id) === true).map(a => a.nome);
-    const assenti  = rosterDocs.filter(a => presenzaMap.get(a.id) !== true).map(a => a.nome);
+    const presenti = rosterDocs.filter(a => presenzaMap.get(a.id) !== false).map(a => a.nome);
+    const assenti  = rosterDocs.filter(a => presenzaMap.get(a.id) === false).map(a => a.nome);
     const data = document.getElementById('presenze-data').value;
 
     const btn = this;
