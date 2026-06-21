@@ -352,6 +352,21 @@
   .gruppo-tendina-stats{display:flex; gap:24px; margin-bottom:16px; font-size:13px; color:var(--text-dim);}
   .gruppo-tendina-stats strong{color:var(--text); font-weight:600; font-family:'Oswald',sans-serif; font-size:15px;}
 
+  .importa-riepilogo{
+    background:var(--surface);
+    border:1px solid #262d3a;
+    border-radius:var(--radius);
+    padding:18px 20px;
+    margin-bottom:16px;
+    font-size:13.5px;
+    line-height:1.7;
+  }
+  .importa-riepilogo strong{color:var(--primary); font-weight:700;}
+  .importa-tabella{width:100%; font-size:13px; border-collapse:collapse;}
+  .importa-tabella th{text-align:left; color:var(--text-dim); font-weight:600; padding:6px 8px; border-bottom:1px solid #262d3a;}
+  .importa-tabella td{padding:6px 8px; border-bottom:1px solid #232936;}
+  .importa-warn{color:var(--accent-lane); margin-top:10px;}
+
   /* ---------- REGISTRA PRESENZE ---------- */
   .presenze-controls{
     display:flex;
@@ -1070,6 +1085,7 @@
           <div class="gestione-menu" id="gestione-menu">
             <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
             <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
+            <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
           </div>
         </div>
       </div>
@@ -1186,6 +1202,39 @@
     </main>
   </section>
 
+  <!-- ===================== IMPORTA STORICO (Società) ===================== -->
+  <section id="view-importa" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-admin-from-importa" aria-label="Torna alla home">←</button>
+        🏃 Pista <span class="role-tag">Importa storico</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2>Importa storico presenze</h2>
+      <p class="sub">Carica il CSV esportato dal vecchio Google Sheet di un gruppo: l'app riconosce automaticamente date, allenamenti e gare.</p>
+
+      <div class="risultato-grid" style="margin-bottom:20px;">
+        <div class="field-inline" style="flex:1.5;">
+          <label for="importa-gruppo">Gruppo</label>
+          <select id="importa-gruppo"></select>
+        </div>
+        <div class="field-inline" style="flex:2;">
+          <label for="importa-file">File CSV</label>
+          <input type="file" id="importa-file" accept=".csv">
+        </div>
+      </div>
+
+      <div id="importa-anteprima"></div>
+
+      <div class="save-bar" style="margin-top:16px;">
+        <button type="button" id="importa-confirm-btn" class="btn-primary" style="width:auto; padding:13px 28px; display:none;">Conferma e importa</button>
+        <span id="importa-feedback" class="save-feedback"></span>
+      </div>
+    </main>
+  </section>
+
   <!-- ===================== ACCOUNT NON CONFIGURATO ===================== -->
   <section id="view-unconfigured" class="view">
     <div class="loading-screen" style="flex-direction:column; gap:16px;">
@@ -1196,6 +1245,7 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
   import {
@@ -1843,6 +1893,98 @@
   }
 
 
+  // --- Importa storico (Società) ---
+  let importaSessioniParse = [];
+  const DATA_PATTERN = /^\d{2}\/\d{2}\/\d{4}$/;
+
+  function apriImporta(){
+    const select = document.getElementById('importa-gruppo');
+    select.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
+    document.getElementById('importa-file').value = '';
+    document.getElementById('importa-anteprima').innerHTML = '';
+    document.getElementById('importa-confirm-btn').style.display = 'none';
+    document.getElementById('importa-feedback').textContent = '';
+    importaSessioniParse = [];
+    showView('view-importa');
+  }
+
+  function analizzaCSV(rows){
+    const header = rows[0].map(h => (h || '').trim());
+
+    // Trova la colonna data scansionando il contenuto (non il nome dell'intestazione)
+    let idxData = 1, maxMatch = -1;
+    for(let i = 0; i < Math.min(5, header.length); i++){
+      let count = 0;
+      rows.slice(1).forEach(r => { if(DATA_PATTERN.test((r[i] || '').trim())) count++; });
+      if(count > maxMatch){ maxMatch = count; idxData = i; }
+    }
+
+    const idxAttivita = header.findIndex(h => /attivit/i.test(h));
+    let idxCommenti = header.findIndex(h => /^comment/i.test(h));
+    if(idxCommenti === -1) idxCommenti = header.length - 1;
+
+    const idxAttivitaEffettivo = idxAttivita === -1 ? idxData : idxAttivita;
+    const atletiIdx = [];
+    for(let i = idxAttivitaEffettivo + 1; i < idxCommenti; i++){
+      if(!header[i]) continue;
+      if(/presenza/i.test(header[i])) continue;
+      atletiIdx.push(i);
+    }
+    const atletiNomi = atletiIdx.map(i => header[i]);
+
+    const sessioni = [];
+    rows.slice(1).forEach(r => {
+      const dataCella = (r[idxData] || '').trim();
+      if(!DATA_PATTERN.test(dataCella)) return;
+      const [gg, mm, aaaa] = dataCella.split('/');
+      const dataISO = `${aaaa}-${mm}-${gg}`;
+      const attivitaText = idxAttivita === -1 ? '' : (r[idxAttivita] || '').trim();
+      const tipo = /^allenamento$/i.test(attivitaText) ? 'allenamento' : 'gara';
+      const presenti = [];
+      const assenti = [];
+      atletiIdx.forEach((colIdx, i) => {
+        const val = (r[colIdx] || '').trim();
+        if(val) presenti.push(atletiNomi[i]); else assenti.push(atletiNomi[i]);
+      });
+      sessioni.push({ data: dataISO, tipo, garaNome: tipo === 'gara' ? attivitaText : null, presenti, assenti });
+    });
+
+    return { idxData, headerData: header[idxData], atletiNomi, sessioni };
+  }
+
+  function renderAnteprimaImporta(risultato){
+    const cont = document.getElementById('importa-anteprima');
+    const nAllenamenti = risultato.sessioni.filter(s => s.tipo === 'allenamento').length;
+    const nGare = risultato.sessioni.filter(s => s.tipo === 'gara').length;
+
+    if(risultato.sessioni.length === 0){
+      cont.innerHTML = '<p class="importa-warn">Non ho trovato nessuna riga valida in questo file. Controlla che sia il CSV giusto.</p>';
+      document.getElementById('importa-confirm-btn').style.display = 'none';
+      return;
+    }
+
+    cont.innerHTML = `
+      <div class="importa-riepilogo">
+        Colonna data riconosciuta: <strong>"${risultato.headerData}"</strong><br>
+        Atleti rilevati (<strong>${risultato.atletiNomi.length}</strong>): ${risultato.atletiNomi.join(', ')}<br>
+        Sessioni valide trovate: <strong>${risultato.sessioni.length}</strong> (${nAllenamenti} allenamenti, ${nGare} gare)
+      </div>
+      <table class="importa-tabella">
+        <tr><th>Data</th><th>Tipo</th><th>Gara</th><th>Presenti</th></tr>
+        ${risultato.sessioni.slice(0,5).map(s => `
+          <tr>
+            <td>${s.data}</td>
+            <td>${s.tipo}</td>
+            <td>${s.garaNome || '—'}</td>
+            <td>${s.presenti.length}</td>
+          </tr>
+        `).join('')}
+      </table>
+      ${risultato.sessioni.length > 5 ? `<p class="empty-note">… e altre ${risultato.sessioni.length - 5} sessioni.</p>` : ''}
+    `;
+    document.getElementById('importa-confirm-btn').style.display = 'inline-block';
+  }
+
   // --- Risultati gare ---
   function parsePrestazione(str){
     if(!str) return null;
@@ -2448,6 +2590,70 @@
   document.getElementById('back-to-admin-from-discipline').addEventListener('click', () => {
     if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
     showView('view-admin');
+  });
+
+  // --- Navigazione Importa storico (Società) ---
+  document.getElementById('btn-importa-storico').addEventListener('click', () => {
+    document.getElementById('gestione-menu').classList.remove('open');
+    apriImporta();
+  });
+  document.getElementById('back-to-admin-from-importa').addEventListener('click', () => {
+    showView('view-admin');
+  });
+
+  document.getElementById('importa-file').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const parsed = Papa.parse(ev.target.result, { skipEmptyLines: true });
+      const risultato = analizzaCSV(parsed.data);
+      importaSessioniParse = risultato.sessioni;
+      renderAnteprimaImporta(risultato);
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  document.getElementById('importa-confirm-btn').addEventListener('click', async function(){
+    const feedback = document.getElementById('importa-feedback');
+    const gruppoId = document.getElementById('importa-gruppo').value;
+    if(importaSessioniParse.length === 0) return;
+
+    const btn = this;
+    btn.disabled = true;
+    let importateAllenamenti = 0, importateGare = 0, saltate = 0;
+    try{
+      for(const s of importaSessioniParse){
+        const collezione = s.tipo === 'allenamento' ? 'presenze' : 'gare';
+        const condizioni = [where('gruppoId','==', gruppoId), where('data','==', s.data)];
+        if(s.tipo === 'allenamento') condizioni.push(where('tipo','==', 'allenamento'));
+        const qEsistente = query(collection(db, collezione), ...condizioni);
+        const snapEsistente = await getDocs(qEsistente);
+        if(!snapEsistente.empty){ saltate++; continue; }
+
+        if(s.tipo === 'allenamento'){
+          await addDoc(collection(db,'presenze'), {
+            gruppoId, data: s.data, tipo: 'allenamento',
+            presenti: s.presenti, assenti: s.assenti,
+            registratoDa: auth.currentUser.uid, creatoIl: serverTimestamp()
+          });
+          importateAllenamenti++;
+        } else {
+          await addDoc(collection(db,'gare'), {
+            gruppoId, data: s.data, nome: s.garaNome, luogo: '',
+            partecipanti: s.presenti,
+            registratoDa: auth.currentUser.uid, creatoIl: serverTimestamp()
+          });
+          importateGare++;
+        }
+      }
+      feedback.textContent = `Importati ${importateAllenamenti} allenamenti e ${importateGare} gare. ${saltate} già esistenti, saltate.`;
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore durante l'importazione: " + err.message;
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   document.getElementById('discipline-add-form').addEventListener('submit', async function(e){
