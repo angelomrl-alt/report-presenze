@@ -1386,23 +1386,7 @@
     showView('view-risultati');
   }
 
-  function calcolaPB(){
-    // chiave atleta||disciplina -> miglior valore numerico
-    const best = new Map();
-    risultatiDocs.forEach(r => {
-      const val = parsePrestazione(r.prestazione);
-      if(val === null) return;
-      const key = r.atleta + '||' + r.disciplina;
-      const cur = best.get(key);
-      const migliore = cur === undefined || (r.tipoMisura === 'misura' ? val > cur : val < cur);
-      if(migliore) best.set(key, val);
-    });
-    return best;
-  }
-
   function renderRisultati(){
-    const best = calcolaPB();
-
     // Storico, più recenti prima
     const storico = document.getElementById('risultati-storico');
     if(risultatiDocs.length === 0){
@@ -1410,14 +1394,10 @@
     } else {
       const ordinati = [...risultatiDocs].sort((a,b) => (b.data||'').localeCompare(a.data||''));
       storico.innerHTML = ordinati.map(r => {
-        const val = parsePrestazione(r.prestazione);
-        const key = r.atleta + '||' + r.disciplina;
-        const isPB = val !== null && best.get(key) === val;
         return `
           <div class="risultato-row">
             <span class="principale">
               ${r.atleta} · ${r.disciplina} · ${r.prestazione}
-              ${isPB ? '<span class="pb-badge">PB</span>' : ''}
             </span>
             <span class="dettagli">
               ${r.data || ''}${r.piazzamento ? ' · ' + r.piazzamento + '° posto' : ''}${r.gara ? ' · ' + r.gara : ''}${r.luogo ? ' · ' + r.luogo : ''}
