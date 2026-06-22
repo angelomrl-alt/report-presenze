@@ -947,6 +947,53 @@
           <p>Segna chi ha partecipato e inserisci subito i risultati.</p>
         </div>
       </div>
+      <p style="margin-top:24px;">
+        <a href="#" id="link-guida" style="color:var(--text-dim); font-size:13px; text-decoration:underline;">❓ Come funziona l'app</a>
+      </p>
+    </main>
+  </section>
+
+  <!-- ===================== GUIDA (Allenatore) ===================== -->
+  <section id="view-guida" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-coach-from-guida" aria-label="Torna alla home">←</button>
+        🏃 Pista <span class="role-tag">Guida</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2>Come funziona l'app</h2>
+      <p class="sub">Una guida rapida alle funzioni principali.</p>
+
+      <div class="report-section" open>
+        <div style="padding:18px 0;">
+          <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
+          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+            Per gli allenamenti. Tutti gli atleti partono già segnati "Presente" — tocca solo chi <strong>non</strong> c'è oggi, poi clicca "Salva presenze". Se riapri lo stesso giorno, trovi quello che avevi già salvato e puoi correggerlo: non crea una copia doppia.
+          </p>
+
+          <h3 style="margin:0 0 8px; font-size:15px;">🏅 Gara</h3>
+          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+            Scrivi data, nome gara e luogo una volta sola. Gli atleti partono come "Non partecipa" — tocca chi ha gareggiato per farlo diventare "Partecipa", poi aggiungi la sua prestazione (disciplina, tempo/misura, posizione). Puoi aggiungere più prestazioni per lo stesso atleta se ha fatto più gare quel giorno.
+          </p>
+
+          <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
+          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+            Mostra i numeri del tuo gruppo: quanti allenamenti e gare, il grafico mese per mese, il podio di chi si allena/partecipa di più, e per ogni atleta una freccia che dice se le sue presenze sono in aumento (↑), in calo (↓) o stabili (→).
+          </p>
+
+          <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificato medico</h3>
+          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+            In "Registra presenze", se un atleta ha il certificato scaduto o in scadenza, vedrai il suo nome evidenziato in arancio o rosso, e un avviso in alto. Segnalalo alla società.
+          </p>
+
+          <h3 style="margin:0 0 8px; font-size:15px;">🔑 Cambiare password</h3>
+          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
+            Dal bottone "🔑 Password" in alto, in qualsiasi schermata. Ti chiede la password attuale e quella nuova. Se l'hai dimenticata del tutto, contatta la società.
+          </p>
+        </div>
+      </div>
     </main>
   </section>
 
@@ -2589,6 +2636,16 @@
 
   // --- Navigazione Registra presenze ---
   document.getElementById('card-presenze').addEventListener('click', apriPresenze);
+
+  // --- Navigazione Guida (Allenatore) ---
+  document.getElementById('link-guida').addEventListener('click', (e) => {
+    e.preventDefault();
+    showView('view-guida');
+  });
+  document.getElementById('back-to-coach-from-guida').addEventListener('click', () => {
+    showView('view-coach');
+  });
+
   document.getElementById('back-to-coach').addEventListener('click', () => {
     if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
     showView('view-coach');
