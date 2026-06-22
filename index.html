@@ -1114,6 +1114,7 @@
             <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
             <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
             <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
+            <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
           </div>
         </div>
       </div>
@@ -1274,6 +1275,30 @@
     </main>
   </section>
 
+  <!-- ===================== IMPOSTAZIONI (Società) ===================== -->
+  <section id="view-impostazioni" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-admin-from-impostazioni" aria-label="Torna alla home">←</button>
+        🏃 Pista <span class="role-tag">Impostazioni</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2>Impostazioni</h2>
+      <p class="sub">Valori generali dell'app, validi per tutti i gruppi.</p>
+
+      <div class="field-inline" style="max-width:280px;">
+        <label for="impostazioni-giorni-cert">Giorni di anticipo avviso certificato medico</label>
+        <input type="number" id="impostazioni-giorni-cert" min="1" max="180">
+      </div>
+      <div class="save-bar" style="margin-top:16px;">
+        <button type="button" id="impostazioni-salva-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva</button>
+        <span id="impostazioni-feedback" class="save-feedback"></span>
+      </div>
+    </main>
+  </section>
+
   <!-- ===================== ACCOUNT NON CONFIGURATO ===================== -->
   <section id="view-unconfigured" class="view">
     <div class="loading-screen" style="flex-direction:column; gap:16px;">
@@ -1383,7 +1408,12 @@
 
   const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
-  const GIORNI_AVVISO_CERTIFICATO = 15;
+  let giorniAvvisoCertificato = 15;
+  onSnapshot(doc(db,'impostazioni','generali'), snap => {
+    if(snap.exists() && snap.data().giorniAvvisoCertificato){
+      giorniAvvisoCertificato = snap.data().giorniAvvisoCertificato;
+    }
+  });
 
   function statoCertificato(dataStr){
     if(!dataStr) return { stato: 'mancante', testo: '' };
@@ -1392,7 +1422,7 @@
     const giorni = Math.round((scadenza - oggi) / 86400000);
     const testo = scadenza.toLocaleDateString('it-IT');
     if(giorni < 0) return { stato:'scaduto', testo, giorni };
-    if(giorni <= GIORNI_AVVISO_CERTIFICATO) return { stato:'avviso', testo, giorni };
+    if(giorni <= giorniAvvisoCertificato) return { stato:'avviso', testo, giorni };
     return { stato:'ok', testo, giorni };
   }
 
@@ -2764,6 +2794,32 @@
   });
   document.getElementById('back-to-admin-from-importa').addEventListener('click', () => {
     showView('view-admin');
+  });
+
+  // --- Navigazione Impostazioni (Società) ---
+  document.getElementById('btn-impostazioni').addEventListener('click', () => {
+    document.getElementById('gestione-menu').classList.remove('open');
+    document.getElementById('impostazioni-giorni-cert').value = giorniAvvisoCertificato;
+    document.getElementById('impostazioni-feedback').textContent = '';
+    showView('view-impostazioni');
+  });
+  document.getElementById('back-to-admin-from-impostazioni').addEventListener('click', () => {
+    showView('view-admin');
+  });
+  document.getElementById('impostazioni-salva-btn').addEventListener('click', async function(){
+    const feedback = document.getElementById('impostazioni-feedback');
+    const valore = parseInt(document.getElementById('impostazioni-giorni-cert').value, 10);
+    if(isNaN(valore) || valore < 1){
+      feedback.textContent = "Inserisci un numero di giorni valido.";
+      return;
+    }
+    try{
+      await setDoc(doc(db,'impostazioni','generali'), { giorniAvvisoCertificato: valore }, { merge: true });
+      feedback.textContent = "Salvato ✓";
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore nel salvataggio: " + err.message;
+    }
   });
 
   document.querySelectorAll('.importa-modo-btn').forEach(btn => {
