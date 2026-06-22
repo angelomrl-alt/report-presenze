@@ -471,6 +471,32 @@
     font-size:13px;
     margin-bottom:16px;
   }
+  .cert-banner{
+    background:rgba(244,87,74,.12);
+    border-color:var(--danger);
+    color:#f7a8a0;
+  }
+  .cert-badge{
+    font-size:11px;
+    font-weight:600;
+    padding:2px 8px;
+    border-radius:10px;
+    margin-left:8px;
+    white-space:nowrap;
+    background:var(--surface-2);
+    color:var(--text-dim);
+  }
+  .cert-badge.cert-avviso{background:rgba(245,166,35,.15); color:var(--accent-lane);}
+  .cert-badge.cert-scaduto{background:rgba(244,87,74,.15); color:var(--danger);}
+  .cert-input{
+    background:var(--surface-2);
+    border:1px solid #343c4a;
+    color:var(--text);
+    border-radius:8px;
+    padding:7px 10px;
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+  }
 
   /* ---------- GARA (presenze + risultati combinati) ---------- */
   .gara-roster{display:flex; flex-direction:column; gap:8px;}
@@ -949,6 +975,8 @@
         📋 Per questo giorno esiste già una registrazione: la stai modificando, non duplicando.
       </div>
 
+      <div id="cert-avviso-banner" class="info-banner cert-banner" style="display:none;"></div>
+
       <div id="roster-list" class="roster-list">
         <div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>
       </div>
@@ -1355,6 +1383,19 @@
 
   const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
+  const GIORNI_AVVISO_CERTIFICATO = 15;
+
+  function statoCertificato(dataStr){
+    if(!dataStr) return { stato: 'mancante', testo: '' };
+    const oggi = new Date(); oggi.setHours(0,0,0,0);
+    const scadenza = new Date(dataStr + 'T00:00:00');
+    const giorni = Math.round((scadenza - oggi) / 86400000);
+    const testo = scadenza.toLocaleDateString('it-IT');
+    if(giorni < 0) return { stato:'scaduto', testo, giorni };
+    if(giorni <= GIORNI_AVVISO_CERTIFICATO) return { stato:'avviso', testo, giorni };
+    return { stato:'ok', testo, giorni };
+  }
+
   function showView(id){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -1520,15 +1561,36 @@
 
   function renderRoster(){
     const list = document.getElementById('roster-list');
+
+    const inAvviso = rosterDocs.filter(a => {
+      const s = statoCertificato(a.scadenzaCertificato).stato;
+      return s === 'avviso' || s === 'scaduto';
+    });
+    const bannerCert = document.getElementById('cert-avviso-banner');
+    if(bannerCert){
+      if(inAvviso.length === 0){
+        bannerCert.style.display = 'none';
+      } else {
+        bannerCert.style.display = 'block';
+        bannerCert.innerHTML = `⚕️ <strong>${inAvviso.length}</strong> certificato/i medico/i scaduto/i o in scadenza: ${inAvviso.map(a => {
+          const s = statoCertificato(a.scadenzaCertificato);
+          return `${a.nome} (${s.stato === 'scaduto' ? 'scaduto' : s.testo})`;
+        }).join(', ')}. Verifica con la società.`;
+      }
+    }
+
     if(rosterDocs.length === 0){
       list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>';
       return;
     }
     list.innerHTML = rosterDocs.map(a => {
       const presente = presenzaMap.get(a.id) !== false; // di default presente, finché non viene toccato
+      const cert = statoCertificato(a.scadenzaCertificato);
+      const certHtml = cert.stato === 'mancante' ? '' :
+        `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : (cert.stato === 'avviso' ? `⚠️ ${cert.testo}` : cert.testo)}</span>`;
       return `
         <div class="roster-item">
-          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button></span>
+          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${certHtml}</span>
           <button type="button" class="presence-pill ${presente ? 'presente' : 'assente'}" data-id="${a.id}">
             ${presente ? 'Presente' : 'Assente'}
           </button>
@@ -1604,7 +1666,7 @@
 
     const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     rosterUnsub = onSnapshot(q, snap => {
-      rosterDocs = snap.docs.map(d => ({ id: d.id, nome: d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      rosterDocs = snap.docs.map(d => ({ id: d.id, nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
       controllaRegistrazioneEsistente();
     });
 
@@ -1756,7 +1818,7 @@
     if(adminRosterUnsub) adminRosterUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
     adminRosterUnsub = onSnapshot(q, snap => {
-      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderAdminRosterList();
     });
 
@@ -1769,12 +1831,24 @@
       list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungili qui sotto.</div>';
       return;
     }
-    list.innerHTML = adminRosterDocs.map(a => `
+    list.innerHTML = adminRosterDocs.map(a => {
+      const cert = statoCertificato(a.scadenzaCertificato);
+      return `
       <div class="roster-item">
-        <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button></span>
-        <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
+        <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}</span>
+        <span style="display:flex; align-items:center; gap:8px;">
+          <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
+          <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
+        </span>
       </div>
-    `).join('');
+    `;
+    }).join('');
+
+    list.querySelectorAll('.cert-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        await updateDoc(doc(db,'atleti', input.dataset.id), { scadenzaCertificato: e.target.value });
+      });
+    });
 
     list.querySelectorAll('.btn-edit-icon').forEach(btn => {
       btn.addEventListener('click', async () => {
