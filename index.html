@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pista — Atletica Silca Conegliano</title>
+<title>Atletica Silca Conegliano</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -101,7 +101,7 @@
     .lanes path{animation:none; stroke-dashoffset:0;}
   }
 
-  .login-logo-row{position:relative; z-index:2; margin-bottom:20px;}
+  .login-logo-row{position:absolute; top:24px; right:24px; z-index:4; margin-bottom:0;}
   .logo-badge{
     display:inline-block;
     background:#fff;
@@ -1030,7 +1030,7 @@
   <!-- ===================== HOME ALLENATORE ===================== -->
   <section id="view-coach" class="view">
     <header class="topbar">
-      <div class="brand-mini">🏃 Pista <span class="role-tag">Allenatore</span></div>
+      <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Allenatore</span></div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
         <div class="account-menu">
@@ -1050,15 +1050,15 @@
           <h3>Registra presenze</h3>
           <p>Segna chi c'era oggi, allenamento o gara.</p>
         </div>
-        <div class="card clickable" id="card-report">
-          <span class="dot" style="background:var(--c-ragazzi)"></span>
-          <h3>Report del gruppo</h3>
-          <p>KPI, grafico mensile, podio e trend atleti.</p>
-        </div>
         <div class="card clickable" id="card-risultati">
           <span class="dot" style="background:var(--c-lanci)"></span>
           <h3>Gara</h3>
           <p>Segna chi ha partecipato e inserisci subito i risultati.</p>
+        </div>
+        <div class="card clickable" id="card-report">
+          <span class="dot" style="background:var(--c-ragazzi)"></span>
+          <h3>Report del gruppo</h3>
+          <p>KPI, grafico mensile, podio e trend atleti.</p>
         </div>
       </div>
     </main>
@@ -1069,7 +1069,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-coach-from-guida" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Guida</span>
+        🏃 Atletica Silca <span class="role-tag">Guida</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
@@ -1113,7 +1113,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-coach" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Presenze</span>
+        🏃 Atletica Silca <span class="role-tag">Presenze</span>
       </div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
@@ -1164,7 +1164,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-coach-from-report" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Report</span>
+        🏃 Atletica Silca <span class="role-tag">Report</span>
       </div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
@@ -1217,7 +1217,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-coach-from-risultati" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Gara</span>
+        🏃 Atletica Silca <span class="role-tag">Gara</span>
       </div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
@@ -1277,7 +1277,7 @@
   <!-- ===================== HOME SOCIETÀ ===================== -->
   <section id="view-admin" class="view">
     <header class="topbar">
-      <div class="brand-mini">🏃 Pista <span class="role-tag">Società</span></div>
+      <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Società</span></div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
         <div class="account-menu">
@@ -1316,7 +1316,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-admin-from-gruppi" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Gruppi</span>
+        🏃 Atletica Silca <span class="role-tag">Gruppi</span>
       </div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
@@ -1351,7 +1351,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-admin-from-discipline" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Discipline</span>
+        🏃 Atletica Silca <span class="role-tag">Discipline</span>
       </div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
@@ -1403,7 +1403,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-admin" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Gestione atleti</span>
+        🏃 Atletica Silca <span class="role-tag">Gestione atleti</span>
       </div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
@@ -1443,7 +1443,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-admin-from-importa" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Importa storico</span>
+        🏃 Atletica Silca <span class="role-tag">Importa storico</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
@@ -1487,7 +1487,7 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-admin-from-impostazioni" aria-label="Torna alla home">←</button>
-        🏃 Pista <span class="role-tag">Impostazioni</span>
+        🏃 Atletica Silca <span class="role-tag">Impostazioni</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
@@ -1839,21 +1839,13 @@
         `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : (cert.stato === 'avviso' ? `⚠️ ${cert.testo}` : cert.testo)}</span>`;
       return `
         <div class="roster-item">
-          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${certHtml}</span>
+          <span class="nome">${a.nome}${certHtml}</span>
           <button type="button" class="presence-pill ${presente ? 'presente' : 'assente'}" data-id="${a.id}">
             ${presente ? 'Presente' : 'Assente'}
           </button>
         </div>
       `;
     }).join('');
-
-    list.querySelectorAll('.btn-edit-icon').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const nuovo = prompt('Correggi il nome (aggiorna anche presenze e risultati già salvati):', btn.dataset.nome);
-        if(nuovo) await rinominaAtleta(btn.dataset.id, currentGruppoId, btn.dataset.nome, nuovo);
-      });
-    });
 
     list.querySelectorAll('.presence-pill').forEach(btn => {
       btn.addEventListener('click', () => {
