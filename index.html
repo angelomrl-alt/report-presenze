@@ -240,15 +240,17 @@
   .btn-logout:hover{color:var(--text); border-color:#4a5468;}
 
   .btn-back{
-    background:none;
+    background:var(--surface-2);
     border:none;
+    border-radius:8px;
     color:var(--text);
-    font-size:20px;
+    font-size:22px;
     cursor:pointer;
-    padding:0 4px 0 0;
+    padding:6px 12px;
     line-height:1;
+    margin-right:4px;
   }
-  .btn-back:hover{color:var(--primary);}
+  .btn-back:hover{color:var(--primary); background:#2a313f;}
 
   main{padding:32px 28px; max-width:1100px; margin:0 auto;}
   main h2{font-size:22px; font-weight:600; margin:0 0 4px;}
@@ -324,6 +326,49 @@
     font-family:'Inter',sans-serif;
   }
   .gestione-menu button:hover{background:var(--surface-2);}
+
+  .account-dropdown-wrap{position:relative; display:inline-block;}
+  .account-menu{
+    display:none;
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
+    background:var(--surface);
+    border:1px solid #343c4a;
+    border-radius:10px;
+    padding:6px;
+    min-width:210px;
+    z-index:20;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  .account-menu.open{display:block;}
+  .account-menu button{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:14px;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .account-menu button:hover{background:var(--surface-2);}
+
+  /* Su schermi piccoli, ancora i menu a tendina alla larghezza della finestra invece che al bottone,
+     altrimenti possono uscire dal lato sinistro dello schermo */
+  @media (max-width:480px){
+    .gestione-menu, .account-menu{
+      position:fixed;
+      left:16px;
+      right:16px;
+      top:64px;
+      width:auto;
+      min-width:0;
+    }
+  }
 
   .gruppi-tendine-list{display:flex; flex-direction:column; gap:10px;}
   .gruppo-tendina{
@@ -924,7 +969,13 @@
   <section id="view-coach" class="view">
     <header class="topbar">
       <div class="brand-mini">🏃 Pista <span class="role-tag">Allenatore</span></div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -947,9 +998,6 @@
           <p>Segna chi ha partecipato e inserisci subito i risultati.</p>
         </div>
       </div>
-      <p style="margin-top:24px;">
-        <a href="#" id="link-guida" style="color:var(--text-dim); font-size:13px; text-decoration:underline;">❓ Come funziona l'app</a>
-      </p>
     </main>
   </section>
 
@@ -1004,7 +1052,13 @@
         <button class="btn-back" id="back-to-coach" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Presenze</span>
       </div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1048,7 +1102,13 @@
         <button class="btn-back" id="back-to-coach-from-report" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Report</span>
       </div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1094,7 +1154,13 @@
         <button class="btn-back" id="back-to-coach-from-risultati" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Gara</span>
       </div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1146,7 +1212,13 @@
   <section id="view-admin" class="view">
     <header class="topbar">
       <div class="brand-mini">🏃 Pista <span class="role-tag">Società</span></div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1179,7 +1251,13 @@
         <button class="btn-back" id="back-to-admin-from-gruppi" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Gruppi</span>
       </div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1207,7 +1285,13 @@
         <button class="btn-back" id="back-to-admin-from-discipline" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Discipline</span>
       </div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -1252,7 +1336,13 @@
         <button class="btn-back" id="back-to-admin" aria-label="Torna alla home">←</button>
         🏃 Pista <span class="role-tag">Gestione atleti</span>
       </div>
-      <button type="button" class="btn-logout btn-cambia-password">🔑 Password</button>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+        </div>
+      </div>
       <button class="btn-logout" data-logout>Esci</button>
     </header>
     <main>
@@ -2611,26 +2701,53 @@
     });
   });
 
-  document.querySelectorAll('.btn-cambia-password').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if(!auth.currentUser) return;
-      const attuale = prompt('Per sicurezza, inserisci prima la password attuale:');
-      if(!attuale) return;
-      const nuova = prompt('Scrivi la nuova password (almeno 6 caratteri):');
-      if(!nuova) return;
-      if(nuova.length < 6){
-        alert('La nuova password deve avere almeno 6 caratteri. Riprova.');
-        return;
-      }
-      try{
-        const cred = EmailAuthProvider.credential(auth.currentUser.email, attuale);
-        await reauthenticateWithCredential(auth.currentUser, cred);
-        await updatePassword(auth.currentUser, nuova);
-        alert('Password aggiornata ✓');
-      } catch(err){
-        console.error(err);
-        alert('Password attuale sbagliata, o errore: ' + err.message);
-      }
+  async function cambiaPassword(){
+    if(!auth.currentUser) return;
+    const attuale = prompt('Per sicurezza, inserisci prima la password attuale:');
+    if(!attuale) return;
+    const nuova = prompt('Scrivi la nuova password (almeno 6 caratteri):');
+    if(!nuova) return;
+    if(nuova.length < 6){
+      alert('La nuova password deve avere almeno 6 caratteri. Riprova.');
+      return;
+    }
+    try{
+      const cred = EmailAuthProvider.credential(auth.currentUser.email, attuale);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      await updatePassword(auth.currentUser, nuova);
+      alert('Password aggiornata ✓');
+    } catch(err){
+      console.error(err);
+      alert('Password attuale sbagliata, o errore: ' + err.message);
+    }
+  }
+
+  let vistaPrimaGuida = 'view-coach';
+
+  // --- Menu account (Password + Guida), presente in ogni schermata ---
+  document.querySelectorAll('.btn-account-toggle').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = btn.nextElementSibling;
+      document.querySelectorAll('.account-menu, .gestione-menu').forEach(m => { if(m !== menu) m.classList.remove('open'); });
+      menu.classList.toggle('open');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
+  });
+  document.querySelectorAll('.account-menu-password').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
+      cambiaPassword();
+    });
+  });
+  document.querySelectorAll('.account-menu-guida').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
+      const attiva = document.querySelector('.view.active');
+      if(attiva) vistaPrimaGuida = attiva.id;
+      showView('view-guida');
     });
   });
 
@@ -2638,12 +2755,8 @@
   document.getElementById('card-presenze').addEventListener('click', apriPresenze);
 
   // --- Navigazione Guida (Allenatore) ---
-  document.getElementById('link-guida').addEventListener('click', (e) => {
-    e.preventDefault();
-    showView('view-guida');
-  });
   document.getElementById('back-to-coach-from-guida').addEventListener('click', () => {
-    showView('view-coach');
+    showView(vistaPrimaGuida);
   });
 
   document.getElementById('back-to-coach').addEventListener('click', () => {
