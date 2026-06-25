@@ -9,21 +9,44 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg-track:#10131a;
-    --surface:#1a1f29;
-    --surface-2:#232936;
+    --bg-track:#f3f1ea;
+    --surface:#ffffff;
+    --surface-2:#f1ede3;
     --primary:#3ecf8e;
     --primary-ink:#0c2018;
     --accent-lane:#f5a623;
-    --text:#f3f5f7;
-    --text-dim:#8b93a1;
+    --text:#1a1f29;
+    --text-dim:#6b6657;
     --danger:#f4574a;
+    --border:#e4e0d5;
+    --border-strong:#d8d3c5;
+    --border-hover:#c7c0ae;
+    --placeholder:#9c9686;
+    --hover-bg:#ece7da;
+    --remove-border:#d9b8b0;
+    --remove-text:#a8554a;
+    --cert-banner-text:#8a3a30;
     --c-cadetti:#3ecf8e;
     --c-agnese:#a78bfa;
     --c-ragazzi:#5b8def;
     --c-lanci:#f5a623;
     --c-salti:#f472b6;
     --radius:14px;
+  }
+  body.tema-scuro{
+    --bg-track:#10131a;
+    --surface:#1a1f29;
+    --surface-2:#232936;
+    --text:#f3f5f7;
+    --text-dim:#8b93a1;
+    --border:#262d3a;
+    --border-strong:#343c4a;
+    --border-hover:#4a5468;
+    --placeholder:#5a6273;
+    --hover-bg:#2a313f;
+    --remove-border:#4a3030;
+    --remove-text:#e0a39c;
+    --cert-banner-text:#f7a8a0;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -235,7 +258,7 @@
     justify-content:space-between;
     padding:18px 28px;
     background:var(--surface);
-    border-bottom:1px solid #262d3a;
+    border-bottom:1px solid var(--border);
   }
   .topbar .brand-mini{
     font-family:'Oswald',sans-serif;
@@ -257,7 +280,7 @@
   }
   .btn-logout{
     background:none;
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     color:var(--text-dim);
     padding:8px 14px;
     border-radius:8px;
@@ -265,7 +288,7 @@
     cursor:pointer;
     font-family:'Inter',sans-serif;
   }
-  .btn-logout:hover{color:var(--text); border-color:#4a5468;}
+  .btn-logout:hover{color:var(--text); border-color:var(--border-hover);}
 
   .btn-back{
     background:var(--surface-2);
@@ -278,7 +301,7 @@
     line-height:1;
     margin-right:4px;
   }
-  .btn-back:hover{color:var(--primary); background:#2a313f;}
+  .btn-back:hover{color:var(--primary); background:var(--hover-bg);}
 
   main{padding:32px 28px; max-width:1100px; margin:0 auto;}
   main h2{font-size:22px; font-weight:600; margin:0 0 4px;}
@@ -291,12 +314,12 @@
   }
   .card{
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
     padding:20px;
   }
   .card.clickable{cursor:pointer; transition:border-color .15s;}
-  .card.clickable:hover{border-color:#3a4456;}
+  .card.clickable:hover{border-color:var(--border-hover);}
   .card h3{font-size:15px; font-weight:600; margin:0 0 6px;}
   .card p{font-size:13px; color:var(--text-dim); margin:0; line-height:1.5;}
   .card .dot{
@@ -332,7 +355,7 @@
     top:calc(100% + 6px);
     right:0;
     background:var(--surface);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     border-radius:10px;
     padding:6px;
     min-width:230px;
@@ -362,7 +385,7 @@
     top:calc(100% + 6px);
     right:0;
     background:var(--surface);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     border-radius:10px;
     padding:6px;
     min-width:210px;
@@ -401,7 +424,7 @@
   .gruppi-tendine-list{display:flex; flex-direction:column; gap:10px;}
   .gruppo-tendina{
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
     padding:0 18px;
   }
@@ -415,7 +438,7 @@
     list-style:none;
   }
   .gruppo-tendina summary::-webkit-details-marker{display:none;}
-  .gruppo-tendina[open] summary{border-bottom:1px solid #262d3a;}
+  .gruppo-tendina[open] summary{border-bottom:1px solid var(--border);}
   .gruppo-tendina-titolo{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .gruppo-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
   .gruppo-tendina-nome{font-weight:600; font-size:15px;}
@@ -427,7 +450,7 @@
 
   .importa-riepilogo{
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
     padding:18px 20px;
     margin-bottom:16px;
@@ -436,8 +459,8 @@
   }
   .importa-riepilogo strong{color:var(--primary); font-weight:700;}
   .importa-tabella{width:100%; font-size:13px; border-collapse:collapse;}
-  .importa-tabella th{text-align:left; color:var(--text-dim); font-weight:600; padding:6px 8px; border-bottom:1px solid #262d3a;}
-  .importa-tabella td{padding:6px 8px; border-bottom:1px solid #232936;}
+  .importa-tabella th{text-align:left; color:var(--text-dim); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--border);}
+  .importa-tabella td{padding:6px 8px; border-bottom:1px solid var(--surface-2);}
   .importa-warn{color:var(--accent-lane); margin-top:10px;}
 
   /* ---------- REGISTRA PRESENZE ---------- */
@@ -449,7 +472,7 @@
     margin-bottom:24px;
     padding:18px;
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
   }
   .field-inline label{
@@ -461,7 +484,7 @@
   }
   .field-inline input[type="date"]{
     background:var(--surface-2);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     color:var(--text);
     border-radius:8px;
     padding:9px 12px;
@@ -471,7 +494,7 @@
   .tipo-toggle{display:flex; gap:8px;}
   .tipo-btn{
     background:var(--surface-2);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     color:var(--text-dim);
     padding:9px 16px;
     border-radius:20px;
@@ -498,7 +521,7 @@
     padding:24px;
     text-align:center;
     background:var(--surface);
-    border:1px dashed #343c4a;
+    border:1px dashed var(--border-strong);
     border-radius:var(--radius);
   }
   .roster-item{
@@ -506,7 +529,7 @@
     align-items:center;
     justify-content:space-between;
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:10px;
     padding:12px 16px;
     gap:12px;
@@ -523,7 +546,7 @@
     min-width:84px;
     background:var(--surface-2);
     color:var(--text-dim);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
   }
   .presence-pill.presente{
     background:var(--primary);
@@ -547,7 +570,7 @@
   .cert-banner{
     background:rgba(244,87,74,.12);
     border-color:var(--danger);
-    color:#f7a8a0;
+    color:var(--cert-banner-text);
   }
   .cert-badge{
     font-size:11px;
@@ -563,7 +586,7 @@
   .cert-badge.cert-scaduto{background:rgba(244,87,74,.15); color:var(--danger);}
   .cert-input{
     background:var(--surface-2);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     color:var(--text);
     border-radius:8px;
     padding:7px 10px;
@@ -575,7 +598,7 @@
   .gara-roster{display:flex; flex-direction:column; gap:8px;}
   .gara-atleta-block{
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:10px;
     padding:12px 16px;
   }
@@ -586,7 +609,7 @@
   }
   .gara-atleta-header .nome{font-size:14.5px; font-weight:500;}
   .partecipa-pill{
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     border-radius:20px;
     padding:7px 14px;
     font-size:12.5px;
@@ -611,7 +634,7 @@
   .gara-risultato-row select,
   .gara-risultato-row input{
     background:var(--surface-2);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     color:var(--text);
     border-radius:8px;
     padding:8px 10px;
@@ -623,8 +646,8 @@
   .gr-piazzamento{width:64px;}
   .gr-remove{
     background:none;
-    border:1px solid #4a3030;
-    color:#e0a39c;
+    border:1px solid var(--remove-border);
+    color:var(--remove-text);
     border-radius:8px;
     padding:0 12px;
     cursor:pointer;
@@ -642,31 +665,31 @@
     flex:1;
     padding:11px 14px;
     border-radius:10px;
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     background:var(--surface);
     color:var(--text);
     font-size:14px;
     font-family:'Inter',sans-serif;
   }
-  .add-atleta-form input::placeholder{color:#5a6273;}
+  .add-atleta-form input::placeholder{color:var(--placeholder);}
 
   .admin-textarea{
     width:100%;
     padding:12px 14px;
     border-radius:10px;
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     background:var(--surface);
     color:var(--text);
     font-size:14px;
     font-family:'Inter',sans-serif;
     resize:vertical;
   }
-  .admin-textarea::placeholder{color:#5a6273;}
+  .admin-textarea::placeholder{color:var(--placeholder);}
 
   .btn-remove{
     background:none;
-    border:1px solid #4a3030;
-    color:#e0a39c;
+    border:1px solid var(--remove-border);
+    color:var(--remove-text);
     padding:7px 14px;
     border-radius:8px;
     font-size:12.5px;
@@ -695,13 +718,13 @@
     align-items:center;
     gap:10px;
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
     padding:14px 16px;
   }
   .gruppo-edit-row input[type="text"]{
     background:var(--surface-2);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     color:var(--text);
     border-radius:8px;
     padding:9px 12px;
@@ -713,7 +736,7 @@
   .gruppo-edit-row .g-coach{flex:1; min-width:160px;}
   .gruppo-edit-row input[type="color"]{
     width:36px; height:36px;
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     border-radius:8px;
     background:none;
     padding:2px;
@@ -728,7 +751,7 @@
     gap:16px;
     padding:18px;
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
   }
   .risultato-grid .field-inline{flex:1; min-width:120px;}
@@ -737,7 +760,7 @@
   .field-inline input[type="number"]{
     width:100%;
     background:var(--surface-2);
-    border:1px solid #343c4a;
+    border:1px solid var(--border-strong);
     color:var(--text);
     border-radius:8px;
     padding:9px 12px;
@@ -745,7 +768,7 @@
     font-family:'Inter',sans-serif;
   }
   .field-inline select{appearance:none;}
-  .field-inline input::placeholder{color:#5a6273;}
+  .field-inline input::placeholder{color:var(--placeholder);}
 
   .risultati-list{display:flex; flex-direction:column; gap:8px;}
   .risultato-row{
@@ -819,7 +842,7 @@
   }
   .kpi-card{
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
     padding:18px;
     display:flex;
@@ -888,7 +911,7 @@
 
   .report-section{
     background:var(--surface);
-    border:1px solid #262d3a;
+    border:1px solid var(--border);
     border-radius:var(--radius);
     padding:6px 18px;
     margin-bottom:14px;
@@ -901,7 +924,7 @@
     list-style:none;
   }
   .report-section summary::-webkit-details-marker{display:none;}
-  .report-section[open] summary{border-bottom:1px solid #262d3a;}
+  .report-section[open] summary{border-bottom:1px solid var(--border);}
   .report-section > div{padding:16px 0;}
 
   .podio-grid{
@@ -932,7 +955,7 @@
     align-items:center;
     justify-content:space-between;
     padding:10px 4px;
-    border-bottom:1px solid #232936;
+    border-bottom:1px solid var(--surface-2);
     font-size:14px;
   }
   .atleta-row:last-child{border-bottom:none;}
@@ -1036,6 +1059,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1119,6 +1143,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1169,6 +1194,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1221,6 +1247,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1279,6 +1306,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1318,6 +1346,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1352,6 +1381,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1403,6 +1433,7 @@
         <div class="account-menu">
           <button type="button" class="account-menu-password">🔑 Cambia password</button>
           <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
         </div>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -1518,6 +1549,18 @@
   import {
     getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+  // --- Tema chiaro/scuro: applicato subito per evitare lampeggi al caricamento ---
+  if(localStorage.getItem('pista-tema') === 'scuro'){
+    document.body.classList.add('tema-scuro');
+  }
+  function aggiornaEtichetteTema(){
+    const scuro = document.body.classList.contains('tema-scuro');
+    document.querySelectorAll('.account-menu-tema').forEach(btn => {
+      btn.textContent = scuro ? '☀️ Tema chiaro' : '🌙 Tema scuro';
+    });
+  }
+  aggiornaEtichetteTema();
 
   // --- Configurazione Firebase del progetto "Atletica Conegliano" ---
   const firebaseConfig = {
@@ -2810,6 +2853,15 @@
       const attiva = document.querySelector('.view.active');
       if(attiva) vistaPrimaGuida = attiva.id;
       showView('view-guida');
+    });
+  });
+
+  document.querySelectorAll('.account-menu-tema').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
+      document.body.classList.toggle('tema-scuro');
+      localStorage.setItem('pista-tema', document.body.classList.contains('tema-scuro') ? 'scuro' : 'chiaro');
+      aggiornaEtichetteTema();
     });
   });
 
