@@ -1351,11 +1351,11 @@
           <h2>Andamento società</h2>
           <p class="sub">Confronta i gruppi nei grafici, poi scegli un gruppo dal menu per i suoi dettagli.</p>
         </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:200px;">
+        <div style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center;">
+          <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:140px; min-width:0; flex:1 1 auto;">
             <option value="">👥 Scegli gruppo ▾</option>
           </select>
-          <div class="gestione-dropdown-wrap">
+          <div class="gestione-dropdown-wrap" style="flex-shrink:0;">
             <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
             <div class="gestione-menu" id="gestione-menu">
               <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
