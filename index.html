@@ -2386,13 +2386,44 @@
     }
     list.innerHTML = adminDisciplineDocs.map(d => {
       const tags = (d.gruppi || []).map(gid => GRUPPI[gid] ? `<span class="disc-gruppo-tag">${GRUPPI[gid].nome}</span>` : '').join('');
+      const checkboxes = Object.entries(GRUPPI).map(([id,g]) => `
+        <label class="gruppo-check-label">
+          <input type="checkbox" value="${id}" class="gruppo-check-input" ${(d.gruppi||[]).includes(id) ? 'checked' : ''}>
+          <span class="dot" style="background:${g.colore}; width:8px; height:8px; border-radius:50%; display:inline-block;"></span> ${g.nome}
+        </label>
+      `).join('');
       return `
-        <div class="roster-item">
-          <span class="nome">${d.nome}${tags}</span>
-          <button type="button" class="btn-remove" data-id="${d.id}">Rimuovi</button>
+        <div class="roster-item-wrap">
+          <div class="roster-item">
+            <span class="nome">${d.nome}${tags}</span>
+            <span style="display:flex; gap:6px; flex-shrink:0;">
+              <button type="button" class="btn-edit-icon disc-edit-toggle" data-id="${d.id}" title="Modifica gruppi" aria-label="Modifica gruppi">✏️</button>
+              <button type="button" class="btn-remove" data-id="${d.id}">Rimuovi</button>
+            </span>
+          </div>
+          <div class="disc-edit-panel" id="disc-edit-${d.id}" style="display:none; padding:12px 4px 4px;">
+            <div class="discipline-gruppi-check">${checkboxes}</div>
+            <button type="button" class="btn-secondary disc-edit-save" data-id="${d.id}" style="margin-top:10px;">Salva</button>
+          </div>
         </div>
       `;
     }).join('');
+
+    list.querySelectorAll('.disc-edit-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById('disc-edit-' + btn.dataset.id);
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+
+    list.querySelectorAll('.disc-edit-save').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const panel = document.getElementById('disc-edit-' + btn.dataset.id);
+        const gruppi = Array.from(panel.querySelectorAll('.gruppo-check-input:checked')).map(c => c.value);
+        await updateDoc(doc(db,'discipline', btn.dataset.id), { gruppi });
+        panel.style.display = 'none';
+      });
+    });
 
     list.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
