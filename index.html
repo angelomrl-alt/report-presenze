@@ -1167,34 +1167,7 @@
       <h2>Come funziona l'app</h2>
       <p class="sub">Una guida rapida alle funzioni principali.</p>
 
-      <div class="report-section" open>
-        <div style="padding:18px 0;">
-          <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
-          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-            Per gli allenamenti. Tutti gli atleti partono già segnati "Presente" — tocca solo chi <strong>non</strong> c'è oggi, poi clicca "Salva presenze". Se riapri lo stesso giorno, trovi quello che avevi già salvato e puoi correggerlo: non crea una copia doppia.
-          </p>
-
-          <h3 style="margin:0 0 8px; font-size:15px;">🏅 Gara</h3>
-          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-            Scrivi data, nome gara e luogo una volta sola. Gli atleti partono come "Non partecipa" — tocca chi ha gareggiato per farlo diventare "Partecipa", poi aggiungi la sua prestazione (disciplina, tempo/misura, posizione). Puoi aggiungere più prestazioni per lo stesso atleta se ha fatto più gare quel giorno.
-          </p>
-
-          <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
-          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-            Mostra i numeri del tuo gruppo: quanti allenamenti e gare, il grafico mese per mese, il podio di chi si allena/partecipa di più, e per ogni atleta una freccia che dice se le sue presenze sono in aumento (↑), in calo (↓) o stabili (→).
-          </p>
-
-          <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificato medico</h3>
-          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-            In "Registra presenze", se un atleta ha il certificato scaduto o in scadenza, vedrai il suo nome evidenziato in arancio o rosso, e un avviso in alto. Segnalalo alla società.
-          </p>
-
-          <h3 style="margin:0 0 8px; font-size:15px;">🔑 Cambiare password</h3>
-          <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
-            Dal bottone "🔑 Password" in alto, in qualsiasi schermata. Ti chiede la password attuale e quella nuova. Se l'hai dimenticata del tutto, contatta la società.
-          </p>
-        </div>
-      </div>
+      <div id="guida-content"></div>
     </main>
   </section>
 
@@ -1675,6 +1648,7 @@
   });
 
   let currentGruppoId = null;
+  let currentRuolo = null;
   let rosterDocs = [];           // [{id, nome}]
   let presenzaMap = new Map();   // atletaId -> bool (presente)
   let rosterUnsub = null;
@@ -2898,6 +2872,7 @@
         return;
       }
       const dati = snap.data();
+      currentRuolo = dati.ruolo;
       if(dati.ruolo === "societa"){
         renderGroupsGrid();
         showView('view-admin');
@@ -2999,11 +2974,70 @@
       cambiaPassword();
     });
   });
+  const guidaContenutoAllenatore = `
+    <div class="report-section" open>
+      <div style="padding:18px 0;">
+        <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Per gli allenamenti. Tutti gli atleti partono già segnati "Presente" — tocca solo chi <strong>non</strong> c'è oggi, poi clicca "Salva presenze". Se riapri lo stesso giorno, trovi quello che avevi già salvato e puoi correggerlo: non crea una copia doppia.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">🏅 Gara</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Scrivi data, nome gara e luogo una volta sola. Gli atleti partono come "Non partecipa" — tocca chi ha gareggiato per farlo diventare "Partecipa", poi scegli la disciplina e la posizione (1°, 2°...). Puoi aggiungere più prestazioni per lo stesso atleta se ha fatto più gare quel giorno.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Mostra i numeri del tuo gruppo: quanti allenamenti e gare, il podio di chi si allena/partecipa di più, e per ogni atleta una freccia che dice se le sue presenze sono in aumento (↑), in calo (↓) o stabili (→).
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificato medico</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
+          In "Registra presenze", se un atleta ha il certificato scaduto o in scadenza, vedrai il suo nome evidenziato in arancio o rosso, e un avviso in alto. Segnalalo alla società.
+        </p>
+      </div>
+    </div>
+  `;
+
+  const guidaContenutoSocieta = `
+    <div class="report-section" open>
+      <div style="padding:18px 0;">
+        <h3 style="margin:0 0 8px; font-size:15px;">🏠 Home "Andamento società"</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          I tre numeri in alto sono i totali di tutta la società. I due grafici confrontano i gruppi mese per mese (uno per gli allenamenti, uno per le gare) — scorri con il dito per vedere mesi più indietro. Il menu a tendina sotto serve per scegliere un gruppo e andare ai suoi atleti.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">🗂️ Gestisci gruppi</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Modifica nome, categoria, allenatore e colore di ogni gruppo, o creane uno nuovo. Il bottone "ID: ..." serve solo per collegare un account allenatore al gruppo giusto da Firebase. Con "🎯 Discipline consentite" scegli quali discipline può scegliere ogni gruppo quando registra una gara — se non ne spunti nessuna, quel gruppo le vede tutte, e le scelte di un gruppo non toccano gli altri.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Aggiungi atleti (uno alla volta o tanti insieme), rimuovili, correggi un nome scritto male con la matita ✏️ (la storia di presenze e risultati resta collegata), e imposta la scadenza del certificato medico di ciascuno.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">⚙️ Gestisci discipline gara</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          L'elenco di tutte le discipline esistenti (es. Giavellotto, 100m...). Aggiungine una o più insieme, oppure rimuovine una. Per decidere quali vede ogni gruppo, usa "Discipline consentite" dentro Gestisci gruppi.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">🔧 Impostazioni</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
+          Imposta da quanti giorni prima avvisare gli allenatori per un certificato medico in scadenza.
+        </p>
+      </div>
+    </div>
+  `;
+
   document.querySelectorAll('.account-menu-guida').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
       const attiva = document.querySelector('.view.active');
       if(attiva) vistaPrimaGuida = attiva.id;
+      document.getElementById('guida-content').innerHTML =
+        currentRuolo === 'societa' ? guidaContenutoSocieta : guidaContenutoAllenatore;
       showView('view-guida');
     });
   });
