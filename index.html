@@ -443,6 +443,36 @@
     }
   }
 
+  .chart-confronto-wrap{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  .chart-confronto-svg{width:100%; height:auto; display:block;}
+  .chart-confronto-legenda{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-top:10px;
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+  .chart-confronto-legenda span{display:inline-flex; align-items:center; gap:6px;}
+  .chart-confronto-legenda .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  .admin-gruppo-select{
+    width:100%;
+    max-width:420px;
+    padding:12px 14px;
+    border:1.5px solid var(--border-strong);
+    border-radius:10px;
+    font-size:15px;
+    font-family:'Inter',sans-serif;
+    background:var(--surface);
+    color:var(--text);
+  }
+
   .gruppi-tendine-list{display:flex; flex-direction:column; gap:10px;}
   .gruppo-tendina{
     background:var(--surface);
@@ -1310,7 +1340,7 @@
       <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
         <div>
           <h2>Andamento società</h2>
-          <p class="sub">Un colpo d'occhio su tutti i gruppi — clicca la freccia per le statistiche, il bottone per gestire gli atleti.</p>
+          <p class="sub">Confronta i gruppi nei grafici, poi scegli un gruppo dal menu per i suoi dettagli.</p>
         </div>
         <div class="gestione-dropdown-wrap">
           <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
@@ -1325,7 +1355,15 @@
 
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
 
-      <div id="gruppi-tendine" class="gruppi-tendine-list" style="margin-top:24px;"></div>
+      <h3 class="section-title" style="margin-top:28px;">Confronto allenamenti tra i gruppi</h3>
+      <div id="chart-confronto-allenamenti" class="chart-confronto-wrap"></div>
+
+      <h3 class="section-title" style="margin-top:24px;">Confronto gare tra i gruppi</h3>
+      <div id="chart-confronto-gare" class="chart-confronto-wrap"></div>
+
+      <h3 class="section-title" style="margin-top:28px;">Dettaglio gruppo</h3>
+      <select id="admin-gruppo-select" class="admin-gruppo-select"></select>
+      <div id="admin-gruppo-detail" style="margin-top:16px;"></div>
     </main>
   </section>
 
@@ -1793,42 +1831,135 @@
       `;
     }
 
-    const cont = document.getElementById('gruppi-tendine');
-    cont.innerHTML = Object.entries(GRUPPI).map(([id,g]) => {
+    // --- Dati mensili per gruppo, per i grafici di confronto ---
+    const mensileAllenamentiPerGruppo = {}; // gruppoId -> Map(mese -> count)
+    const mensileGarePerGruppo = {};        // gruppoId -> Map(mese -> Set(data))
+    snapPresenze.docs.forEach(d => {
+      const p = d.data();
+      if(!p.data || !p.gruppoId) return;
+      const mese = p.data.slice(0,7);
+      if(p.tipo === 'allenamento'){
+        if(!mensileAllenamentiPerGruppo[p.gruppoId]) mensileAllenamentiPerGruppo[p.gruppoId] = new Map();
+        const m = mensileAllenamentiPerGruppo[p.gruppoId];
+        m.set(mese, (m.get(mese)||0)+1);
+      } else if(p.tipo === 'gara'){
+        if(!mensileGarePerGruppo[p.gruppoId]) mensileGarePerGruppo[p.gruppoId] = new Map();
+        const m = mensileGarePerGruppo[p.gruppoId];
+        if(!m.has(mese)) m.set(mese, new Set());
+        m.get(mese).add(p.data);
+      }
+    });
+    snapGare.docs.forEach(d => {
+      const g = d.data();
+      if(!g.data || !g.gruppoId) return;
+      const mese = g.data.slice(0,7);
+      if(!mensileGarePerGruppo[g.gruppoId]) mensileGarePerGruppo[g.gruppoId] = new Map();
+      const m = mensileGarePerGruppo[g.gruppoId];
+      if(!m.has(mese)) m.set(mese, new Set());
+      m.get(mese).add(g.data);
+    });
+    snapRisultati.docs.forEach(d => {
+      const r = d.data();
+      if(!r.data || !r.gruppoId) return;
+      const mese = r.data.slice(0,7);
+      if(!mensileGarePerGruppo[r.gruppoId]) mensileGarePerGruppo[r.gruppoId] = new Map();
+      const m = mensileGarePerGruppo[r.gruppoId];
+      if(!m.has(mese)) m.set(mese, new Set());
+      m.get(mese).add(r.data);
+    });
+    const mensileGareContiPerGruppo = {};
+    Object.keys(mensileGarePerGruppo).forEach(gid => {
+      const m = new Map();
+      mensileGarePerGruppo[gid].forEach((set, mese) => m.set(mese, set.size));
+      mensileGareContiPerGruppo[gid] = m;
+    });
+
+    const tuttiIMesiSet = new Set();
+    Object.values(mensileAllenamentiPerGruppo).forEach(m => m.forEach((_,k) => tuttiIMesiSet.add(k)));
+    Object.values(mensileGareContiPerGruppo).forEach(m => m.forEach((_,k) => tuttiIMesiSet.add(k)));
+    const mesiConfronto = Array.from(tuttiIMesiSet).sort();
+    const mesiConfrontoLabel = mesiConfronto.map(chiave => {
+      const [anno, mese] = chiave.split('-');
+      return `${MESI[parseInt(mese,10)-1]} '${anno.slice(2)}`;
+    });
+
+    function renderGraficoConfronto(datiPerGruppo){
+      if(mesiConfronto.length === 0){
+        return '<p class="empty-note">Nessun dato ancora.</p>';
+      }
+      const W = 600, H = 200, padL = 8, padB = 24, padT = 10, padR = 8;
+      const innerW = W - padL - padR;
+      const innerH = H - padT - padB;
+      let maxVal = 1;
+      Object.values(datiPerGruppo).forEach(m => {
+        mesiConfronto.forEach(k => { maxVal = Math.max(maxVal, m.get(k) || 0); });
+      });
+      const stepX = mesiConfronto.length > 1 ? innerW / (mesiConfronto.length - 1) : 0;
+      function puntiPath(map){
+        return mesiConfronto.map((k,i) => {
+          const v = map.get(k) || 0;
+          const x = padL + (mesiConfronto.length > 1 ? i*stepX : innerW/2);
+          const y = padT + innerH - (v / maxVal) * innerH;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+      }
+      const linee = Object.entries(GRUPPI).map(([gid,g]) => {
+        const map = datiPerGruppo[gid] || new Map();
+        return `<polyline points="${puntiPath(map)}" fill="none" stroke="${g.colore}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }).join('');
+      const etichetteX = mesiConfrontoLabel.map((lab,i) => {
+        const x = padL + (mesiConfronto.length > 1 ? i*stepX : innerW/2);
+        return `<text x="${x.toFixed(1)}" y="${H-6}" font-size="10" text-anchor="middle" style="fill:var(--text-dim);">${lab}</text>`;
+      }).join('');
+      return `<svg class="chart-confronto-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${linee}${etichetteX}</svg>`;
+    }
+    const legendaGruppi = `<div class="chart-confronto-legenda">${Object.entries(GRUPPI).map(([gid,g]) => `<span><span class="dot" style="background:${g.colore}"></span>${g.nome}</span>`).join('')}</div>`;
+
+    document.getElementById('chart-confronto-allenamenti').innerHTML =
+      renderGraficoConfronto(mensileAllenamentiPerGruppo) + legendaGruppi;
+    document.getElementById('chart-confronto-gare').innerHTML =
+      renderGraficoConfronto(mensileGareContiPerGruppo) + legendaGruppi;
+
+    // --- Dropdown selettore gruppo + dettaglio ---
+    const select = document.getElementById('admin-gruppo-select');
+    const valorePrecedente = select.value;
+    select.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
+    if(valorePrecedente && GRUPPI[valorePrecedente]) select.value = valorePrecedente;
+
+    function renderDettaglioGruppo(){
+      const id = select.value;
+      const g = GRUPPI[id];
+      const detailCont = document.getElementById('admin-gruppo-detail');
+      if(!g){ detailCont.innerHTML = ''; return; }
       const podioAllenamenti = top3(contiAllenamentiAtleta[id]);
       const mappaGare = new Map();
       (garaDatePerAtleta[id] || new Map()).forEach((set, nome) => mappaGare.set(nome, set.size));
       const podioGare = top3(mappaGare);
-      return `
-        <details class="gruppo-tendina">
-          <summary>
-            <span class="gruppo-tendina-titolo">
-              <span class="gruppo-dot" style="background:${g.colore}"></span>
-              <span class="gruppo-tendina-nome">${g.nome}</span>
-              <span class="gruppo-tendina-sub">${g.coach || ''} · ${conteggiAtleti[id] || 0} atleti</span>
-            </span>
-            <span class="gruppo-tendina-caret">▾</span>
-          </summary>
-          <div class="gruppo-tendina-body">
-            <div class="gruppo-tendina-stats">
-              <span><strong>${conteggiAllenamenti[id] || 0}</strong> allenamenti</span>
-              <span><strong>${conteggiGare[id] || 0}</strong> gare</span>
-            </div>
-            <div class="podio-grid">
-              ${podioMiniHtml('Allenamenti', podioAllenamenti)}
-              ${podioMiniHtml('Gare', podioGare)}
-            </div>
-            <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-top:16px;">
-              👥 Gestisci atleti ${g.nome}
-            </button>
+      detailCont.innerHTML = `
+        <div style="border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--surface);">
+          <div class="gruppo-tendina-titolo" style="margin-bottom:12px;">
+            <span class="gruppo-dot" style="background:${g.colore}"></span>
+            <span class="gruppo-tendina-nome">${g.nome}</span>
+            <span class="gruppo-tendina-sub">${g.coach || ''} · ${conteggiAtleti[id] || 0} atleti</span>
           </div>
-        </details>
+          <div class="gruppo-tendina-stats">
+            <span><strong>${conteggiAllenamenti[id] || 0}</strong> allenamenti</span>
+            <span><strong>${conteggiGare[id] || 0}</strong> gare</span>
+          </div>
+          <div class="podio-grid">
+            ${podioMiniHtml('Allenamenti', podioAllenamenti)}
+            ${podioMiniHtml('Gare', podioGare)}
+          </div>
+          <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-top:16px;">
+            👥 Gestisci atleti ${g.nome}
+          </button>
+        </div>
       `;
-    }).join('');
-
-    cont.querySelectorAll('.gruppo-gestisci-btn').forEach(btn => {
-      btn.addEventListener('click', () => apriAdminRoster(btn.dataset.gruppo));
-    });
+      const btnGestisci = detailCont.querySelector('.gruppo-gestisci-btn');
+      if(btnGestisci) btnGestisci.addEventListener('click', () => apriAdminRoster(btnGestisci.dataset.gruppo));
+    }
+    renderDettaglioGruppo();
+    select.onchange = renderDettaglioGruppo;
   }
 
   function renderRoster(){
