@@ -570,6 +570,32 @@
     border-color:var(--primary);
   }
 
+  .discipline-gruppi-check{display:flex; flex-wrap:wrap; gap:10px;}
+  .gruppo-check-label{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:var(--surface-2);
+    border:1px solid var(--border-strong);
+    padding:8px 14px;
+    border-radius:20px;
+    font-size:13px;
+    color:var(--text);
+    cursor:pointer;
+  }
+  .gruppo-check-label input{margin:0;}
+  .disc-gruppo-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:11px;
+    background:var(--surface-2);
+    color:var(--text-dim);
+    padding:2px 8px;
+    border-radius:12px;
+    margin-left:6px;
+  }
+
   .roster-list{
     display:flex;
     flex-direction:column;
@@ -702,8 +728,7 @@
     font-size:13.5px;
     font-family:'Inter',sans-serif;
   }
-  .gr-disciplina{flex:1.3; min-width:120px;}
-  .gr-prestazione{flex:1; min-width:100px;}
+  .gr-disciplina{flex:2; min-width:140px;}
   .gr-piazzamento{width:64px;}
   .gr-remove{
     background:none;
@@ -1434,32 +1459,25 @@
     </header>
     <main>
       <h2>Discipline gara</h2>
-      <p class="sub">Definisci qui l'elenco ufficiale: gli allenatori scelgono da questa lista, niente più nomi diversi per la stessa gara.</p>
+      <p class="sub">Definisci qui l'elenco ufficiale, indicando a quali gruppi appartiene ciascuna disciplina. Gli allenatori vedranno solo quelle del proprio gruppo.</p>
 
       <div id="discipline-list" class="roster-list">
         <div class="roster-empty">Nessuna disciplina ancora.</div>
       </div>
 
-      <form id="discipline-add-form" class="add-atleta-form" style="margin-top:20px; flex-wrap:wrap;">
-        <input type="text" id="discipline-nuovo-nome" placeholder="Nome disciplina, es. 100m" required style="flex:1.5; min-width:160px;">
-        <div class="tipo-toggle">
-          <button type="button" class="tipo-btn tipodisc-btn active" data-tipodisc="tempo">Tempo</button>
-          <button type="button" class="tipo-btn tipodisc-btn" data-tipodisc="misura">Misura</button>
-        </div>
+      <h3 class="section-title" style="margin-top:28px;">Aggiungi una disciplina</h3>
+      <form id="discipline-add-form" class="add-atleta-form" style="margin-top:12px; flex-wrap:wrap;">
+        <input type="text" id="discipline-nuovo-nome" placeholder="Nome disciplina, es. Giavellotto" required style="flex:1.5; min-width:160px;">
         <button type="submit" class="btn-secondary">+ Aggiungi</button>
       </form>
+      <p class="bulk-label" style="margin-top:10px;">A quali gruppi appartiene:</p>
+      <div id="discipline-nuovo-gruppi" class="discipline-gruppi-check"></div>
 
       <h3 class="section-title" style="margin-top:28px;">Aggiungi più discipline insieme</h3>
-      <div style="display:flex; gap:16px; flex-wrap:wrap;">
-        <div style="flex:1; min-width:220px;">
-          <label class="bulk-label">Discipline a TEMPO (una per riga, vince il valore più basso)</label>
-          <textarea id="discipline-bulk-tempo" class="admin-textarea" rows="6" placeholder="100m&#10;200m&#10;400m&#10;800m"></textarea>
-        </div>
-        <div style="flex:1; min-width:220px;">
-          <label class="bulk-label">Discipline a MISURA (una per riga, vince il valore più alto)</label>
-          <textarea id="discipline-bulk-misura" class="admin-textarea" rows="6" placeholder="Salto in lungo&#10;Salto in alto&#10;Getto del peso"></textarea>
-        </div>
-      </div>
+      <label class="bulk-label">Nomi (uno per riga)</label>
+      <textarea id="discipline-bulk" class="admin-textarea" rows="6" placeholder="Giavellotto&#10;Getto del peso&#10;Lancio del martello"></textarea>
+      <p class="bulk-label" style="margin-top:10px;">A quali gruppi appartengono tutte queste:</p>
+      <div id="discipline-bulk-gruppi" class="discipline-gruppi-check"></div>
       <div class="save-bar" style="margin-top:12px;">
         <button id="discipline-bulk-add-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Aggiungi tutte</button>
         <span id="discipline-bulk-feedback" class="save-feedback"></span>
@@ -1697,7 +1715,7 @@
   // Stato per Gestione discipline (Società)
   let adminDisciplineUnsub = null;
   let adminDisciplineDocs = [];  // [{id, nome, tipoMisura}]
-  let tipoDiscSelezionato = "tempo";
+  let tipoDiscSelezionato = "tempo"; // mantenuta per compatibilità, non più usata nell'interfaccia
 
   const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
@@ -2334,14 +2352,22 @@
   }
 
 
+  function renderGruppiCheckbox(contId){
+    const cont = document.getElementById(contId);
+    cont.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `
+      <label class="gruppo-check-label">
+        <input type="checkbox" value="${id}" class="gruppo-check-input">
+        <span class="dot" style="background:${g.colore}; width:8px; height:8px; border-radius:50%; display:inline-block;"></span> ${g.nome}
+      </label>
+    `).join('');
+  }
+
   function apriAdminDiscipline(){
     document.getElementById('discipline-bulk-feedback').textContent = "";
-    document.getElementById('discipline-bulk-tempo').value = "";
-    document.getElementById('discipline-bulk-misura').value = "";
+    document.getElementById('discipline-bulk').value = "";
     document.getElementById('discipline-add-form').reset();
-    document.querySelectorAll('.tipodisc-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.tipodisc-btn[data-tipodisc="tempo"]').classList.add('active');
-    tipoDiscSelezionato = "tempo";
+    renderGruppiCheckbox('discipline-nuovo-gruppi');
+    renderGruppiCheckbox('discipline-bulk-gruppi');
 
     if(adminDisciplineUnsub) adminDisciplineUnsub();
     adminDisciplineUnsub = onSnapshot(collection(db,'discipline'), snap => {
@@ -2358,12 +2384,15 @@
       list.innerHTML = '<div class="roster-empty">Nessuna disciplina ancora. Aggiungile qui sotto.</div>';
       return;
     }
-    list.innerHTML = adminDisciplineDocs.map(d => `
-      <div class="roster-item">
-        <span class="nome">${d.nome}<span class="tipo-badge ${d.tipoMisura}">${d.tipoMisura === 'misura' ? 'Misura' : 'Tempo'}</span></span>
-        <button type="button" class="btn-remove" data-id="${d.id}">Rimuovi</button>
-      </div>
-    `).join('');
+    list.innerHTML = adminDisciplineDocs.map(d => {
+      const tags = (d.gruppi || []).map(gid => GRUPPI[gid] ? `<span class="disc-gruppo-tag">${GRUPPI[gid].nome}</span>` : '').join('');
+      return `
+        <div class="roster-item">
+          <span class="nome">${d.nome}${tags}</span>
+          <button type="button" class="btn-remove" data-id="${d.id}">Rimuovi</button>
+        </div>
+      `;
+    }).join('');
 
     list.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -2583,17 +2612,18 @@
           </div>
           ${partecipa ? `
             <div class="gara-risultati-rows">
-              ${righe.map((r,i) => `
+              ${righe.map((r,i) => {
+                const disciplineGruppo = risultatiDisciplineDocs.filter(d => !d.gruppi || d.gruppi.length===0 || d.gruppi.includes(currentGruppoId));
+                return `
                 <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
                   <select class="gr-disciplina">
                     <option value="">Disciplina…</option>
-                    ${risultatiDisciplineDocs.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
+                    ${disciplineGruppo.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
                   </select>
-                  <input type="text" class="gr-prestazione" placeholder="Prestazione" value="${r.prestazione||''}">
                   <input type="number" class="gr-piazzamento" placeholder="Pos." min="1" value="${r.piazzamento||''}">
                   <button type="button" class="gr-remove" data-id="${a.id}" data-idx="${i}">✕</button>
                 </div>
-              `).join('')}
+              `;}).join('')}
               <button type="button" class="btn-secondary gr-add" data-id="${a.id}">+ Aggiungi prestazione</button>
             </div>
           ` : ''}
@@ -2605,14 +2635,14 @@
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
         if(garaPartecipanti.has(id)) garaPartecipanti.delete(id);
-        else garaPartecipanti.set(id, [{disciplina:'', prestazione:'', piazzamento:''}]);
+        else garaPartecipanti.set(id, [{disciplina:'', piazzamento:''}]);
         renderGaraRoster();
       });
     });
 
     cont.querySelectorAll('.gr-add').forEach(btn => {
       btn.addEventListener('click', () => {
-        garaPartecipanti.get(btn.dataset.id).push({disciplina:'', prestazione:'', piazzamento:''});
+        garaPartecipanti.get(btn.dataset.id).push({disciplina:'', piazzamento:''});
         renderGaraRoster();
       });
     });
@@ -2621,7 +2651,7 @@
       btn.addEventListener('click', () => {
         const arr = garaPartecipanti.get(btn.dataset.id);
         arr.splice(parseInt(btn.dataset.idx,10), 1);
-        if(arr.length === 0) arr.push({disciplina:'', prestazione:'', piazzamento:''});
+        if(arr.length === 0) arr.push({disciplina:'', piazzamento:''});
         renderGaraRoster();
       });
     });
@@ -2629,7 +2659,6 @@
     cont.querySelectorAll('.gara-risultato-row').forEach(row => {
       const rec = garaPartecipanti.get(row.dataset.id)[parseInt(row.dataset.idx,10)];
       row.querySelector('.gr-disciplina').addEventListener('change', e => { rec.disciplina = e.target.value; });
-      row.querySelector('.gr-prestazione').addEventListener('input', e => { rec.prestazione = e.target.value; });
       row.querySelector('.gr-piazzamento').addEventListener('input', e => { rec.piazzamento = e.target.value; });
     });
   }
@@ -2721,7 +2750,7 @@
         return `
           <div class="risultato-row">
             <span class="principale">
-              ${r.atleta} · ${r.disciplina} · ${r.prestazione}
+              ${r.atleta} · ${r.disciplina}${r.prestazione ? ' · ' + r.prestazione : ''}
             </span>
             <span class="dettagli">
               ${r.data || ''}${r.piazzamento ? ' · ' + r.piazzamento + '° posto' : ''}${r.gara ? ' · ' + r.gara : ''}${r.luogo ? ' · ' + r.luogo : ''}
@@ -2739,33 +2768,32 @@
       });
     }
 
-    // Migliori per disciplina (PB di ogni atleta, top 3 per disciplina)
-    const perDisciplina = new Map(); // disciplina -> {tipoMisura, atleti: Map(nome -> {val, raw})}
+    // Migliori per disciplina (miglior piazzamento di ogni atleta, top 3 per disciplina)
+    const perDisciplina = new Map(); // disciplina -> Map(nome -> miglior piazzamento)
     risultatiDocs.forEach(r => {
-      const val = parsePrestazione(r.prestazione);
-      if(val === null) return;
-      if(!perDisciplina.has(r.disciplina)) perDisciplina.set(r.disciplina, { tipoMisura: r.tipoMisura, atleti: new Map() });
-      const entry = perDisciplina.get(r.disciplina);
-      const cur = entry.atleti.get(r.atleta);
-      const migliore = !cur || (entry.tipoMisura === 'misura' ? val > cur.val : val < cur.val);
-      if(migliore) entry.atleti.set(r.atleta, { val, raw:r.prestazione });
+      const p = parseInt(r.piazzamento, 10);
+      if(isNaN(p)) return;
+      if(!perDisciplina.has(r.disciplina)) perDisciplina.set(r.disciplina, new Map());
+      const atleti = perDisciplina.get(r.disciplina);
+      const cur = atleti.get(r.atleta);
+      if(cur === undefined || p < cur) atleti.set(r.atleta, p);
     });
 
     const topDiv = document.getElementById('risultati-top-disciplina');
     if(perDisciplina.size === 0){
       topDiv.innerHTML = '<p class="empty-note">Nessun risultato ancora.</p>';
     } else {
-      topDiv.innerHTML = Array.from(perDisciplina.entries()).map(([disciplina, entry]) => {
-        const lista = Array.from(entry.atleti.entries())
-          .sort((a,b) => entry.tipoMisura === 'misura' ? b[1].val - a[1].val : a[1].val - b[1].val)
+      topDiv.innerHTML = Array.from(perDisciplina.entries()).map(([disciplina, atleti]) => {
+        const lista = Array.from(atleti.entries())
+          .sort((a,b) => a[1] - b[1])
           .slice(0,3);
         return `
           <div class="podio-col">
             <h4>${disciplina}</h4>
-            ${lista.map(([nome, d], i) => `
+            ${lista.map(([nome, p], i) => `
               <div class="podio-row">
                 <span><span class="medaglia">${['🥇','🥈','🥉'][i]}</span>${nome}</span>
-                <span class="conteggio">${d.raw}</span>
+                <span class="conteggio">${p}° posto</span>
               </div>
             `).join('')}
           </div>
@@ -3037,12 +3065,10 @@
         const atleta = risultatiAtletiDocs.find(a => a.id === atletaId);
         if(!atleta) return;
         righe.forEach(r => {
-          if(!r.disciplina || !r.prestazione) return;
-          const disciplinaInfo = risultatiDisciplineDocs.find(d => d.nome === r.disciplina);
+          if(!r.disciplina) return;
           const datiRisultato = {
             gruppoId: currentGruppoId, data, atleta: atleta.nome,
-            disciplina: r.disciplina, tipoMisura: disciplinaInfo ? disciplinaInfo.tipoMisura : 'tempo',
-            prestazione: r.prestazione, piazzamento: r.piazzamento || null,
+            disciplina: r.disciplina, piazzamento: r.piazzamento || null,
             gara: nome, luogo
           };
           if(r.docId){
@@ -3115,14 +3141,6 @@
 
   document.getElementById('presenze-data').addEventListener('change', controllaRegistrazioneEsistente);
   document.getElementById('presenze-data').addEventListener('input', controllaRegistrazioneEsistente);
-  // --- Toggle Tempo / Misura (solo dentro Gestione discipline) ---
-  document.querySelectorAll('.tipodisc-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tipodisc-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      tipoDiscSelezionato = btn.dataset.tipodisc;
-    });
-  });
 
   // --- Menu a tendina "Gestione" (Società) ---
   document.getElementById('btn-gestione-toggle').addEventListener('click', (e) => {
@@ -3352,31 +3370,29 @@
     const input = document.getElementById('discipline-nuovo-nome');
     const nome = input.value.trim();
     if(!nome) return;
-    await addDoc(collection(db,'discipline'), { nome, tipoMisura: tipoDiscSelezionato });
+    const gruppi = Array.from(document.querySelectorAll('#discipline-nuovo-gruppi .gruppo-check-input:checked')).map(c => c.value);
+    await addDoc(collection(db,'discipline'), { nome, gruppi });
     input.value = "";
+    document.querySelectorAll('#discipline-nuovo-gruppi .gruppo-check-input').forEach(c => c.checked = false);
   });
 
   document.getElementById('discipline-bulk-add-btn').addEventListener('click', async function(){
-    const taTempo = document.getElementById('discipline-bulk-tempo');
-    const taMisura = document.getElementById('discipline-bulk-misura');
+    const ta = document.getElementById('discipline-bulk');
     const feedback = document.getElementById('discipline-bulk-feedback');
-    const nomiTempo = taTempo.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-    const nomiMisura = taMisura.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-    if(nomiTempo.length === 0 && nomiMisura.length === 0){
+    const nomi = ta.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+    if(nomi.length === 0){
       feedback.textContent = "Scrivi almeno una disciplina.";
       return;
     }
+    const gruppi = Array.from(document.querySelectorAll('#discipline-bulk-gruppi .gruppo-check-input:checked')).map(c => c.value);
     const btn = this;
     btn.disabled = true;
     feedback.textContent = "Aggiunta in corso…";
     try{
-      await Promise.all([
-        ...nomiTempo.map(nome => addDoc(collection(db,'discipline'), { nome, tipoMisura:'tempo' })),
-        ...nomiMisura.map(nome => addDoc(collection(db,'discipline'), { nome, tipoMisura:'misura' }))
-      ]);
-      feedback.textContent = `${nomiTempo.length + nomiMisura.length} discipline aggiunte ✓`;
-      taTempo.value = "";
-      taMisura.value = "";
+      await Promise.all(nomi.map(nome => addDoc(collection(db,'discipline'), { nome, gruppi })));
+      feedback.textContent = `${nomi.length} discipline aggiunte ✓`;
+      ta.value = "";
+      document.querySelectorAll('#discipline-bulk-gruppi .gruppo-check-input').forEach(c => c.checked = false);
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore durante l'aggiunta, riprova.";
