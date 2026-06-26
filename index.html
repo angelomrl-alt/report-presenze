@@ -278,6 +278,8 @@
     display:flex;
     align-items:center;
     justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px 12px;
     padding:18px 28px;
     background:var(--surface);
     border-bottom:1px solid var(--border);
@@ -289,6 +291,7 @@
     display:flex;
     align-items:center;
     gap:10px;
+    white-space:nowrap;
   }
   .role-tag{
     font-size:11px;
@@ -299,6 +302,11 @@
     color:var(--text-dim);
     padding:4px 10px;
     border-radius:20px;
+    white-space:nowrap;
+  }
+  @media (max-width:480px){
+    .topbar .brand-mini{font-size:16px; gap:7px;}
+    .role-tag{font-size:10px; padding:3px 8px;}
   }
   .btn-logout{
     background:none;
