@@ -1459,7 +1459,7 @@
     </header>
     <main>
       <h2>Discipline gara</h2>
-      <p class="sub">Definisci qui l'elenco ufficiale, indicando a quali gruppi appartiene ciascuna disciplina. Gli allenatori vedranno solo quelle del proprio gruppo.</p>
+      <p class="sub">Definisci qui l'elenco ufficiale delle discipline. Per limitare quali discipline può scegliere ogni squadra, vai su "Gestisci gruppi".</p>
 
       <div id="discipline-list" class="roster-list">
         <div class="roster-empty">Nessuna disciplina ancora.</div>
@@ -1470,14 +1470,10 @@
         <input type="text" id="discipline-nuovo-nome" placeholder="Nome disciplina, es. Giavellotto" required style="flex:1.5; min-width:160px;">
         <button type="submit" class="btn-secondary">+ Aggiungi</button>
       </form>
-      <p class="bulk-label" style="margin-top:10px;">A quali gruppi appartiene:</p>
-      <div id="discipline-nuovo-gruppi" class="discipline-gruppi-check"></div>
 
       <h3 class="section-title" style="margin-top:28px;">Aggiungi più discipline insieme</h3>
       <label class="bulk-label">Nomi (uno per riga)</label>
       <textarea id="discipline-bulk" class="admin-textarea" rows="6" placeholder="Giavellotto&#10;Getto del peso&#10;Lancio del martello"></textarea>
-      <p class="bulk-label" style="margin-top:10px;">A quali gruppi appartengono tutte queste:</p>
-      <div id="discipline-bulk-gruppi" class="discipline-gruppi-check"></div>
       <div class="save-bar" style="margin-top:12px;">
         <button id="discipline-bulk-add-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Aggiungi tutte</button>
         <span id="discipline-bulk-feedback" class="save-feedback"></span>
@@ -2303,9 +2299,19 @@
       conteggi[gid] = (conteggi[gid] || 0) + 1;
     });
 
+    const snapDiscipline = await getDocs(collection(db,'discipline'));
+    const discipline = snapDiscipline.docs.map(d => d.data().nome).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+
     list.innerHTML = idGruppi.map(id => {
       const g = GRUPPI[id];
       const colore = (g.colore && g.colore.startsWith('#')) ? g.colore : '#3ecf8e';
+      const consentite = g.disciplineConsentite || [];
+      const checkboxesDiscipline = discipline.map(nome => `
+        <label class="gruppo-check-label">
+          <input type="checkbox" value="${nome}" class="disc-allow-input" ${consentite.includes(nome) ? 'checked' : ''}>
+          ${nome}
+        </label>
+      `).join('');
       return `
         <div class="gruppo-edit-row" data-id="${id}">
           <input type="color" class="g-colore" value="${colore}">
@@ -2316,6 +2322,17 @@
           <button type="button" class="btn-secondary g-copia-id" data-id="${id}" title="Copia l'ID, serve per collegare l'account allenatore">ID: ${id}</button>
           <button type="button" class="btn-secondary g-salva">Salva</button>
           <button type="button" class="btn-remove g-elimina">Elimina</button>
+        </div>
+        <div style="margin:4px 0 14px;">
+          <button type="button" class="btn-secondary g-discipline-toggle" data-id="${id}">
+            🎯 Discipline consentite ${consentite.length ? `(${consentite.length})` : '(tutte)'}
+          </button>
+          <div class="gruppo-discipline-panel" id="gdisc-${id}" style="display:none; padding:12px 0;">
+            <p class="bulk-label">Se non selezioni nulla, questo gruppo vede tutte le discipline. Le scelte qui non influenzano gli altri gruppi.</p>
+            <div class="discipline-gruppi-check">${checkboxesDiscipline || '<span class="empty-note">Nessuna disciplina creata ancora.</span>'}</div>
+            <button type="button" class="btn-secondary g-discipline-save" data-id="${id}" style="margin-top:10px;">Salva discipline</button>
+            <span class="save-feedback g-discipline-feedback" data-id="${id}"></span>
+          </div>
         </div>
       `;
     }).join('');
@@ -2349,25 +2366,32 @@
         }
       });
     });
+
+    list.querySelectorAll('.g-discipline-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById('gdisc-' + btn.dataset.id);
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+
+    list.querySelectorAll('.g-discipline-save').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const panel = document.getElementById('gdisc-' + id);
+        const scelte = Array.from(panel.querySelectorAll('.disc-allow-input:checked')).map(c => c.value);
+        await updateDoc(doc(db,'gruppi', id), { disciplineConsentite: scelte });
+        const feedback = panel.querySelector('.g-discipline-feedback');
+        feedback.textContent = "Salvato ✓";
+        setTimeout(() => { feedback.textContent = ""; }, 2000);
+      });
+    });
   }
 
-
-  function renderGruppiCheckbox(contId){
-    const cont = document.getElementById(contId);
-    cont.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `
-      <label class="gruppo-check-label">
-        <input type="checkbox" value="${id}" class="gruppo-check-input">
-        <span class="dot" style="background:${g.colore}; width:8px; height:8px; border-radius:50%; display:inline-block;"></span> ${g.nome}
-      </label>
-    `).join('');
-  }
 
   function apriAdminDiscipline(){
     document.getElementById('discipline-bulk-feedback').textContent = "";
     document.getElementById('discipline-bulk').value = "";
     document.getElementById('discipline-add-form').reset();
-    renderGruppiCheckbox('discipline-nuovo-gruppi');
-    renderGruppiCheckbox('discipline-bulk-gruppi');
 
     if(adminDisciplineUnsub) adminDisciplineUnsub();
     adminDisciplineUnsub = onSnapshot(collection(db,'discipline'), snap => {
@@ -2384,46 +2408,12 @@
       list.innerHTML = '<div class="roster-empty">Nessuna disciplina ancora. Aggiungile qui sotto.</div>';
       return;
     }
-    list.innerHTML = adminDisciplineDocs.map(d => {
-      const tags = (d.gruppi || []).map(gid => GRUPPI[gid] ? `<span class="disc-gruppo-tag">${GRUPPI[gid].nome}</span>` : '').join('');
-      const checkboxes = Object.entries(GRUPPI).map(([id,g]) => `
-        <label class="gruppo-check-label">
-          <input type="checkbox" value="${id}" class="gruppo-check-input" ${(d.gruppi||[]).includes(id) ? 'checked' : ''}>
-          <span class="dot" style="background:${g.colore}; width:8px; height:8px; border-radius:50%; display:inline-block;"></span> ${g.nome}
-        </label>
-      `).join('');
-      return `
-        <div class="roster-item-wrap">
-          <div class="roster-item">
-            <span class="nome">${d.nome}${tags}</span>
-            <span style="display:flex; gap:6px; flex-shrink:0;">
-              <button type="button" class="btn-edit-icon disc-edit-toggle" data-id="${d.id}" title="Modifica gruppi" aria-label="Modifica gruppi">✏️</button>
-              <button type="button" class="btn-remove" data-id="${d.id}">Rimuovi</button>
-            </span>
-          </div>
-          <div class="disc-edit-panel" id="disc-edit-${d.id}" style="display:none; padding:12px 4px 4px;">
-            <div class="discipline-gruppi-check">${checkboxes}</div>
-            <button type="button" class="btn-secondary disc-edit-save" data-id="${d.id}" style="margin-top:10px;">Salva</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    list.querySelectorAll('.disc-edit-toggle').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const panel = document.getElementById('disc-edit-' + btn.dataset.id);
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-      });
-    });
-
-    list.querySelectorAll('.disc-edit-save').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const panel = document.getElementById('disc-edit-' + btn.dataset.id);
-        const gruppi = Array.from(panel.querySelectorAll('.gruppo-check-input:checked')).map(c => c.value);
-        await updateDoc(doc(db,'discipline', btn.dataset.id), { gruppi });
-        panel.style.display = 'none';
-      });
-    });
+    list.innerHTML = adminDisciplineDocs.map(d => `
+      <div class="roster-item">
+        <span class="nome">${d.nome}</span>
+        <button type="button" class="btn-remove" data-id="${d.id}">Rimuovi</button>
+      </div>
+    `).join('');
 
     list.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -2644,7 +2634,8 @@
           ${partecipa ? `
             <div class="gara-risultati-rows">
               ${righe.map((r,i) => {
-                const disciplineGruppo = risultatiDisciplineDocs.filter(d => !d.gruppi || d.gruppi.length===0 || d.gruppi.includes(currentGruppoId));
+                const consentite = (GRUPPI[currentGruppoId] && GRUPPI[currentGruppoId].disciplineConsentite) || [];
+                const disciplineGruppo = consentite.length === 0 ? risultatiDisciplineDocs : risultatiDisciplineDocs.filter(d => consentite.includes(d.nome));
                 return `
                 <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
                   <select class="gr-disciplina">
@@ -3401,10 +3392,8 @@
     const input = document.getElementById('discipline-nuovo-nome');
     const nome = input.value.trim();
     if(!nome) return;
-    const gruppi = Array.from(document.querySelectorAll('#discipline-nuovo-gruppi .gruppo-check-input:checked')).map(c => c.value);
-    await addDoc(collection(db,'discipline'), { nome, gruppi });
+    await addDoc(collection(db,'discipline'), { nome });
     input.value = "";
-    document.querySelectorAll('#discipline-nuovo-gruppi .gruppo-check-input').forEach(c => c.checked = false);
   });
 
   document.getElementById('discipline-bulk-add-btn').addEventListener('click', async function(){
@@ -3415,15 +3404,13 @@
       feedback.textContent = "Scrivi almeno una disciplina.";
       return;
     }
-    const gruppi = Array.from(document.querySelectorAll('#discipline-bulk-gruppi .gruppo-check-input:checked')).map(c => c.value);
     const btn = this;
     btn.disabled = true;
     feedback.textContent = "Aggiunta in corso…";
     try{
-      await Promise.all(nomi.map(nome => addDoc(collection(db,'discipline'), { nome, gruppi })));
+      await Promise.all(nomi.map(nome => addDoc(collection(db,'discipline'), { nome })));
       feedback.textContent = `${nomi.length} discipline aggiunte ✓`;
       ta.value = "";
-      document.querySelectorAll('#discipline-bulk-gruppi .gruppo-check-input').forEach(c => c.checked = false);
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore durante l'aggiunta, riprova.";
