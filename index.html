@@ -900,10 +900,18 @@
     display:flex;
     flex-direction:column;
     gap:4px;
+    min-width:0;
   }
   .kpi-value{font-family:'Oswald',sans-serif; font-size:30px; font-weight:700;}
   .kpi-label{font-size:12px; color:var(--text-dim);}
   .kpi-medaglie{display:flex; gap:12px; font-size:17px; font-weight:700; font-family:'Oswald',sans-serif;}
+
+  /* KPI più piccoli, sempre in una sola riga di 3, solo nella Home Società */
+  #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:8px;}
+  #admin-kpi-grid .kpi-card{padding:12px 10px; gap:2px;}
+  #admin-kpi-grid .kpi-value{font-size:21px;}
+  #admin-kpi-grid .kpi-label{font-size:10px;}
+  #admin-kpi-grid .kpi-medaglie{gap:5px; font-size:12px;}
 
   .section-title{
     font-size:14px;
@@ -1342,16 +1350,23 @@
           <h2>Andamento società</h2>
           <p class="sub">Confronta i gruppi nei grafici, poi scegli un gruppo dal menu per i suoi dettagli.</p>
         </div>
-        <div class="gestione-dropdown-wrap">
-          <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
-          <div class="gestione-menu" id="gestione-menu">
-            <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
-            <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
-            <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
-            <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:200px;">
+            <option value="">👥 Scegli gruppo ▾</option>
+          </select>
+          <div class="gestione-dropdown-wrap">
+            <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
+            <div class="gestione-menu" id="gestione-menu">
+              <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
+              <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
+              <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
+              <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
+            </div>
           </div>
         </div>
       </div>
+
+      <div id="admin-gruppo-detail"></div>
 
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
 
@@ -1360,10 +1375,6 @@
 
       <h3 class="section-title" style="margin-top:24px;">Confronto gare tra i gruppi</h3>
       <div id="chart-confronto-gare" class="chart-confronto-wrap"></div>
-
-      <h3 class="section-title" style="margin-top:28px;">Dettaglio gruppo</h3>
-      <select id="admin-gruppo-select" class="admin-gruppo-select"></select>
-      <div id="admin-gruppo-detail" style="margin-top:16px;"></div>
     </main>
   </section>
 
@@ -1894,24 +1905,27 @@
       Object.values(datiPerGruppo).forEach(m => {
         mesiConfronto.forEach(k => { maxVal = Math.max(maxVal, m.get(k) || 0); });
       });
-      const stepX = mesiConfronto.length > 1 ? innerW / (mesiConfronto.length - 1) : 0;
-      function puntiPath(map){
-        return mesiConfronto.map((k,i) => {
-          const v = map.get(k) || 0;
-          const x = padL + (mesiConfronto.length > 1 ? i*stepX : innerW/2);
-          const y = padT + innerH - (v / maxVal) * innerH;
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        }).join(' ');
-      }
-      const linee = Object.entries(GRUPPI).map(([gid,g]) => {
-        const map = datiPerGruppo[gid] || new Map();
-        return `<polyline points="${puntiPath(map)}" fill="none" stroke="${g.colore}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const gruppiIds = Object.keys(GRUPPI);
+      const nGruppi = Math.max(gruppiIds.length, 1);
+      const colWidth = innerW / mesiConfronto.length;
+      const barGap = 1.5;
+      const barWidth = Math.max(2, (colWidth - barGap*(nGruppi+1)) / nGruppi);
+      const barre = mesiConfronto.map((mese, mi) => {
+        const colX = padL + mi*colWidth;
+        return gruppiIds.map((gid, gi) => {
+          const g = GRUPPI[gid];
+          const v = (datiPerGruppo[gid] && datiPerGruppo[gid].get(mese)) || 0;
+          const h = (v / maxVal) * innerH;
+          const x = colX + barGap + gi*(barWidth+barGap);
+          const y = padT + innerH - h;
+          return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${h.toFixed(1)}" fill="${g.colore}" rx="1"/>`;
+        }).join('');
       }).join('');
       const etichetteX = mesiConfrontoLabel.map((lab,i) => {
-        const x = padL + (mesiConfronto.length > 1 ? i*stepX : innerW/2);
+        const x = padL + i*colWidth + colWidth/2;
         return `<text x="${x.toFixed(1)}" y="${H-6}" font-size="10" text-anchor="middle" style="fill:var(--text-dim);">${lab}</text>`;
       }).join('');
-      return `<svg class="chart-confronto-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${linee}${etichetteX}</svg>`;
+      return `<svg class="chart-confronto-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${barre}${etichetteX}</svg>`;
     }
     const legendaGruppi = `<div class="chart-confronto-legenda">${Object.entries(GRUPPI).map(([gid,g]) => `<span><span class="dot" style="background:${g.colore}"></span>${g.nome}</span>`).join('')}</div>`;
 
@@ -1923,8 +1937,9 @@
     // --- Dropdown selettore gruppo + dettaglio ---
     const select = document.getElementById('admin-gruppo-select');
     const valorePrecedente = select.value;
-    select.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
-    if(valorePrecedente && GRUPPI[valorePrecedente]) select.value = valorePrecedente;
+    select.innerHTML = '<option value="">👥 Scegli gruppo ▾</option>' +
+      Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
+    select.value = (valorePrecedente && GRUPPI[valorePrecedente]) ? valorePrecedente : '';
 
     function renderDettaglioGruppo(){
       const id = select.value;
@@ -1936,7 +1951,7 @@
       (garaDatePerAtleta[id] || new Map()).forEach((set, nome) => mappaGare.set(nome, set.size));
       const podioGare = top3(mappaGare);
       detailCont.innerHTML = `
-        <div style="border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--surface);">
+        <div style="border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--surface); margin:20px 0;">
           <div class="gruppo-tendina-titolo" style="margin-bottom:12px;">
             <span class="gruppo-dot" style="background:${g.colore}"></span>
             <span class="gruppo-tendina-nome">${g.nome}</span>
