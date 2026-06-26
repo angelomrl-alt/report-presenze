@@ -1245,14 +1245,7 @@
         <div class="kpi-card"><span class="kpi-value" id="kpi-media">0</span><span class="kpi-label">Media/sessione</span></div>
       </div>
 
-      <h3 class="section-title">Presenze per mese</h3>
-      <div class="chart-wrap" id="chart-mensile"></div>
-      <div class="chart-legend">
-        <span><i class="legend-dot dot-allenamento"></i>Allenamenti</span>
-        <span><i class="legend-dot dot-gara"></i>Gare</span>
-      </div>
-
-      <details class="report-section" open>
+      <details class="report-section">
         <summary>🏆 Podio</summary>
         <div class="podio-grid" id="podio-grid"></div>
       </details>
@@ -2781,28 +2774,6 @@
     document.getElementById('kpi-gare').textContent = d.kpi.gare;
     document.getElementById('kpi-atleti').textContent = d.kpi.atleti;
     document.getElementById('kpi-media').textContent = d.kpi.media;
-
-    // Grafico mensile
-    const chart = document.getElementById('chart-mensile');
-    if(d.mensile.length === 0){
-      chart.innerHTML = '<p class="empty-note">Nessuna presenza registrata ancora.</p>';
-    } else {
-      const maxTotale = Math.max(...d.mensile.map(m => m.allenamenti + m.gare), 1);
-      chart.innerHTML = d.mensile.map(m => {
-        const hA = Math.round((m.allenamenti / maxTotale) * 160);
-        const hG = Math.round((m.gare / maxTotale) * 160);
-        return `
-          <div class="bar-col">
-            <span class="bar-total-label">${m.allenamenti + m.gare}</span>
-            <div class="bar-stack">
-              <div class="bar-seg allenamento" style="bottom:0; height:${hA}px;"></div>
-              <div class="bar-seg gara" style="bottom:${hA}px; height:${hG}px;"></div>
-            </div>
-            <span class="bar-month-label">${m.label}</span>
-          </div>
-        `;
-      }).join('');
-    }
 
     // Podio
     const podioHtml = (titolo, lista) => `
