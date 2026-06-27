@@ -1999,8 +1999,10 @@
         : `<div style="display:flex; flex-wrap:wrap; gap:6px;">
             ${atletiGruppo.map(a => {
               const stato = statoCertificato(a.scadenzaCertificato).stato;
-              const colore = stato === 'scaduto' ? 'var(--danger)' : stato === 'avviso' ? 'var(--accent-lane)' : 'var(--border-strong)';
-              return `<span style="font-size:12.5px; padding:4px 10px; border-radius:14px; background:var(--surface-2); border:1px solid ${colore};">${a.nome}</span>`;
+              let stile = `border:1.5px solid var(--border-strong); background:var(--surface-2); color:var(--text);`;
+              if(stato === 'scaduto') stile = `border:2.5px solid #f4574a; background:rgba(244,87,74,.16); color:var(--text); font-weight:700;`;
+              else if(stato === 'avviso') stile = `border:2.5px solid #f5a623; background:rgba(245,166,35,.18); color:var(--text); font-weight:700;`;
+              return `<span style="font-size:12.5px; padding:4px 10px; border-radius:14px; ${stile}">${a.nome}</span>`;
             }).join('')}
           </div>`;
 
