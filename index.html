@@ -1764,9 +1764,13 @@
     ]);
 
     const conteggiAtleti = {};
+    const atletiPerGruppo = {}; // gruppoId -> [atleta, ...] con tutti i dati (nome, scadenzaCertificato)
     snapAtleti.docs.forEach(d => {
-      const gid = d.data().gruppoId;
+      const a = d.data();
+      const gid = a.gruppoId;
       conteggiAtleti[gid] = (conteggiAtleti[gid] || 0) + 1;
+      if(!atletiPerGruppo[gid]) atletiPerGruppo[gid] = [];
+      atletiPerGruppo[gid].push(a);
     });
 
     const conteggiAllenamenti = {};
@@ -1960,8 +1964,62 @@
       const g = GRUPPI[id];
       const detailCont = document.getElementById('admin-gruppo-detail');
       if(!g){ detailCont.innerHTML = ''; return; }
+
+      const atletiGruppo = (atletiPerGruppo[id] || []).slice().sort((a,b) => a.nome.localeCompare(b.nome));
+
+      // Certificati in scadenza/scaduti
+      let scaduti = 0, inAvviso = 0;
+      atletiGruppo.forEach(a => {
+        const stato = statoCertificato(a.scadenzaCertificato).stato;
+        if(stato === 'scaduto') scaduti++;
+        else if(stato === 'avviso') inAvviso++;
+      });
+      const certHtml = (scaduti + inAvviso) === 0
+        ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun certificato scaduto o in scadenza ✓</p>`
+        : `<p style="font-size:13px; margin:0;">
+            ${scaduti ? `<span style="color:var(--danger); font-weight:600;">${scaduti} scadut${scaduti===1?'o':'i'}</span>` : ''}
+            ${scaduti && inAvviso ? ' · ' : ''}
+            ${inAvviso ? `<span style="color:var(--accent-lane); font-weight:600;">${inAvviso} in scadenza</span>` : ''}
+          </p>`;
+
+      // Mini-podio presenze allenamenti
+      const podio = top3(contiAllenamentiAtleta[id]);
+      const podioHtml = podio.length === 0
+        ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessuna presenza registrata ancora.</p>`
+        : podio.map((p,i) => `
+            <div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0;">
+              <span>${['🥇','🥈','🥉'][i]} ${p[0]}</span>
+              <span style="color:var(--text-dim);">${p[1]}</span>
+            </div>
+          `).join('');
+
+      // Elenco atleti rapido
+      const elencoHtml = atletiGruppo.length === 0
+        ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta in questo gruppo.</p>`
+        : `<div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${atletiGruppo.map(a => {
+              const stato = statoCertificato(a.scadenzaCertificato).stato;
+              const colore = stato === 'scaduto' ? 'var(--danger)' : stato === 'avviso' ? 'var(--accent-lane)' : 'var(--border-strong)';
+              return `<span style="font-size:12.5px; padding:4px 10px; border-radius:14px; background:var(--surface-2); border:1px solid ${colore};">${a.nome}</span>`;
+            }).join('')}
+          </div>`;
+
       detailCont.innerHTML = `
-        <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin:16px 0;">
+        <div style="display:grid; gap:12px; margin:16px 0;">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+            <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">⚕️ Certificati</p>
+            ${certHtml}
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+            <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">🏆 Più presenti agli allenamenti</p>
+            ${podioHtml}
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+            <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">👤 Atleti (${atletiGruppo.length})</p>
+            ${elencoHtml}
+          </div>
+        </div>
+        <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-bottom:16px;">
           👥 Gestisci atleti ${g.nome}
         </button>
       `;
