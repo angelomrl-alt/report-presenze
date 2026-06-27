@@ -1820,11 +1820,19 @@
     const totaleGare = garaDateSocieta.size;
 
     let oro = 0, argento = 0, bronzo = 0;
+    const medagliePerGruppoAtleta = {}; // gruppoId -> Map(nome -> {oro,argento,bronzo})
     snapRisultati.docs.forEach(d => {
-      const p = parseInt(d.data().piazzamento, 10);
+      const r = d.data();
+      const p = parseInt(r.piazzamento, 10);
       if(p === 1) oro++;
       else if(p === 2) argento++;
       else if(p === 3) bronzo++;
+      if(!r.gruppoId || !r.atleta || isNaN(p) || p < 1 || p > 3) return;
+      if(!medagliePerGruppoAtleta[r.gruppoId]) medagliePerGruppoAtleta[r.gruppoId] = new Map();
+      const m = medagliePerGruppoAtleta[r.gruppoId];
+      if(!m.has(r.atleta)) m.set(r.atleta, {oro:0, argento:0, bronzo:0});
+      const c = m.get(r.atleta);
+      if(p===1) c.oro++; else if(p===2) c.argento++; else c.bronzo++;
     });
 
     document.getElementById('admin-kpi-grid').innerHTML = `
@@ -1993,6 +2001,20 @@
             </div>
           `).join('');
 
+      // Podi in gara (medaglie oro/argento/bronzo per atleta)
+      const medaglieGruppo = medagliePerGruppoAtleta[id] || new Map();
+      const podioMedaglie = Array.from(medaglieGruppo.entries())
+        .sort((a,b) => (b[1].oro-a[1].oro) || (b[1].argento-a[1].argento) || (b[1].bronzo-a[1].bronzo))
+        .slice(0,3);
+      const podioMedaglieHtml = podioMedaglie.length === 0
+        ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun podio in gara ancora.</p>`
+        : podioMedaglie.map(([nome,c]) => `
+            <div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0;">
+              <span>${nome}</span>
+              <span style="color:var(--text-dim);">🥇${c.oro} 🥈${c.argento} 🥉${c.bronzo}</span>
+            </div>
+          `).join('');
+
       // Elenco atleti rapido
       const elencoHtml = atletiGruppo.length === 0
         ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta in questo gruppo.</p>`
@@ -2015,6 +2037,10 @@
           <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
             <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">🏆 Più presenti agli allenamenti</p>
             ${podioHtml}
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+            <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">🥇 Podi in gara</p>
+            ${podioMedaglieHtml}
           </div>
           <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
             <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">👤 Atleti (${atletiGruppo.length})</p>
