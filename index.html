@@ -2373,11 +2373,17 @@
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const panel = document.getElementById('gdisc-' + id);
-        const scelte = Array.from(panel.querySelectorAll('.disc-allow-input:checked')).map(c => c.value);
-        await updateDoc(doc(db,'gruppi', id), { disciplineConsentite: scelte });
         const feedback = panel.querySelector('.g-discipline-feedback');
-        feedback.textContent = "Salvato ✓";
-        setTimeout(() => { feedback.textContent = ""; }, 2000);
+        const scelte = Array.from(panel.querySelectorAll('.disc-allow-input:checked')).map(c => c.value);
+        feedback.textContent = "Salvataggio in corso…";
+        try{
+          await updateDoc(doc(db,'gruppi', id), { disciplineConsentite: scelte });
+          feedback.textContent = "Salvato ✓ (" + scelte.length + (scelte.length===1?" disciplina":" discipline") + ")";
+          setTimeout(() => { feedback.textContent = ""; }, 3000);
+        } catch(err){
+          console.error('Errore salvataggio disciplineConsentite:', err);
+          feedback.textContent = "Errore: " + err.message;
+        }
       });
     });
   }
