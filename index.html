@@ -3190,20 +3190,28 @@
 
     const dataFormattata = data ? new Date(data + 'T00:00:00').toLocaleDateString('it-IT') : '';
 
-    const righe = [];
+    const risultatiConPosizione = [];
     risultatiAtletiDocs.forEach(a => {
       const ris = garaPartecipanti.get(a.id);
       if(!ris) return;
       ris.forEach(r => {
-        if(!r.disciplina) return;
-        righe.push(`${a.nome} - ${r.disciplina}${r.piazzamento ? ': ' + r.piazzamento + '°' : ''}`);
+        if(!r.disciplina || !r.piazzamento) return;
+        risultatiConPosizione.push({ nome: a.nome, disciplina: r.disciplina, piazzamento: parseInt(r.piazzamento, 10) });
       });
     });
 
-    if(righe.length === 0){
-      alert('Segna almeno un risultato prima di condividere.');
+    if(risultatiConPosizione.length === 0){
+      alert('Inserisci almeno una posizione prima di condividere (gli atleti senza posizione non vengono inclusi).');
       return;
     }
+
+    risultatiConPosizione.sort((a,b) => a.piazzamento - b.piazzamento);
+    const medaglie = {1:'🥇',2:'🥈',3:'🥉'};
+    const righe = risultatiConPosizione.map(r => {
+      const prefisso = medaglie[r.piazzamento] ? medaglie[r.piazzamento] + ' ' : '';
+      const suffisso = medaglie[r.piazzamento] ? '' : `: ${r.piazzamento}°`;
+      return `${prefisso}${r.nome} - ${r.disciplina}${suffisso}`;
+    });
 
     let testo = `🏃 ${nomeGara}\n`;
     if(dataFormattata) testo += `📅 ${dataFormattata}\n`;
