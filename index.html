@@ -1622,13 +1622,18 @@
   }
 
   // Dati dei gruppi: ora vivono su Firestore (collezione "gruppi"), modificabili dalla Società.
-  // GRUPPI viene popolato e aggiornato in automatico dalla sottoscrizione più sotto.
+  // GRUPPI viene popolato e aggiornato in automatico dalla sottoscrizione avviata dopo il login
+  // (richiede l'autenticazione per le regole di sicurezza, quindi non si può avviare prima).
   let GRUPPI = {};
   let risolviGruppiPronti;
   const gruppiPronti = new Promise(res => { risolviGruppiPronti = res; });
   let primaVoltaGruppi = true;
+  let gruppiListenerAvviato = false;
 
-  onSnapshot(collection(db,'gruppi'), snap => {
+  function avviaListenerGruppi(){
+    if(gruppiListenerAvviato) return;
+    gruppiListenerAvviato = true;
+    onSnapshot(collection(db,'gruppi'), snap => {
     const nuovo = {};
     snap.docs.forEach(d => { nuovo[d.id] = d.data(); });
     GRUPPI = nuovo;
@@ -1647,6 +1652,7 @@
       if(reportCat) reportCat.textContent = g.categoria || "—";
     }
   });
+  }
 
   let currentGruppoId = null;
   let currentRuolo = null;
@@ -1691,11 +1697,16 @@
   const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
   let giorniAvvisoCertificato = 15;
-  onSnapshot(doc(db,'impostazioni','generali'), snap => {
-    if(snap.exists() && snap.data().giorniAvvisoCertificato){
-      giorniAvvisoCertificato = snap.data().giorniAvvisoCertificato;
-    }
-  });
+  let impostazioniListenerAvviato = false;
+  function avviaListenerImpostazioni(){
+    if(impostazioniListenerAvviato) return;
+    impostazioniListenerAvviato = true;
+    onSnapshot(doc(db,'impostazioni','generali'), snap => {
+      if(snap.exists() && snap.data().giorniAvvisoCertificato){
+        giorniAvvisoCertificato = snap.data().giorniAvvisoCertificato;
+      }
+    });
+  }
 
   function statoCertificato(dataStr){
     if(!dataStr) return { stato: 'mancante', testo: '' };
@@ -2865,6 +2876,8 @@
       showView('view-login');
       return;
     }
+    avviaListenerGruppi();
+    avviaListenerImpostazioni();
     await gruppiPronti;
     try{
       const snap = await getDoc(doc(db, "utenti", user.uid));
