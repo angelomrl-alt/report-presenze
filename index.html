@@ -1315,6 +1315,7 @@
       <div class="save-bar" style="margin-top:20px;">
         <button type="button" id="salva-gara-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva gara</button>
         <button type="button" id="nuova-gara-btn" class="btn-secondary">Nuova registrazione</button>
+        <button type="button" id="condividi-gara-btn" class="btn-secondary">📤 Condividi risultati</button>
         <span id="gara-feedback" class="save-feedback"></span>
       </div>
 
@@ -3152,6 +3153,45 @@
     document.getElementById('gara-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('gara-feedback').textContent = "";
     controllaGaraEsistente();
+  });
+
+  document.getElementById('condividi-gara-btn').addEventListener('click', () => {
+    const data = document.getElementById('gara-data').value;
+    const nomeGara = document.getElementById('gara-nome').value.trim();
+    const luogo = document.getElementById('gara-luogo').value.trim();
+
+    if(!nomeGara){
+      alert('Scrivi prima il nome della gara.');
+      return;
+    }
+
+    const dataFormattata = data ? new Date(data + 'T00:00:00').toLocaleDateString('it-IT') : '';
+
+    const righe = [];
+    risultatiAtletiDocs.forEach(a => {
+      const ris = garaPartecipanti.get(a.id);
+      if(!ris) return;
+      ris.forEach(r => {
+        if(!r.disciplina) return;
+        righe.push(`${a.nome} - ${r.disciplina}${r.piazzamento ? ': ' + r.piazzamento + '°' : ''}`);
+      });
+    });
+
+    if(righe.length === 0){
+      alert('Segna almeno un risultato prima di condividere.');
+      return;
+    }
+
+    let testo = `🏃 ${nomeGara}\n`;
+    if(dataFormattata) testo += `📅 ${dataFormattata}\n`;
+    if(luogo) testo += `📍 ${luogo}\n`;
+    testo += `\n${righe.join('\n')}`;
+
+    if(navigator.share){
+      navigator.share({ text: testo }).catch(() => {});
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(testo), '_blank');
+    }
   });
 
   document.getElementById('gara-data').addEventListener('change', controllaGaraEsistente);
