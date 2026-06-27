@@ -911,6 +911,7 @@
   .save-bar{
     display:flex;
     align-items:center;
+    flex-wrap:wrap;
     gap:16px;
   }
   .save-feedback{
@@ -1326,8 +1327,10 @@
       <div class="save-bar" style="margin-top:20px;">
         <button type="button" id="salva-gara-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva gara</button>
         <button type="button" id="nuova-gara-btn" class="btn-secondary">Nuova registrazione</button>
-        <button type="button" id="condividi-gara-btn" class="btn-secondary">📤 Condividi risultati</button>
         <span id="gara-feedback" class="save-feedback"></span>
+      </div>
+      <div class="save-bar" style="margin-top:10px;">
+        <button type="button" id="condividi-gara-btn" class="btn-secondary">📤 Condividi risultati</button>
       </div>
 
       <details class="report-section" open style="margin-top:28px;">
