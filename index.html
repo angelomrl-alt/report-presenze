@@ -814,6 +814,27 @@
   .btn-edit-icon:hover{opacity:1;}
 
   /* ---------- GESTIONE GRUPPI ---------- */
+  .id-gruppo-tendina{margin:8px 0;}
+  .id-gruppo-tendina summary{
+    font-size:12px;
+    color:var(--text-dim);
+    cursor:pointer;
+    list-style:none;
+  }
+  .id-gruppo-tendina summary::-webkit-details-marker{display:none;}
+  .id-gruppo-tendina summary::before{content:"▸ "; }
+  .id-gruppo-tendina[open] summary::before{content:"▾ ";}
+  .g-copia-id-link{
+    margin-top:8px;
+    background:none;
+    border:1px dashed var(--border-strong);
+    color:var(--text-dim);
+    font-size:12.5px;
+    padding:6px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    box-shadow:none;
+  }
   .gruppi-edit-list{display:flex; flex-direction:column; gap:10px;}
   .gruppo-edit-row{
     display:flex;
@@ -2486,10 +2507,15 @@
           <input type="text" class="g-categoria" value="${g.categoria || ''}" placeholder="Categoria (badge)">
           <input type="text" class="g-coach" value="${g.coach || ''}" placeholder="Allenatore/i">
           <span class="g-conteggio">${conteggi[id] || 0} atleti</span>
-          <button type="button" class="btn-secondary g-copia-id" data-id="${id}" title="Copia l'ID, serve per collegare l'account allenatore">ID: ${id}</button>
           <button type="button" class="btn-secondary g-salva">Salva</button>
           <button type="button" class="btn-remove g-elimina">Elimina</button>
         </div>
+        <details class="id-gruppo-tendina">
+          <summary>ID gruppo (solo per creare l'account allenatore su Firebase)</summary>
+          <button type="button" class="g-copia-id-link" data-id="${id}" title="Copia l'ID, serve solo per collegare l'account allenatore">
+            📋 Copia ID gruppo
+          </button>
+        </details>
         <div style="margin:4px 0 14px;">
           <button type="button" class="btn-secondary g-discipline-toggle" data-id="${id}">
             🎯 Discipline consentite ${consentite.length ? `(${consentite.length})` : '(tutte)'}
@@ -2504,19 +2530,22 @@
       `;
     }).join('');
 
-    list.querySelectorAll('.gruppo-edit-row').forEach(row => {
-      const id = row.dataset.id;
-      row.querySelector('.g-copia-id').addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
+    list.querySelectorAll('.g-copia-id-link').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const originale = btn.innerHTML;
         try{
           await navigator.clipboard.writeText(id);
-          const originale = btn.textContent;
-          btn.textContent = "Copiato ✓";
-          setTimeout(() => { btn.textContent = originale; }, 1500);
+          btn.innerHTML = "✓ ID copiato";
+          setTimeout(() => { btn.innerHTML = originale; }, 1500);
         } catch(err){
           alert('ID gruppo: ' + id);
         }
       });
+    });
+
+    list.querySelectorAll('.gruppo-edit-row').forEach(row => {
+      const id = row.dataset.id;
       row.querySelector('.g-colore').addEventListener('change', async (e) => {
         await updateDoc(doc(db,'gruppi', id), { colore: e.target.value });
       });
