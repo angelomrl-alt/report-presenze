@@ -1856,12 +1856,13 @@
 
     // Riepilogo ultima giornata di gare
     const ultimaGiornataCont = document.getElementById('ultima-giornata-gare');
-    const dateConRisultati = snapRisultati.docs.map(d => d.data().data).filter(Boolean).sort();
+    const risultatiConPosizione = snapRisultati.docs.map(d => d.data()).filter(r => r.data && r.piazzamento);
+    const dateConRisultati = risultatiConPosizione.map(r => r.data).sort();
     const ultimaData = dateConRisultati.length ? dateConRisultati[dateConRisultati.length - 1] : null;
     if(!ultimaData){
-      ultimaGiornataCont.innerHTML = '<p class="empty-note">Nessuna gara registrata ancora.</p>';
+      ultimaGiornataCont.innerHTML = '<p class="empty-note">Nessun risultato con posizione registrato ancora.</p>';
     } else {
-      const risultatiUltimaData = snapRisultati.docs.map(d => d.data()).filter(r => r.data === ultimaData);
+      const risultatiUltimaData = risultatiConPosizione.filter(r => r.data === ultimaData);
       const perGara = new Map(); // nomeGara -> {luogo, righe:[]}
       risultatiUltimaData.forEach(r => {
         const chiave = r.gara || '—';
