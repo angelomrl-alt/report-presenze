@@ -1362,9 +1362,9 @@
         </div>
         <div style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center;">
           <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:140px; min-width:0; flex:1 1 auto;">
-            <option value="">👥 Scegli gruppo ▾</option>
+            <option value="">👥 Squadre ▾</option>
           </select>
-          <div class="gestione-dropdown-wrap" style="flex-shrink:0;">
+          <div class="gestione-dropdown-wrap" style="flex-shrink:0; margin-left:14px;">
             <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
             <div class="gestione-menu" id="gestione-menu">
               <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
@@ -1544,7 +1544,7 @@
       </div>
 
       <div style="margin-bottom:20px;">
-        <button type="button" class="btn-remove" id="importa-svuota-btn">🗑️ Svuota presenze e gare di questo gruppo</button>
+        <button type="button" class="btn-remove" id="importa-svuota-btn">🗑️ Svuota presenze, gare e risultati di questo gruppo</button>
         <span id="importa-svuota-feedback" class="save-feedback"></span>
         <p class="empty-note" style="margin-top:6px;">Usalo se hai dati di prova da pulire prima di importare lo storico vero. Cancella solo il gruppo selezionato sopra.</p>
       </div>
@@ -2023,7 +2023,7 @@
     // --- Dropdown selettore gruppo + dettaglio ---
     const select = document.getElementById('admin-gruppo-select');
     const valorePrecedente = select.value;
-    select.innerHTML = '<option value="">👥 Scegli gruppo ▾</option>' +
+    select.innerHTML = '<option value="">👥 Squadre ▾</option>' +
       Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
     select.value = (valorePrecedente && GRUPPI[valorePrecedente]) ? valorePrecedente : '';
 
@@ -3523,7 +3523,7 @@
     const gruppoId = document.getElementById('importa-gruppo').value;
     const nomeGruppo = GRUPPI[gruppoId] ? GRUPPI[gruppoId].nome : gruppoId;
     const feedback = document.getElementById('importa-svuota-feedback');
-    if(!confirm(`Eliminare TUTTE le presenze e le gare già registrate per "${nomeGruppo}"? Questa azione non si può annullare.`)) return;
+    if(!confirm(`Eliminare TUTTE le presenze, le gare e i risultati già registrati per "${nomeGruppo}"? Questa azione non si può annullare.`)) return;
 
     const btn = this;
     btn.disabled = true;
@@ -3537,7 +3537,11 @@
       const snapG = await getDocs(qG);
       await Promise.all(snapG.docs.map(d => deleteDoc(doc(db,'gare', d.id))));
 
-      feedback.textContent = `Eliminate ${snapP.size} presenze e ${snapG.size} gare di "${nomeGruppo}". Ora puoi importare il CSV.`;
+      const qR = query(collection(db,'risultati'), where('gruppoId','==', gruppoId));
+      const snapR = await getDocs(qR);
+      await Promise.all(snapR.docs.map(d => deleteDoc(doc(db,'risultati', d.id))));
+
+      feedback.textContent = `Eliminate ${snapP.size} presenze, ${snapG.size} gare e ${snapR.size} risultati di "${nomeGruppo}". Ora puoi importare il CSV.`;
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore durante l'eliminazione: " + err.message;
