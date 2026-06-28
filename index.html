@@ -1420,6 +1420,11 @@
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
 
       <details class="report-section" style="margin-top:24px;">
+        <summary>📋 Categorie e allenatori</summary>
+        <div id="categorie-allenatori" style="padding-bottom:12px;"></div>
+      </details>
+
+      <details class="report-section" style="margin-top:24px;">
         <summary>📅 Ultima giornata di gare</summary>
         <div id="ultima-giornata-gare" style="padding-bottom:12px;"></div>
       </details>
@@ -1896,6 +1901,30 @@
     `;
 
     // Riepilogo ultima giornata di gare
+    // Categorie e allenatori
+    const catCont = document.getElementById('categorie-allenatori');
+    const idGruppiOrdinatiPerCat = Object.keys(GRUPPI).sort((a,b) => {
+      const ca = GRUPPI[a].categoria || '', cb = GRUPPI[b].categoria || '';
+      return ca.localeCompare(cb) || GRUPPI[a].nome.localeCompare(GRUPPI[b].nome);
+    });
+    if(idGruppiOrdinatiPerCat.length === 0){
+      catCont.innerHTML = '<p class="empty-note">Nessun gruppo ancora.</p>';
+    } else {
+      catCont.innerHTML = idGruppiOrdinatiPerCat.map(id => {
+        const g = GRUPPI[id];
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border);">
+            <span style="display:flex; align-items:center; gap:8px; font-size:13.5px;">
+              <span class="dot" style="background:${g.colore || '#3ecf8e'}; width:9px; height:9px; border-radius:50%; display:inline-block;"></span>
+              <strong>${g.nome}</strong>
+              ${g.categoria ? `<span style="font-size:11px; color:var(--text-dim); background:var(--surface-2); padding:2px 8px; border-radius:10px;">${g.categoria}</span>` : ''}
+            </span>
+            <span style="font-size:13px; color:var(--text-dim); text-align:right;">${g.coach || '—'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
     const ultimaGiornataCont = document.getElementById('ultima-giornata-gare');
     const risultatiConPosizione = snapRisultati.docs.map(d => d.data()).filter(r => r.data && r.piazzamento);
     const dateConRisultati = risultatiConPosizione.map(r => r.data).sort();
