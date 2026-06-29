@@ -1593,6 +1593,12 @@
         <p class="empty-note" style="margin-top:6px;">Usalo se hai dati di prova da pulire prima di importare lo storico vero. Cancella solo il gruppo selezionato sopra.</p>
       </div>
 
+      <div style="margin-bottom:20px; border-top:1px dashed var(--border-strong); padding-top:16px;">
+        <button type="button" class="btn-remove" id="importa-svuota-tutto-btn">🗑️ Svuota TUTTO (tutti i gruppi, anche dati orfani)</button>
+        <span id="importa-svuota-tutto-feedback" class="save-feedback"></span>
+        <p class="empty-note" style="margin-top:6px;">Cancella presenze, gare e risultati di TUTTI i gruppi, incluso ciò che non corrisponde più a nessun gruppo esistente. Usalo solo per la pulizia finale prima del lancio vero.</p>
+      </div>
+
       <div id="importa-anteprima"></div>
 
       <div class="save-bar" style="margin-top:16px;">
@@ -3626,6 +3632,33 @@
       await Promise.all(snapR.docs.map(d => deleteDoc(doc(db,'risultati', d.id))));
 
       feedback.textContent = `Eliminate ${snapP.size} presenze, ${snapG.size} gare e ${snapR.size} risultati di "${nomeGruppo}". Ora puoi importare il CSV.`;
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore durante l'eliminazione: " + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('importa-svuota-tutto-btn').addEventListener('click', async function(){
+    const feedback = document.getElementById('importa-svuota-tutto-feedback');
+    if(!confirm('Eliminare TUTTE le presenze, le gare e i risultati di TUTTI i gruppi (incluso ciò che non corrisponde più a nessun gruppo)? Questa azione non si può annullare.')) return;
+    if(!confirm('Sei sicuro? Stai per cancellare ASSOLUTAMENTE TUTTO lo storico di presenze, gare e risultati, di ogni squadra. Conferma di nuovo per procedere.')) return;
+
+    const btn = this;
+    btn.disabled = true;
+    feedback.textContent = "Eliminazione in corso…";
+    try{
+      const snapP = await getDocs(collection(db,'presenze'));
+      await Promise.all(snapP.docs.map(d => deleteDoc(doc(db,'presenze', d.id))));
+
+      const snapG = await getDocs(collection(db,'gare'));
+      await Promise.all(snapG.docs.map(d => deleteDoc(doc(db,'gare', d.id))));
+
+      const snapR = await getDocs(collection(db,'risultati'));
+      await Promise.all(snapR.docs.map(d => deleteDoc(doc(db,'risultati', d.id))));
+
+      feedback.textContent = `Eliminate ${snapP.size} presenze, ${snapG.size} gare e ${snapR.size} risultati in totale. Tutto pulito.`;
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore durante l'eliminazione: " + err.message;
