@@ -1205,6 +1205,9 @@
           <p>KPI, grafico mensile, podio e trend atleti.</p>
         </div>
       </div>
+
+      <h3 class="section-title" style="margin-top:28px;">📅 Prossimi eventi</h3>
+      <div id="coach-eventi-list"></div>
     </main>
   </section>
 
@@ -1421,6 +1424,32 @@
       <div id="admin-gruppo-detail"></div>
 
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
+
+      <h3 class="section-title" style="margin-top:28px;">📅 Prossimi eventi</h3>
+      <div id="admin-eventi-list" style="margin-bottom:14px;"></div>
+      <details class="report-section" style="margin-bottom:24px;">
+        <summary>+ Nuovo evento</summary>
+        <div style="padding-bottom:14px;">
+          <div class="risultato-grid" style="margin-bottom:12px;">
+            <div class="field-inline" style="flex:1 1 100%;">
+              <label for="evento-nuovo-nome">Nome evento</label>
+              <input type="text" id="evento-nuovo-nome" placeholder="es. Trofeo Atletica Silca">
+            </div>
+            <div class="field-inline" style="flex:1 1 100%;">
+              <label for="evento-nuovo-data">Data</label>
+              <input type="date" id="evento-nuovo-data">
+            </div>
+            <div class="field-inline" style="flex:1 1 100%;">
+              <label for="evento-nuovo-luogo">Luogo</label>
+              <input type="text" id="evento-nuovo-luogo" placeholder="es. Campo scuola Conegliano">
+            </div>
+          </div>
+          <div class="save-bar">
+            <button type="button" id="evento-crea-btn" class="btn-primary" style="width:auto; padding:13px 28px;">+ Crea evento</button>
+            <span id="evento-crea-feedback" class="save-feedback"></span>
+          </div>
+        </div>
+      </details>
 
       <details class="report-section" style="margin-top:24px;">
         <summary>📅 Ultima giornata di gare</summary>
@@ -1779,6 +1808,131 @@
       }
     });
   }
+
+  // --- Eventi della società: mostrati inline nella Home (società e allenatori) ---
+  let eventiDocs = [];
+  let eventiListenerAvviato = false;
+  function avviaListenerEventi(){
+    if(eventiListenerAvviato) return;
+    eventiListenerAvviato = true;
+    onSnapshot(collection(db,'eventi'), snap => {
+      const oggi = new Date().toISOString().slice(0,10);
+      eventiDocs = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+        .filter(ev => !ev.data || ev.data >= oggi)
+        .sort((a,b) => (a.data||'').localeCompare(b.data||''));
+      renderEventiInline('admin-eventi-list', true);
+      renderEventiInline('coach-eventi-list', false);
+    });
+  }
+
+  function renderEventiInline(contId, modificabile){
+    const cont = document.getElementById(contId);
+    if(!cont) return;
+    if(eventiDocs.length === 0){
+      cont.innerHTML = '<p class="empty-note">Nessun evento in programma al momento.</p>';
+      return;
+    }
+    cont.innerHTML = eventiDocs.map(ev => {
+      const dataLabel = ev.data ? new Date(ev.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' }) : 'Data da definire';
+      const programma = (ev.programma || []).slice().sort((a,b) => (a.orario||'').localeCompare(b.orario||''));
+      const programmaHtml = programma.length === 0
+        ? '<p class="empty-note">Nessuna voce nel programma ancora.</p>'
+        : programma.map((r,i) => `
+            <div class="risultato-row" style="margin-bottom:6px;">
+              <span class="principale"><strong>${r.orario || '—'}</strong> · ${r.testo}</span>
+              ${modificabile ? `<button type="button" class="btn-remove evento-prog-remove" data-ev="${ev.id}" data-idx="${i}">Rimuovi</button>` : ''}
+            </div>
+          `).join('');
+      const formAggiungi = modificabile ? `
+        <div class="risultato-grid" style="margin:12px 0;">
+          <div class="field-inline" style="flex:0 0 110px;">
+            <label>Orario</label>
+            <input type="time" class="evento-prog-orario-input" data-ev="${ev.id}">
+          </div>
+          <div class="field-inline" style="flex:1 1 200px;">
+            <label>Cosa</label>
+            <input type="text" class="evento-prog-testo-input" data-ev="${ev.id}" placeholder="es. Batteria 100m Cadetti">
+          </div>
+          <div class="field-inline" style="flex:0 0 auto; justify-content:flex-end;">
+            <label style="visibility:hidden;">.</label>
+            <button type="button" class="btn-secondary evento-prog-aggiungi-btn" data-ev="${ev.id}">+ Aggiungi</button>
+          </div>
+        </div>
+        <button type="button" class="btn-remove evento-elimina-btn" data-ev="${ev.id}" data-nome="${ev.nome || ''}" style="margin-top:6px;">🗑️ Elimina evento</button>
+      ` : '';
+      return `
+        <details class="report-section" style="margin-bottom:10px;">
+          <summary>
+            ${ev.nome || 'Evento senza nome'}
+            <span style="display:block; font-size:12px; color:var(--text-dim); font-weight:400; margin-top:2px;">
+              ${dataLabel}${ev.luogo ? ' · 📍 ' + ev.luogo : ''}
+            </span>
+          </summary>
+          <div style="padding-bottom:10px;">
+            ${programmaHtml}
+            ${formAggiungi}
+          </div>
+        </details>
+      `;
+    }).join('');
+
+    cont.querySelectorAll('.evento-prog-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const ev = eventiDocs.find(e => e.id === btn.dataset.ev);
+        if(!ev) return;
+        const programma = (ev.programma || []).slice().sort((a,b) => (a.orario||'').localeCompare(b.orario||''));
+        programma.splice(parseInt(btn.dataset.idx,10), 1);
+        await updateDoc(doc(db,'eventi', ev.id), { programma });
+      });
+    });
+
+    cont.querySelectorAll('.evento-prog-aggiungi-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const evId = btn.dataset.ev;
+        const orarioInput = cont.querySelector(`.evento-prog-orario-input[data-ev="${evId}"]`);
+        const testoInput = cont.querySelector(`.evento-prog-testo-input[data-ev="${evId}"]`);
+        const testo = testoInput.value.trim();
+        if(!testo) return;
+        const ev = eventiDocs.find(e => e.id === evId);
+        const nuovoProgramma = [...(ev.programma || []), { orario: orarioInput.value, testo }];
+        await updateDoc(doc(db,'eventi', evId), { programma: nuovoProgramma });
+      });
+    });
+
+    cont.querySelectorAll('.evento-elimina-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm(`Eliminare l'evento "${btn.dataset.nome}" e tutto il suo programma? Non si può annullare.`)) return;
+        await deleteDoc(doc(db,'eventi', btn.dataset.ev));
+      });
+    });
+  }
+
+  document.getElementById('evento-crea-btn')?.addEventListener('click', async function(){
+    const nome = document.getElementById('evento-nuovo-nome').value.trim();
+    const data = document.getElementById('evento-nuovo-data').value;
+    const luogo = document.getElementById('evento-nuovo-luogo').value.trim();
+    const feedback = document.getElementById('evento-crea-feedback');
+    if(!nome){
+      feedback.textContent = "Scrivi almeno il nome dell'evento.";
+      return;
+    }
+    const btn = this;
+    btn.disabled = true;
+    feedback.textContent = "Creazione in corso…";
+    try{
+      await addDoc(collection(db,'eventi'), { nome, data, luogo, programma: [], creatoIl: serverTimestamp() });
+      document.getElementById('evento-nuovo-nome').value = '';
+      document.getElementById('evento-nuovo-data').value = '';
+      document.getElementById('evento-nuovo-luogo').value = '';
+      feedback.textContent = "Evento creato ✓";
+      setTimeout(() => { feedback.textContent = ''; }, 2000);
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore: " + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   function statoCertificato(dataStr){
     if(!dataStr) return { stato: 'mancante', testo: '' };
@@ -3118,6 +3272,7 @@
     }
     avviaListenerGruppi();
     avviaListenerImpostazioni();
+    avviaListenerEventi();
     await gruppiPronti;
     try{
       const snap = await getDoc(doc(db, "utenti", user.uid));
@@ -3335,6 +3490,7 @@
 
   // --- Navigazione Report del gruppo ---
   document.getElementById('card-report').addEventListener('click', apriReport);
+
   document.getElementById('back-to-coach-from-report').addEventListener('click', () => {
     if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
     if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
