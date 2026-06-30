@@ -1417,6 +1417,7 @@
               <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
               <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
               <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
+              <button type="button" id="btn-crea-evento">📅 Crea evento</button>
               <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
             </div>
           </div>
@@ -1426,32 +1427,6 @@
       <div id="admin-gruppo-detail"></div>
 
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
-
-      <h3 class="section-title" style="margin-top:28px;">📅 Prossimi eventi</h3>
-      <div id="admin-eventi-list" style="margin-bottom:14px;"></div>
-      <details class="report-section" style="margin-bottom:24px;">
-        <summary>+ Nuovo evento</summary>
-        <div style="padding-bottom:14px;">
-          <div class="risultato-grid" style="margin-bottom:12px;">
-            <div class="field-inline" style="flex:1 1 100%;">
-              <label for="evento-nuovo-nome">Nome evento</label>
-              <input type="text" id="evento-nuovo-nome" placeholder="es. Trofeo Atletica Silca">
-            </div>
-            <div class="field-inline" style="flex:1 1 100%;">
-              <label for="evento-nuovo-data">Data</label>
-              <input type="date" id="evento-nuovo-data">
-            </div>
-            <div class="field-inline" style="flex:1 1 100%;">
-              <label for="evento-nuovo-luogo">Luogo</label>
-              <input type="text" id="evento-nuovo-luogo" placeholder="es. Campo scuola Conegliano">
-            </div>
-          </div>
-          <div class="save-bar">
-            <button type="button" id="evento-crea-btn" class="btn-primary" style="width:auto; padding:13px 28px;">+ Crea evento</button>
-            <span id="evento-crea-feedback" class="save-feedback"></span>
-          </div>
-        </div>
-      </details>
 
       <details class="report-section" style="margin-top:24px;">
         <summary>📅 Ultima giornata di gare</summary>
@@ -1472,6 +1447,11 @@
           <h3 class="section-title" style="margin-top:24px;">Confronto gare tra i gruppi</h3>
           <div id="chart-confronto-gare" class="chart-confronto-wrap"></div>
         </div>
+      </details>
+
+      <details class="report-section" style="margin-top:24px;">
+        <summary>📅 Prossimi eventi</summary>
+        <div id="admin-eventi-list" style="padding-bottom:12px;"></div>
       </details>
     </main>
   </section>
@@ -1662,6 +1642,40 @@
       <div class="save-bar" style="margin-top:16px;">
         <button type="button" id="impostazioni-salva-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva</button>
         <span id="impostazioni-feedback" class="save-feedback"></span>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===================== CREA EVENTO (Società) ===================== -->
+  <section id="view-crea-evento" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-admin-from-evento" aria-label="Torna alla home">←</button>
+        🏃 Atletica Silca <span class="role-tag">Nuovo evento</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2>Crea evento</h2>
+      <p class="sub">Manifestazione organizzata da noi: programma e orari della giornata si aggiungono dopo, dalla tendina "Prossimi eventi" in fondo alla Home.</p>
+
+      <div class="risultato-grid" style="margin-bottom:16px;">
+        <div class="field-inline" style="flex:1 1 100%;">
+          <label for="evento-nuovo-nome">Nome evento</label>
+          <input type="text" id="evento-nuovo-nome" placeholder="es. Trofeo Atletica Silca">
+        </div>
+        <div class="field-inline" style="flex:1 1 100%;">
+          <label for="evento-nuovo-data">Data</label>
+          <input type="date" id="evento-nuovo-data">
+        </div>
+        <div class="field-inline" style="flex:1 1 100%;">
+          <label for="evento-nuovo-luogo">Luogo</label>
+          <input type="text" id="evento-nuovo-luogo" placeholder="es. Campo scuola Conegliano">
+        </div>
+      </div>
+      <div class="save-bar">
+        <button type="button" id="evento-crea-btn" class="btn-primary" style="width:auto; padding:13px 28px;">+ Crea evento</button>
+        <span id="evento-crea-feedback" class="save-feedback"></span>
       </div>
     </main>
   </section>
@@ -3738,6 +3752,19 @@
     showView('view-impostazioni');
   });
   document.getElementById('back-to-admin-from-impostazioni').addEventListener('click', () => {
+    showView('view-admin');
+  });
+
+  // --- Navigazione Crea evento (Società) ---
+  document.getElementById('btn-crea-evento').addEventListener('click', () => {
+    document.getElementById('gestione-menu').classList.remove('open');
+    document.getElementById('evento-nuovo-nome').value = '';
+    document.getElementById('evento-nuovo-data').value = '';
+    document.getElementById('evento-nuovo-luogo').value = '';
+    document.getElementById('evento-crea-feedback').textContent = '';
+    showView('view-crea-evento');
+  });
+  document.getElementById('back-to-admin-from-evento').addEventListener('click', () => {
     showView('view-admin');
   });
   document.getElementById('impostazioni-salva-btn').addEventListener('click', async function(){
