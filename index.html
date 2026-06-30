@@ -351,8 +351,8 @@
     .admin-gruppo-select{
       width:100%;
       height:40px;
-      padding:0 8px;
-      font-size:12px;
+      padding:0 4px;
+      font-size:10.5px;
       text-align:center;
       text-align-last:center;
       max-width:none !important;
@@ -1444,9 +1444,14 @@
     <header class="topbar">
       <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Società</span></div>
       <button class="btn-logout" data-logout>Esci</button>
-      <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:140px; min-width:0;">
-        <option value="">👥 Squadre ▾</option>
-      </select>
+      <div class="account-dropdown-wrap">
+        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
+        <div class="account-menu">
+          <button type="button" class="account-menu-password">🔑 Cambia password</button>
+          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
+          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
+        </div>
+      </div>
       <div class="gestione-dropdown-wrap">
         <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
         <div class="gestione-menu" id="gestione-menu">
@@ -1457,14 +1462,9 @@
           <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
         </div>
       </div>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:140px; min-width:0;">
+        <option value="">👥 Squadre ▾</option>
+      </select>
     </header>
     <main>
       <h2 style="margin-bottom:20px;">Andamento società</h2>
