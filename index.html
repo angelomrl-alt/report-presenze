@@ -1859,22 +1859,8 @@
               ${modificabile ? `<button type="button" class="btn-remove evento-prog-remove" data-ev="${ev.id}" data-idx="${i}">Rimuovi</button>` : ''}
             </div>
           `).join('');
-      const formAggiungi = modificabile ? `
-        <div class="risultato-grid" style="margin:12px 0;">
-          <div class="field-inline" style="flex:0 0 110px;">
-            <label>Orario</label>
-            <input type="time" class="evento-prog-orario-input" data-ev="${ev.id}">
-          </div>
-          <div class="field-inline" style="flex:1 1 200px;">
-            <label>Cosa</label>
-            <input type="text" class="evento-prog-testo-input" data-ev="${ev.id}" placeholder="es. Batteria 100m Cadetti">
-          </div>
-          <div class="field-inline" style="flex:0 0 auto; justify-content:flex-end;">
-            <label style="visibility:hidden;">.</label>
-            <button type="button" class="btn-secondary evento-prog-aggiungi-btn" data-ev="${ev.id}">+ Aggiungi</button>
-          </div>
-        </div>
-        <button type="button" class="btn-remove evento-elimina-btn" data-ev="${ev.id}" data-nome="${ev.nome || ''}" style="margin-top:6px;">🗑️ Elimina evento</button>
+      const eliminaBtn = modificabile ? `
+        <button type="button" class="btn-remove evento-elimina-btn" data-ev="${ev.id}" data-nome="${ev.nome || ''}" style="margin-top:10px;">🗑️ Elimina evento</button>
       ` : '';
       return `
         <details class="report-section" style="margin-bottom:10px;">
@@ -1886,7 +1872,7 @@
           </summary>
           <div style="padding-bottom:10px;">
             ${programmaHtml}
-            ${formAggiungi}
+            ${eliminaBtn}
           </div>
         </details>
       `;
@@ -1899,19 +1885,6 @@
         const programma = (ev.programma || []).slice().sort((a,b) => (a.orario||'').localeCompare(b.orario||''));
         programma.splice(parseInt(btn.dataset.idx,10), 1);
         await updateDoc(doc(db,'eventi', ev.id), { programma });
-      });
-    });
-
-    cont.querySelectorAll('.evento-prog-aggiungi-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const evId = btn.dataset.ev;
-        const orarioInput = cont.querySelector(`.evento-prog-orario-input[data-ev="${evId}"]`);
-        const testoInput = cont.querySelector(`.evento-prog-testo-input[data-ev="${evId}"]`);
-        const testo = testoInput.value.trim();
-        if(!testo) return;
-        const ev = eventiDocs.find(e => e.id === evId);
-        const nuovoProgramma = [...(ev.programma || []), { orario: orarioInput.value, testo }];
-        await updateDoc(doc(db,'eventi', evId), { programma: nuovoProgramma });
       });
     });
 
