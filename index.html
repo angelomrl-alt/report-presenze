@@ -60,7 +60,7 @@
     --btn-shadow-active:0 1px 2px rgba(0,0,0,.4);
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0; -webkit-text-size-adjust:100%; text-size-adjust:100%;}
   body{
     font-family:'Inter',system-ui,-apple-system,sans-serif;
     background:var(--bg-track);
@@ -357,6 +357,8 @@
       text-align-last:center;
       max-width:none !important;
       box-sizing:border-box;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
     }
   }
   .btn-logout{
