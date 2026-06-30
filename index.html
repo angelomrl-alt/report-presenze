@@ -1410,6 +1410,19 @@
     <header class="topbar">
       <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Società</span></div>
       <button class="btn-logout" data-logout>Esci</button>
+      <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:140px; min-width:0; width:auto;">
+        <option value="">👥 Squadre ▾</option>
+      </select>
+      <div class="gestione-dropdown-wrap">
+        <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
+        <div class="gestione-menu" id="gestione-menu">
+          <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
+          <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
+          <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
+          <button type="button" id="btn-crea-evento">📅 Crea evento</button>
+          <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
+        </div>
+      </div>
       <div class="account-dropdown-wrap">
         <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
         <div class="account-menu">
@@ -1420,27 +1433,7 @@
       </div>
     </header>
     <main>
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-        <div>
-          <h2>Andamento società</h2>
-          <p class="sub">Confronta i gruppi nei grafici, poi scegli un gruppo dal menu per i suoi dettagli.</p>
-        </div>
-        <div style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center;">
-          <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:140px; min-width:0; flex:1 1 auto;">
-            <option value="">👥 Squadre ▾</option>
-          </select>
-          <div class="gestione-dropdown-wrap" style="flex-shrink:0; margin-left:14px;">
-            <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
-            <div class="gestione-menu" id="gestione-menu">
-              <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
-              <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
-              <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
-              <button type="button" id="btn-crea-evento">📅 Crea evento</button>
-              <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <h2 style="margin-bottom:20px;">Andamento società</h2>
 
       <div id="admin-gruppo-detail"></div>
 
