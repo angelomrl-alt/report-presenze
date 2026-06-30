@@ -263,8 +263,8 @@
   .btn-secondary{
     background:var(--surface-2);
     color:var(--text);
-    border:1px solid #343c4a;
-    border-radius:10px;
+    border:1px solid var(--border-strong);
+    border-radius:12px;
     padding:12px 18px;
     font-size:14px;
     font-weight:600;
@@ -272,7 +272,7 @@
     cursor:pointer;
     white-space:nowrap;
   }
-  .btn-secondary:hover{border-color:#4a5468;}
+  .btn-secondary:hover{border-color:var(--border-hover);}
 
   .help-text{
     margin-top:24px;
@@ -495,7 +495,7 @@
     max-width:420px;
     padding:12px 14px;
     border:1.5px solid var(--border-strong);
-    border-radius:10px;
+    border-radius:12px;
     font-size:15px;
     font-family:'Inter',sans-serif;
     background:var(--surface);
@@ -995,8 +995,8 @@
 
   /* KPI più piccoli, sempre in una sola riga di 3, solo nella Home Società */
   #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:8px;}
-  #admin-kpi-grid .kpi-card{padding:12px 10px; gap:2px;}
-  #admin-kpi-grid .kpi-value{font-size:21px;}
+  #admin-kpi-grid .kpi-card{padding:14px 8px; gap:3px; align-items:center; text-align:center; border-radius:12px; border-color:var(--border);}
+  #admin-kpi-grid .kpi-value{font-size:22px;}
   #admin-kpi-grid .kpi-label{font-size:10px;}
   #admin-kpi-grid .kpi-medaglie{gap:5px; font-size:12px;}
 
