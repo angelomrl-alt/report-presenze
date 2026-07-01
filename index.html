@@ -1990,6 +1990,12 @@
   function showView(id){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    if(id === 'view-admin'){
+      document.getElementById('view-admin').querySelectorAll('details').forEach(d => d.removeAttribute('open'));
+      squadreGruppoSelezionato = '';
+      document.getElementById('btn-squadre-toggle').textContent = '👥 Squadre ▾';
+      document.getElementById('admin-gruppo-detail').innerHTML = '';
+    }
   }
 
   // Corregge il nome di un atleta e allinea anche presenze e risultati già registrati con il nome vecchio
@@ -3388,6 +3394,22 @@
       if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
       if(risultatiDisciplineUnsub) { risultatiDisciplineUnsub(); risultatiDisciplineUnsub = null; }
       if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
+
+      // Reset stato globale
+      currentGruppoId = null;
+      currentRuolo = null;
+      squadreGruppoSelezionato = '';
+      GRUPPI = {};
+      gruppiListenerAvviato = false;
+      impostazioniListenerAvviato = false;
+      eventiListenerAvviato = false;
+      primaVoltaGruppi = true;
+
+      // Reset UI: chiude tutti i menu aperti, torna alla schermata login
+      document.querySelectorAll('.gestione-menu, .account-menu, .squadre-menu').forEach(m => m.classList.remove('open'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-loading').classList.add('active');
+
       await signOut(auth);
       document.getElementById('login-form').reset();
     });
