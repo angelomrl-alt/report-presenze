@@ -1464,9 +1464,10 @@
           <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
         </div>
       </div>
-      <select id="admin-gruppo-select" class="admin-gruppo-select" style="max-width:140px; min-width:0;">
-        <option value="">👥 Squadre ▾</option>
-      </select>
+      <div class="gestione-dropdown-wrap" id="squadre-dropdown-wrap">
+        <button type="button" class="btn-secondary" id="btn-squadre-toggle">👥 Squadre ▾</button>
+        <div class="gestione-menu" id="squadre-menu"></div>
+      </div>
     </header>
     <main>
       <h2 style="margin-bottom:20px;">Andamento società</h2>
@@ -1824,6 +1825,7 @@
 
   let currentGruppoId = null;
   let currentRuolo = null;
+  let squadreGruppoSelezionato = '';
   let rosterDocs = [];           // [{id, nome}]
   let presenzaMap = new Map();   // atletaId -> bool (presente)
   let rosterUnsub = null;
@@ -2291,15 +2293,25 @@
     impostaGraficoConfronto('chart-confronto-allenamenti', mensileAllenamentiPerGruppo);
     impostaGraficoConfronto('chart-confronto-gare', mensileGareContiPerGruppo);
 
-    // --- Dropdown selettore gruppo + dettaglio ---
-    const select = document.getElementById('admin-gruppo-select');
-    const valorePrecedente = select.value;
-    select.innerHTML = '<option value="">👥 Squadre ▾</option>' +
-      Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
-    select.value = (valorePrecedente && GRUPPI[valorePrecedente]) ? valorePrecedente : '';
+    // --- Dropdown selettore gruppo custom (sostituisce <select> nativo) ---
+    const squadreMenu = document.getElementById('squadre-menu');
+    const squadreBtn = document.getElementById('btn-squadre-toggle');
+    const valorePrecedente = squadreGruppoSelezionato;
+
+    squadreMenu.innerHTML = `<button type="button" class="squadre-voce" data-id="">Tutti i gruppi</button>` +
+      Object.entries(GRUPPI).map(([id,g]) => `<button type="button" class="squadre-voce" data-id="${id}">${g.nome}</button>`).join('');
+
+    squadreMenu.querySelectorAll('.squadre-voce').forEach(btn => {
+      btn.addEventListener('click', () => {
+        squadreGruppoSelezionato = btn.dataset.id;
+        squadreBtn.textContent = btn.dataset.id ? (GRUPPI[btn.dataset.id]?.nome || '') + ' ▾' : '👥 Squadre ▾';
+        squadreMenu.classList.remove('open');
+        renderDettaglioGruppo();
+      });
+    });
 
     function renderDettaglioGruppo(){
-      const id = select.value;
+      const id = squadreGruppoSelezionato;
       const g = GRUPPI[id];
       const detailCont = document.getElementById('admin-gruppo-detail');
       if(!g){ detailCont.innerHTML = ''; return; }
@@ -2394,7 +2406,6 @@
       if(btnGestisci) btnGestisci.addEventListener('click', () => apriAdminRoster(btnGestisci.dataset.gruppo));
     }
     renderDettaglioGruppo();
-    select.onchange = renderDettaglioGruppo;
   }
 
   function renderRoster(){
@@ -3714,9 +3725,16 @@
   document.getElementById('btn-gestione-toggle').addEventListener('click', (e) => {
     e.stopPropagation();
     document.getElementById('gestione-menu').classList.toggle('open');
+    document.getElementById('squadre-menu').classList.remove('open');
+  });
+  document.getElementById('btn-squadre-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('squadre-menu').classList.toggle('open');
+    document.getElementById('gestione-menu').classList.remove('open');
   });
   document.addEventListener('click', () => {
     document.getElementById('gestione-menu').classList.remove('open');
+    document.getElementById('squadre-menu').classList.remove('open');
   });
 
   // --- Navigazione Gestione gruppi (Società) ---
