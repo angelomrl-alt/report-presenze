@@ -304,13 +304,27 @@
   }
   .account-dropdown-wrap, .gestione-dropdown-wrap{position:relative;}
   @media (max-width:480px){
-    .account-dropdown-wrap, .gestione-dropdown-wrap, #squadre-dropdown-wrap{position:relative;}
+    .account-dropdown-wrap, .gestione-dropdown-wrap, #squadre-dropdown-wrap{position:static;}
     .account-menu, .gestione-menu{
-      left:0;
-      right:auto;
-      min-width:220px;
+      position:fixed;
+      top:155px;
+      left:12px;
+      right:12px;
+      width:auto;
+      min-width:0;
+      border-radius:14px;
+      padding:8px;
+      z-index:600;
     }
   }
+  #menu-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.35);
+    z-index:550;
+  }
+  #menu-overlay.visible{display:block;}
   .topbar .brand-mini{
     font-family:'Oswald',sans-serif;
     font-size:20px;
@@ -480,6 +494,8 @@
     position:absolute;
     top:calc(100% + 6px);
     right:0;
+    left:auto;
+    bottom:auto;
     background:var(--surface);
     border:1px solid var(--border-strong);
     border-radius:10px;
@@ -3454,12 +3470,11 @@
       e.stopPropagation();
       const menu = btn.nextElementSibling;
       document.querySelectorAll('.account-menu, .gestione-menu').forEach(m => { if(m !== menu) m.classList.remove('open'); });
-      menu.classList.toggle('open');
+      const isOpen = menu.classList.toggle('open');
+      menuOverlay.classList.toggle('visible', isOpen);
     });
   });
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
-  });
+  document.addEventListener('click', chiudiTuttiMenu);
   document.querySelectorAll('.account-menu-password').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
@@ -3753,21 +3768,29 @@
   document.getElementById('presenze-data').addEventListener('change', controllaRegistrazioneEsistente);
   document.getElementById('presenze-data').addEventListener('input', controllaRegistrazioneEsistente);
 
+  const menuOverlay = document.getElementById('menu-overlay');
+  function chiudiTuttiMenu(){
+    document.getElementById('gestione-menu').classList.remove('open');
+    document.getElementById('squadre-menu')?.classList.remove('open');
+    document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
+    menuOverlay.classList.remove('visible');
+  }
+  menuOverlay.addEventListener('click', chiudiTuttiMenu);
+
   // --- Menu a tendina "Gestione" (Società) ---
   document.getElementById('btn-gestione-toggle').addEventListener('click', (e) => {
     e.stopPropagation();
-    document.getElementById('gestione-menu').classList.toggle('open');
-    document.getElementById('squadre-menu').classList.remove('open');
+    const isOpen = document.getElementById('gestione-menu').classList.toggle('open');
+    document.getElementById('squadre-menu')?.classList.remove('open');
+    menuOverlay.classList.toggle('visible', isOpen);
   });
   document.getElementById('btn-squadre-toggle').addEventListener('click', (e) => {
     e.stopPropagation();
-    document.getElementById('squadre-menu').classList.toggle('open');
+    const isOpen = document.getElementById('squadre-menu').classList.toggle('open');
     document.getElementById('gestione-menu').classList.remove('open');
+    menuOverlay.classList.toggle('visible', isOpen);
   });
-  document.addEventListener('click', () => {
-    document.getElementById('gestione-menu').classList.remove('open');
-    document.getElementById('squadre-menu').classList.remove('open');
-  });
+  document.addEventListener('click', chiudiTuttiMenu);
 
   // --- Navigazione Gestione gruppi (Società) ---
   document.getElementById('btn-gestisci-gruppi').addEventListener('click', () => {
@@ -4114,5 +4137,6 @@
   });
 </script>
 
+<div id="menu-overlay"></div>
 </body>
 </html>
