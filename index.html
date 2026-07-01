@@ -325,6 +325,74 @@
     z-index:550;
   }
   #menu-overlay.visible{display:block;}
+  #side-panel{
+    position:fixed;
+    top:0;
+    right:-320px;
+    width:300px;
+    max-width:85vw;
+    height:100%;
+    background:var(--surface);
+    border-left:1px solid var(--border);
+    z-index:600;
+    transition:right .25s ease;
+    overflow-y:auto;
+    padding:0;
+  }
+  #side-panel.open{right:0;}
+  #side-panel-content{padding:20px 16px;}
+  .side-panel-title{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin:18px 0 8px;
+    padding-bottom:4px;
+    border-bottom:1px solid var(--border);
+  }
+  .side-panel-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    padding:13px 10px;
+    background:none;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-family:'Inter',sans-serif;
+    color:var(--text);
+    cursor:pointer;
+    text-align:left;
+    box-shadow:none;
+  }
+  .side-panel-btn:hover{background:var(--hover-bg);}
+  .side-panel-select{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid var(--border-strong);
+    border-radius:10px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+    background:var(--surface-2);
+    color:var(--text);
+    margin-bottom:8px;
+  }
+  .side-panel-close{
+    display:flex;
+    justify-content:flex-end;
+    padding:16px 16px 0;
+  }
+  .side-panel-close button{
+    background:none;
+    border:none;
+    font-size:22px;
+    cursor:pointer;
+    color:var(--text-dim);
+    box-shadow:none;
+    padding:4px 8px;
+  }
   .topbar .brand-mini{
     font-family:'Oswald',sans-serif;
     font-size:20px;
@@ -1256,14 +1324,7 @@
     <header class="topbar">
       <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Allenatore</span></div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <h2 id="coach-group-name">—</h2>
@@ -1318,14 +1379,7 @@
         🏃 Atletica Silca <span class="role-tag">Presenze</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <h2 id="presenze-group-name">—</h2>
@@ -1369,14 +1423,7 @@
         🏃 Atletica Silca <span class="role-tag">Report</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <span class="categoria-badge" id="report-categoria">—</span>
@@ -1415,14 +1462,7 @@
         🏃 Atletica Silca <span class="role-tag">Gara</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <h2 id="risultati-group-name">—</h2>
@@ -1472,28 +1512,7 @@
     <header class="topbar">
       <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Società</span></div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
-      <div class="gestione-dropdown-wrap">
-        <button type="button" class="btn-secondary" id="btn-gestione-toggle">⚙️ Gestione ▾</button>
-        <div class="gestione-menu" id="gestione-menu">
-          <button type="button" id="btn-gestisci-gruppi">🗂️ Gestisci gruppi</button>
-          <button type="button" id="btn-gestisci-discipline">⚙️ Gestisci discipline gara</button>
-          <button type="button" id="btn-importa-storico">📥 Importa storico (CSV)</button>
-          <button type="button" id="btn-crea-evento">📅 Crea evento</button>
-          <button type="button" id="btn-impostazioni">🔧 Impostazioni</button>
-        </div>
-      </div>
-      <div class="gestione-dropdown-wrap" id="squadre-dropdown-wrap">
-        <button type="button" class="btn-secondary" id="btn-squadre-toggle">👥 Squadre ▾</button>
-        <div class="gestione-menu" id="squadre-menu"></div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <h2 style="margin-bottom:20px;">Andamento società</h2>
@@ -1542,14 +1561,7 @@
         🏃 Atletica Silca <span class="role-tag">Gruppi</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <h2>Gestione gruppi</h2>
@@ -1577,14 +1589,7 @@
         🏃 Atletica Silca <span class="role-tag">Discipline</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <h2>Discipline gara</h2>
@@ -1618,14 +1623,7 @@
         🏃 Atletica Silca <span class="role-tag">Gestione atleti</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
-      <div class="account-dropdown-wrap">
-        <button type="button" class="btn-logout btn-account-toggle">☰ Menu</button>
-        <div class="account-menu">
-          <button type="button" class="account-menu-password">🔑 Cambia password</button>
-          <button type="button" class="account-menu-guida">❓ Come funziona l'app</button>
-          <button type="button" class="account-menu-tema">🌙 Tema scuro</button>
-        </div>
-      </div>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
       <h2 id="admin-roster-group-name">—</h2>
@@ -2019,7 +2017,6 @@
     if(id === 'view-admin'){
       document.getElementById('view-admin').querySelectorAll('details').forEach(d => d.removeAttribute('open'));
       squadreGruppoSelezionato = '';
-      document.getElementById('btn-squadre-toggle').textContent = '👥 Squadre ▾';
       document.getElementById('admin-gruppo-detail').innerHTML = '';
     }
   }
@@ -2324,23 +2321,7 @@
     }
     impostaGraficoConfronto('chart-confronto-allenamenti', mensileAllenamentiPerGruppo);
     impostaGraficoConfronto('chart-confronto-gare', mensileGareContiPerGruppo);
-
-    // --- Dropdown selettore gruppo custom (sostituisce <select> nativo) ---
-    const squadreMenu = document.getElementById('squadre-menu');
-    const squadreBtn = document.getElementById('btn-squadre-toggle');
-    const valorePrecedente = squadreGruppoSelezionato;
-
-    squadreMenu.innerHTML = `<button type="button" class="squadre-voce" data-id="">Tutti i gruppi</button>` +
-      Object.entries(GRUPPI).map(([id,g]) => `<button type="button" class="squadre-voce" data-id="${id}">${g.nome}</button>`).join('');
-
-    squadreMenu.querySelectorAll('.squadre-voce').forEach(btn => {
-      btn.addEventListener('click', () => {
-        squadreGruppoSelezionato = btn.dataset.id;
-        squadreBtn.textContent = btn.dataset.id ? (GRUPPI[btn.dataset.id]?.nome || '') + ' ▾' : '👥 Squadre ▾';
-        squadreMenu.classList.remove('open');
-        renderDettaglioGruppo();
-      });
-    });
+    aggiornaPannelloSquadre();
 
     function renderDettaglioGruppo(){
       const id = squadreGruppoSelezionato;
@@ -3464,22 +3445,105 @@
 
   let vistaPrimaGuida = 'view-coach';
 
-  // --- Menu account (Password + Guida), presente in ogni schermata ---
-  document.querySelectorAll('.btn-account-toggle').forEach(btn => {
+  // --- Pannello laterale ☰ ---
+  const sidePanel = document.getElementById('side-panel');
+  const sidePanelContent = document.getElementById('side-panel-content');
+  const menuOverlay = document.getElementById('menu-overlay');
+
+  function chiudiPannello(){
+    sidePanel.classList.remove('open');
+    menuOverlay.classList.remove('visible');
+  }
+
+  function apriPannello(){
+    renderPannello();
+    sidePanel.classList.add('open');
+    menuOverlay.classList.add('visible');
+  }
+
+  function renderPannello(){
+    let html = `<div class="side-panel-close"><button onclick="document.getElementById('side-panel').classList.remove('open'); document.getElementById('menu-overlay').classList.remove('visible');">✕</button></div>`;
+
+    if(currentRuolo === 'societa'){
+      html += `<div id="side-panel-content-inner">
+        <p class="side-panel-title">👥 Squadre</p>
+        <select class="side-panel-select" id="side-panel-squadre">
+          <option value="">— Scegli gruppo —</option>
+          ${Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}" ${squadreGruppoSelezionato===id?'selected':''}>${g.nome}</option>`).join('')}
+        </select>
+        <p class="side-panel-title">⚙️ Gestione</p>
+        <button type="button" class="side-panel-btn" id="sp-gestisci-gruppi">🗂️ Gestisci gruppi</button>
+        <button type="button" class="side-panel-btn" id="sp-gestisci-discipline">⚙️ Gestisci discipline gara</button>
+        <button type="button" class="side-panel-btn" id="sp-importa-storico">📥 Importa storico (CSV)</button>
+        <button type="button" class="side-panel-btn" id="sp-crea-evento">📅 Crea evento</button>
+        <button type="button" class="side-panel-btn" id="sp-impostazioni">🔧 Impostazioni</button>
+      </div>`;
+    }
+
+    html += `<p class="side-panel-title">Impostazioni</p>
+      <button type="button" class="side-panel-btn" id="sp-password">🔑 Cambia password</button>
+      <button type="button" class="side-panel-btn" id="sp-guida">❓ Come funziona l'app</button>
+      <button type="button" class="side-panel-btn" id="sp-tema">🌙 Tema scuro</button>`;
+
+    sidePanelContent.innerHTML = html;
+
+    document.getElementById('sp-password')?.addEventListener('click', () => { chiudiPannello(); cambiaPassword(); });
+    document.getElementById('sp-guida')?.addEventListener('click', () => {
+      chiudiPannello();
+      document.getElementById('guida-content').innerHTML = currentRuolo === 'societa' ? guidaContenutoSocieta : guidaContenutoAllenatore;
+      vistaPrimaGuida = document.querySelector('.view.active')?.id || 'view-coach';
+      showView('view-guida');
+    });
+    document.getElementById('sp-tema')?.addEventListener('click', () => {
+      document.body.classList.toggle('tema-scuro');
+      localStorage.setItem('pista-tema', document.body.classList.contains('tema-scuro') ? 'scuro' : 'chiaro');
+    });
+
+    if(currentRuolo === 'societa'){
+      document.getElementById('side-panel-squadre')?.addEventListener('change', (e) => {
+        squadreGruppoSelezionato = e.target.value;
+        chiudiPannello();
+        if(typeof renderGroupsGrid === 'function') renderGroupsGrid();
+        else if(typeof renderDettaglioGruppoStandalone === 'function') renderDettaglioGruppoStandalone();
+        else document.getElementById('admin-gruppo-detail') && (document.getElementById('admin-gruppo-detail').innerHTML = '');
+      });
+      document.getElementById('sp-gestisci-gruppi')?.addEventListener('click', () => { chiudiPannello(); apriAdminGruppi(); });
+      document.getElementById('sp-gestisci-discipline')?.addEventListener('click', () => { chiudiPannello(); apriAdminDiscipline(); });
+      document.getElementById('sp-importa-storico')?.addEventListener('click', () => { chiudiPannello(); apriImporta(); });
+      document.getElementById('sp-crea-evento')?.addEventListener('click', () => {
+        chiudiPannello();
+        document.getElementById('evento-nuovo-nome').value = '';
+        document.getElementById('evento-nuovo-data').value = '';
+        document.getElementById('evento-nuovo-luogo').value = '';
+        document.getElementById('evento-crea-feedback').textContent = '';
+        showView('view-crea-evento');
+      });
+      document.getElementById('sp-impostazioni')?.addEventListener('click', () => {
+        chiudiPannello();
+        document.getElementById('impostazioni-giorni-cert').value = giorniAvvisoCertificato;
+        document.getElementById('impostazioni-feedback').textContent = '';
+        showView('view-impostazioni');
+      });
+    }
+  }
+
+  function aggiornaPannelloSquadre(){
+    // Se il pannello è aperto e siamo su view-admin, aggiorna il select squadre
+    if(sidePanel.classList.contains('open') && currentRuolo === 'societa'){
+      renderPannello();
+    }
+  }
+
+  menuOverlay.addEventListener('click', chiudiPannello);
+  document.querySelectorAll('.btn-hamburger').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const menu = btn.nextElementSibling;
-      document.querySelectorAll('.account-menu, .gestione-menu').forEach(m => { if(m !== menu) m.classList.remove('open'); });
-      const isOpen = menu.classList.toggle('open');
-      menuOverlay.classList.toggle('visible', isOpen);
+      apriPannello();
     });
   });
-  document.addEventListener('click', chiudiTuttiMenu);
+
   document.querySelectorAll('.account-menu-password').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
-      cambiaPassword();
-    });
+    btn.addEventListener('click', () => cambiaPassword());
   });
   const guidaContenutoAllenatore = `
     <div class="report-section" open>
@@ -3552,26 +3616,6 @@
       </div>
     </div>
   `;
-
-  document.querySelectorAll('.account-menu-guida').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
-      const attiva = document.querySelector('.view.active');
-      if(attiva) vistaPrimaGuida = attiva.id;
-      document.getElementById('guida-content').innerHTML =
-        currentRuolo === 'societa' ? guidaContenutoSocieta : guidaContenutoAllenatore;
-      showView('view-guida');
-    });
-  });
-
-  document.querySelectorAll('.account-menu-tema').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
-      document.body.classList.toggle('tema-scuro');
-      localStorage.setItem('pista-tema', document.body.classList.contains('tema-scuro') ? 'scuro' : 'chiaro');
-      aggiornaEtichetteTema();
-    });
-  });
 
   // --- Navigazione Registra presenze ---
   document.getElementById('card-presenze').addEventListener('click', apriPresenze);
@@ -3768,35 +3812,7 @@
   document.getElementById('presenze-data').addEventListener('change', controllaRegistrazioneEsistente);
   document.getElementById('presenze-data').addEventListener('input', controllaRegistrazioneEsistente);
 
-  const menuOverlay = document.getElementById('menu-overlay');
-  function chiudiTuttiMenu(){
-    document.getElementById('gestione-menu').classList.remove('open');
-    document.getElementById('squadre-menu')?.classList.remove('open');
-    document.querySelectorAll('.account-menu').forEach(m => m.classList.remove('open'));
-    menuOverlay.classList.remove('visible');
-  }
-  menuOverlay.addEventListener('click', chiudiTuttiMenu);
-
-  // --- Menu a tendina "Gestione" (Società) ---
-  document.getElementById('btn-gestione-toggle').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = document.getElementById('gestione-menu').classList.toggle('open');
-    document.getElementById('squadre-menu')?.classList.remove('open');
-    menuOverlay.classList.toggle('visible', isOpen);
-  });
-  document.getElementById('btn-squadre-toggle').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpen = document.getElementById('squadre-menu').classList.toggle('open');
-    document.getElementById('gestione-menu').classList.remove('open');
-    menuOverlay.classList.toggle('visible', isOpen);
-  });
-  document.addEventListener('click', chiudiTuttiMenu);
-
   // --- Navigazione Gestione gruppi (Società) ---
-  document.getElementById('btn-gestisci-gruppi').addEventListener('click', () => {
-    document.getElementById('gestione-menu').classList.remove('open');
-    apriAdminGruppi();
-  });
   document.getElementById('back-to-admin-from-gruppi').addEventListener('click', () => {
     showView('view-admin');
   });
@@ -3823,44 +3839,22 @@
   });
 
   // --- Navigazione Gestione discipline (Società) ---
-  document.getElementById('btn-gestisci-discipline').addEventListener('click', () => {
-    document.getElementById('gestione-menu').classList.remove('open');
-    apriAdminDiscipline();
-  });
   document.getElementById('back-to-admin-from-discipline').addEventListener('click', () => {
     if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
     showView('view-admin');
   });
 
   // --- Navigazione Importa storico (Società) ---
-  document.getElementById('btn-importa-storico').addEventListener('click', () => {
-    document.getElementById('gestione-menu').classList.remove('open');
-    apriImporta();
-  });
   document.getElementById('back-to-admin-from-importa').addEventListener('click', () => {
     showView('view-admin');
   });
 
   // --- Navigazione Impostazioni (Società) ---
-  document.getElementById('btn-impostazioni').addEventListener('click', () => {
-    document.getElementById('gestione-menu').classList.remove('open');
-    document.getElementById('impostazioni-giorni-cert').value = giorniAvvisoCertificato;
-    document.getElementById('impostazioni-feedback').textContent = '';
-    showView('view-impostazioni');
-  });
   document.getElementById('back-to-admin-from-impostazioni').addEventListener('click', () => {
     showView('view-admin');
   });
 
   // --- Navigazione Crea evento (Società) ---
-  document.getElementById('btn-crea-evento').addEventListener('click', () => {
-    document.getElementById('gestione-menu').classList.remove('open');
-    document.getElementById('evento-nuovo-nome').value = '';
-    document.getElementById('evento-nuovo-data').value = '';
-    document.getElementById('evento-nuovo-luogo').value = '';
-    document.getElementById('evento-crea-feedback').textContent = '';
-    showView('view-crea-evento');
-  });
   document.getElementById('back-to-admin-from-evento').addEventListener('click', () => {
     showView('view-admin');
   });
@@ -4138,5 +4132,8 @@
 </script>
 
 <div id="menu-overlay"></div>
+<div id="side-panel">
+  <div id="side-panel-content"></div>
+</div>
 </body>
 </html>
