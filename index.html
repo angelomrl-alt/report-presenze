@@ -300,6 +300,16 @@
     padding:18px 28px;
     background:var(--surface);
     border-bottom:1px solid var(--border);
+    position:relative;
+  }
+  .account-dropdown-wrap, .gestione-dropdown-wrap{position:relative;}
+  @media (max-width:480px){
+    .account-dropdown-wrap, .gestione-dropdown-wrap, #squadre-dropdown-wrap{position:relative;}
+    .account-menu, .gestione-menu{
+      left:0;
+      right:auto;
+      min-width:220px;
+    }
   }
   .topbar .brand-mini{
     font-family:'Oswald',sans-serif;
@@ -445,23 +455,8 @@
     border-radius:10px;
     padding:6px;
     min-width:230px;
-    z-index:200;
-    box-shadow:0 8px 24px rgba(0,0,0,.4);
-  }
-  @media (max-width:480px){
-    .gestione-dropdown-wrap, #squadre-dropdown-wrap{position:static;}
-    .gestione-menu{
-      position:fixed;
-      top:auto;
-      bottom:0;
-      left:0;
-      right:0;
-      width:100%;
-      border-radius:16px 16px 0 0;
-      min-width:0;
-      padding:12px;
-      z-index:500;
-    }
+    z-index:500;
+    box-shadow:0 8px 24px rgba(0,0,0,.15);
   }
   .gestione-menu.open{display:block;}
   .gestione-menu button{
@@ -490,25 +485,10 @@
     border-radius:10px;
     padding:6px;
     min-width:210px;
-    z-index:200;
-    box-shadow:0 8px 24px rgba(0,0,0,.4);
+    z-index:500;
+    box-shadow:0 8px 24px rgba(0,0,0,.15);
   }
   .account-menu.open{display:block;}
-  @media (max-width:480px){
-    .account-dropdown-wrap{position:static;}
-    .account-menu{
-      position:fixed;
-      top:auto;
-      bottom:0;
-      left:0;
-      right:0;
-      width:100%;
-      border-radius:16px 16px 0 0;
-      min-width:0;
-      padding:16px;
-      z-index:500;
-    }
-  }
   .account-menu button{
     display:block;
     width:100%;
