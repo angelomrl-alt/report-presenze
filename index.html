@@ -1496,8 +1496,10 @@
         <button type="button" id="nuova-gara-btn" class="btn-secondary">Nuova registrazione</button>
         <span id="gara-feedback" class="save-feedback"></span>
       </div>
-      <div class="save-bar" style="margin-top:10px;">
+      <div class="save-bar" style="margin-top:10px; flex-wrap:wrap; gap:10px;">
         <button type="button" id="condividi-gara-btn" class="btn-secondary">📤 Condividi risultati</button>
+        <button type="button" id="elimina-gara-btn" class="btn-remove" style="padding:12px 18px;">🗑️ Elimina questa gara</button>
+        <span id="elimina-gara-feedback" class="save-feedback"></span>
       </div>
 
       <details class="report-section" open style="margin-top:28px;">
@@ -1709,7 +1711,7 @@
     </header>
     <main>
       <h2>Impostazioni</h2>
-      
+      <p class="sub">Valori generali dell'app, validi per tutti i gruppi.</p>
 
       <div class="field-inline" style="max-width:280px;">
         <label for="impostazioni-giorni-cert">Giorni di anticipo avviso certificato medico</label>
@@ -1733,7 +1735,7 @@
     </header>
     <main>
       <h2>Crea evento</h2>
-      <p class="sub">Dopo la creazione viene condiviso automaticamente alle squadre.</p>
+      <p class="sub">Manifestazione organizzata da noi: programma e orari della giornata si aggiungono dopo, dalla tendina "Prossimi eventi" in fondo alla Home.</p>
 
       <div class="risultato-grid" style="margin-bottom:16px;">
         <div class="field-inline" style="flex:1 1 100%;">
@@ -3476,7 +3478,7 @@
         <button type="button" class="side-panel-btn" id="sp-gestisci-discipline">⚙️ Gestisci discipline gara</button>
         <button type="button" class="side-panel-btn" id="sp-importa-storico">📥 Importa storico (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-crea-evento">📅 Crea evento</button>
-        <button type="button" class="side-panel-btn" id="sp-impostazioni">🔧 Promemoria certificato</button>
+        <button type="button" class="side-panel-btn" id="sp-impostazioni">🔧 Impostazioni</button>
       </div>`;
     }
 
@@ -3719,6 +3721,47 @@
     document.getElementById('gara-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('gara-feedback').textContent = "";
     controllaGaraEsistente();
+  });
+
+  document.getElementById('elimina-gara-btn').addEventListener('click', async function(){
+    const data = document.getElementById('gara-data').value;
+    const nomeGara = document.getElementById('gara-nome').value.trim();
+    const feedback = document.getElementById('elimina-gara-feedback');
+
+    if(!garaDocIdAttuale){
+      feedback.textContent = "Nessuna gara salvata per questa data.";
+      setTimeout(() => { feedback.textContent = ''; }, 2500);
+      return;
+    }
+    if(!confirm(`Eliminare la gara "${nomeGara || data}" e tutti i risultati collegati? Questa azione non si può annullare.`)) return;
+
+    const btn = this;
+    btn.disabled = true;
+    feedback.textContent = "Eliminazione in corso…";
+    try{
+      // Elimina la gara
+      await deleteDoc(doc(db,'gare', garaDocIdAttuale));
+      // Elimina tutti i risultati collegati a questa gara (stesso gruppo e data)
+      const qRis = query(collection(db,'risultati'),
+        where('gruppoId','==', currentGruppoId),
+        where('data','==', data));
+      const snapRis = await getDocs(qRis);
+      await Promise.all(snapRis.docs.map(d => deleteDoc(doc(db,'risultati', d.id))));
+
+      garaDocIdAttuale = null;
+      garaPartecipanti.clear();
+      document.getElementById('gara-nome').value = '';
+      document.getElementById('gara-luogo').value = '';
+      document.getElementById('gara-esistente-banner').style.display = 'none';
+      document.getElementById('gara-roster').innerHTML = '<div class="roster-empty">Nessun atleta ancora.</div>';
+      feedback.textContent = `Gara eliminata (${snapRis.size} risultati rimossi) ✓`;
+      setTimeout(() => { feedback.textContent = ''; }, 3000);
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore: " + err.message;
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   document.getElementById('condividi-gara-btn').addEventListener('click', () => {
