@@ -4173,7 +4173,249 @@
     controllaRegistrazioneEsistente();
   });
 </script>
+/* =========================================================
+   SCHEDA ATLETA – Integrazione Firebase Firestore
+   Da aggiungere in fondo al file HTML (dentro <script type="module">)
+   oppure importare come modulo separato.
+   ========================================================= */
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// -----------------------------------------------------------
+// 1) CONFIGURAZIONE FIREBASE (sostituisci con i tuoi dati)
+// -----------------------------------------------------------
+const firebaseConfig = {
+  apiKey: "TUA_API_KEY",
+  authDomain: "TUO_PROGETTO.firebaseapp.com",
+  projectId: "TUO_PROGETTO",
+  storageBucket: "TUO_PROGETTO.appspot.com",
+  messagingSenderId: "TUO_SENDER_ID",
+  appId: "TUO_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ID dell'atleta da caricare (es. preso dall'URL: ?id=xxxx)
+const params = new URLSearchParams(window.location.search);
+const ATLETA_ID = params.get("id");
+const atletaRef = doc(db, "atleti", ATLETA_ID);
+
+/* =========================================================
+   2) CARICAMENTO DATI DA FIRESTORE -> SCRITTURA NEL DOM
+   ========================================================= */
+
+async function caricaSchedaAtleta() {
+  try {
+    const snap = await getDoc(atletaRef);
+    if (!snap.exists()) {
+      console.warn("Nessun atleta trovato con ID:", ATLETA_ID);
+      return;
+    }
+    popolaDOM(snap.data());
+  } catch (err) {
+    console.error("Errore nel caricamento dati atleta:", err);
+  }
+}
+
+// Popola gli elementi della pagina con i dati dell'atleta
+function popolaDOM(dati) {
+  // --- Header atleta ---
+  const nomeCompleto = dati.nome || "";
+  document.querySelector(".atleta-header h2").textContent = nomeCompleto;
+  document.querySelector(".atleta-header p").textContent =
+    `${dati.categoria || ""} · nato il ${dati.dataNascita || ""}`;
+
+  const iniziali = nomeCompleto
+    .split(" ")
+    .map(p => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  document.querySelector(".atleta-avatar").textContent = iniziali;
+
+  // --- Dati fisici (Altezza / Peso) ---
+  const datoValori = document.querySelectorAll(".dati-grid .dato-valore");
+  // datoValori[0] = Altezza, datoValori[1] = Peso
+  datoValori[0].innerHTML = `${dati.altezza ?? "-"} <span class="dato-unita">cm</span>`;
+  datoValori[1].innerHTML = `${dati.peso ?? "-"} <span class="dato-unita">kg</span>`;
+
+  // --- Record personali ---
+  if (Array.isArray(dati.record)) {
+    const righeRecord = document.querySelectorAll(".record-row");
+    dati.record.forEach((r, i) => {
+      const riga = righeRecord[i];
+      if (!riga) return;
+      riga.querySelector(".record-disc").textContent = r.disciplina;
+      riga.querySelector(".record-data").textContent = `${r.evento} · ${r.data}`;
+      riga.querySelector(".record-val").textContent = r.valore;
+    });
+  }
+
+  // --- Obiettivi stagionali ---
+  if (Array.isArray(dati.obiettivi)) {
+    const righeObiettivo = document.querySelectorAll(".obiettivo");
+    dati.obiettivi.forEach((ob, i) => {
+      const riga = righeObiettivo[i];
+      if (!riga) return;
+      const check = riga.querySelector(".ob-check");
+      const testo = riga.querySelector(".ob-testo");
+      testo.textContent = ob.testo;
+      check.classList.toggle("done", !!ob.completato);
+      check.innerHTML = ob.completato ? "✓" : "";
+      testo.classList.toggle("done", !!ob.completato);
+    });
+  }
+
+  // --- Note allenatore ---
+  if (Array.isArray(dati.note)) {
+    const righeNota = document.querySelectorAll(".nota-item");
+    dati.note.forEach((n, i) => {
+      const riga = righeNota[i];
+      if (!riga) return;
+      riga.querySelector(".nota-data").textContent = n.data;
+      riga.querySelector(".nota-testo").textContent = n.testo;
+    });
+  }
+}
+
+/* =========================================================
+   3) SALVATAGGIO SU FIRESTORE QUANDO L'ALLENATORE MODIFICA
+   ========================================================= */
+
+// Rende editabili Peso e Altezza, e salva su Firestore al blur
+function attivaModificaDatiFisici() {
+  const datoValori = document.querySelectorAll(".dati-grid .dato-valore");
+  const [altezzaEl, pesoEl] = datoValori;
+
+  altezzaEl.contentEditable = "true";
+  pesoEl.contentEditable = "true";
+
+  altezzaEl.addEventListener("blur", () => {
+    const valore = parseFloat(altezzaEl.textContent);
+    if (!isNaN(valore)) salvaCampo({ altezza: valore });
+  });
+
+  pesoEl.addEventListener("blur", () => {
+    const valore = parseFloat(pesoEl.textContent);
+    if (!isNaN(valore)) salvaCampo({ peso: valore });
+  });
+}
+
+// Gestisce il click sugli obiettivi (completato/non completato) e il testo editabile
+function attivaModificaObiettivi() {
+  const righeObiettivo = document.querySelectorAll(".obiettivo");
+
+  righeObiettivo.forEach((riga, index) => {
+    const check = riga.querySelector(".ob-check");
+    const testo = riga.querySelector(".ob-testo");
+    testo.contentEditable = "true";
+
+    // Toggle completato/non completato
+    check.addEventListener("click", () => {
+      const completato = !check.classList.contains("done");
+      check.classList.toggle("done", completato);
+      check.innerHTML = completato ? "✓" : "";
+      testo.classList.toggle("done", completato);
+      salvaObiettivo(index, { completato, testo: testo.textContent });
+    });
+
+    // Modifica testo obiettivo
+    testo.addEventListener("blur", () => {
+      salvaObiettivo(index, {
+        completato: check.classList.contains("done"),
+        testo: testo.textContent
+      });
+    });
+  });
+}
+
+// Rende editabili le note allenatore e salva al blur
+function attivaModificaNote() {
+  const righeNota = document.querySelectorAll(".nota-item");
+
+  righeNota.forEach((riga, index) => {
+    const testo = riga.querySelector(".nota-testo");
+    const data = riga.querySelector(".nota-data");
+    testo.contentEditable = "true";
+
+    testo.addEventListener("blur", () => {
+      salvaNota(index, { data: data.textContent, testo: testo.textContent });
+    });
+  });
+}
+
+// --- Funzioni di salvataggio effettivo su Firestore ---
+
+// Salva campi semplici (peso, altezza, ecc.)
+async function salvaCampo(campi) {
+  try {
+    await updateDoc(atletaRef, campi);
+    console.log("Campo aggiornato:", campi);
+  } catch (err) {
+    console.error("Errore nel salvataggio campo:", err);
+  }
+}
+
+// Salva un obiettivo specifico dell'array "obiettivi"
+async function salvaObiettivo(index, nuovoObiettivo) {
+  try {
+    const snap = await getDoc(atletaRef);
+    const dati = snap.data() || {};
+    const obiettivi = Array.isArray(dati.obiettivi) ? [...dati.obiettivi] : [];
+    obiettivi[index] = { ...obiettivi[index], ...nuovoObiettivo };
+    await updateDoc(atletaRef, { obiettivi });
+    console.log("Obiettivo aggiornato:", obiettivi[index]);
+  } catch (err) {
+    console.error("Errore nel salvataggio obiettivo:", err);
+  }
+}
+
+// Salva una nota specifica dell'array "note"
+async function salvaNota(index, nuovaNota) {
+  try {
+    const snap = await getDoc(atletaRef);
+    const dati = snap.data() || {};
+    const note = Array.isArray(dati.note) ? [...dati.note] : [];
+    note[index] = { ...note[index], ...nuovaNota };
+    await updateDoc(atletaRef, { note });
+    console.log("Nota aggiornata:", note[index]);
+  } catch (err) {
+    console.error("Errore nel salvataggio nota:", err);
+  }
+}
+
+/* =========================================================
+   4) (OPZIONALE) AGGIORNAMENTO IN TEMPO REALE
+   Se preferisci che la scheda si aggiorni da sola quando
+   i dati cambiano su Firestore (es. modificati da un altro
+   dispositivo), sostituisci getDoc con onSnapshot così:
+   ========================================================= */
+
+function ascoltaAggiornamentiRealtime() {
+  onSnapshot(atletaRef, (snap) => {
+    if (snap.exists()) popolaDOM(snap.data());
+  });
+}
+
+/* =========================================================
+   5) INIZIALIZZAZIONE
+   ========================================================= */
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await caricaSchedaAtleta();       // carica i dati iniziali
+  attivaModificaDatiFisici();       // rende editabili peso/altezza
+  attivaModificaObiettivi();        // rende editabili gli obiettivi
+  attivaModificaNote();             // rende editabili le note
+  // ascoltaAggiornamentiRealtime(); // decommenta se vuoi il realtime
+});
 <div id="menu-overlay"></div>
 <div id="side-panel">
   <div id="side-panel-content"></div>
