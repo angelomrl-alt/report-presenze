@@ -1264,8 +1264,6 @@
 
   /* ---------- SCHEDA ATLETA ---------- */
   .scheda-search{width:100%; padding:11px 14px; border:1.5px solid var(--border-strong); border-radius:10px; background:var(--surface); color:var(--text); font-size:14px; margin-bottom:14px; font-family:'Inter',sans-serif;}
-  .scheda-section{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:16px; box-shadow:var(--btn-shadow);}
-  .scheda-section h3{font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin:0 0 14px; display:flex; align-items:center; gap:8px;}
   .fisico-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;}
   .fisico-campo label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
   .fisico-campo input, .fisico-campo select{width:100%; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:14px; font-family:'Inter',sans-serif;}
@@ -1585,81 +1583,91 @@
       <span class="categoria-badge" id="scheda-atleta-gruppo">—</span>
 
       <!-- DATI FISICI -->
-      <div class="scheda-section">
-        <h3>🧍 Dati fisici</h3>
-        <div class="fisico-grid">
-          <div class="fisico-campo">
-            <label for="scheda-fisico-nascita">Data di nascita</label>
-            <input type="date" id="scheda-fisico-nascita">
+      <details class="report-section">
+        <summary>🧍 Dati fisici</summary>
+        <div>
+          <div class="fisico-grid">
+            <div class="fisico-campo">
+              <label for="scheda-fisico-nascita">Data di nascita</label>
+              <input type="date" id="scheda-fisico-nascita">
+            </div>
+            <div class="fisico-campo">
+              <label for="scheda-fisico-dominante">Lato dominante</label>
+              <select id="scheda-fisico-dominante">
+                <option value="">—</option>
+                <option value="Destra">Destra</option>
+                <option value="Sinistra">Sinistra</option>
+              </select>
+            </div>
           </div>
-          <div class="fisico-campo">
-            <label for="scheda-fisico-dominante">Lato dominante</label>
-            <select id="scheda-fisico-dominante">
-              <option value="">—</option>
-              <option value="Destra">Destra</option>
-              <option value="Sinistra">Sinistra</option>
-            </select>
+          <div class="fisico-note">
+            <label for="scheda-fisico-note">Note fisiche (infortuni, allergie, indicazioni mediche)</label>
+            <textarea id="scheda-fisico-note" placeholder="es. Distorsione caviglia dx guarita a marzo 2025..."></textarea>
+          </div>
+          <div class="save-bar" style="margin-top:14px;">
+            <button type="button" id="salva-fisico-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Salva dati fisici</button>
+            <span id="scheda-fisico-feedback" class="save-feedback"></span>
           </div>
         </div>
-        <div class="fisico-note">
-          <label for="scheda-fisico-note">Note fisiche (infortuni, allergie, indicazioni mediche)</label>
-          <textarea id="scheda-fisico-note" placeholder="es. Distorsione caviglia dx guarita a marzo 2025..."></textarea>
-        </div>
-        <div class="save-bar" style="margin-top:14px;">
-          <button type="button" id="salva-fisico-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Salva dati fisici</button>
-          <span id="scheda-fisico-feedback" class="save-feedback"></span>
-        </div>
-      </div>
+      </details>
 
       <!-- STORICO CRESCITA -->
-      <div class="scheda-section">
-        <h3>📈 Storico crescita</h3>
-        <div id="scheda-crescita-tabs" class="discipline-tabs"></div>
-        <div id="scheda-crescita-attuale"></div>
-        <div class="progressione-svg-wrap" id="scheda-crescita-grafico-wrap"></div>
-        <div class="storico-record" id="scheda-crescita-storico"></div>
-        <div class="nuovo-record-form" id="scheda-crescita-form">
-          <input type="date" id="scheda-crescita-data" title="Data">
-          <input type="text" id="scheda-crescita-valore" placeholder="Valore">
-          <input type="text" id="scheda-crescita-nota" placeholder="Nota (facoltativa)">
-          <button type="button" id="scheda-crescita-salva-btn" class="btn-secondary">+ Aggiungi</button>
+      <details class="report-section">
+        <summary>📈 Storico crescita</summary>
+        <div>
+          <div id="scheda-crescita-tabs" class="discipline-tabs"></div>
+          <div id="scheda-crescita-attuale"></div>
+          <div class="progressione-svg-wrap" id="scheda-crescita-grafico-wrap"></div>
+          <div class="storico-record" id="scheda-crescita-storico"></div>
+          <div class="nuovo-record-form" id="scheda-crescita-form">
+            <input type="date" id="scheda-crescita-data" title="Data">
+            <input type="text" id="scheda-crescita-valore" placeholder="Valore">
+            <input type="text" id="scheda-crescita-nota" placeholder="Nota (facoltativa)">
+            <button type="button" id="scheda-crescita-salva-btn" class="btn-secondary">+ Aggiungi</button>
+          </div>
         </div>
-      </div>
+      </details>
 
       <!-- RECORD PERSONALI -->
-      <div class="scheda-section">
-        <h3>🏅 Record personali</h3>
-        <div id="scheda-discipline-tabs" class="discipline-tabs"></div>
-        <div id="scheda-pb-attuale"></div>
-        <div class="progressione-svg-wrap" id="scheda-grafico-wrap"></div>
-        <div class="storico-record" id="scheda-storico-record"></div>
-        <div class="nuovo-record-form" id="scheda-nuovo-record-form" style="display:none;">
-          <input type="date" id="scheda-record-data" title="Data">
-          <input type="text" id="scheda-record-valore" placeholder="Valore (es. 14.82)">
-          <input type="text" id="scheda-record-gara" placeholder="Gara (facoltativo)">
-          <button type="button" id="scheda-record-salva-btn" class="btn-secondary">+ Aggiungi</button>
+      <details class="report-section">
+        <summary>🏅 Record personali</summary>
+        <div>
+          <div id="scheda-discipline-tabs" class="discipline-tabs"></div>
+          <div id="scheda-pb-attuale"></div>
+          <div class="progressione-svg-wrap" id="scheda-grafico-wrap"></div>
+          <div class="storico-record" id="scheda-storico-record"></div>
+          <div class="nuovo-record-form" id="scheda-nuovo-record-form" style="display:none;">
+            <input type="date" id="scheda-record-data" title="Data">
+            <input type="text" id="scheda-record-valore" placeholder="Valore (es. 14.82)">
+            <input type="text" id="scheda-record-gara" placeholder="Gara (facoltativo)">
+            <button type="button" id="scheda-record-salva-btn" class="btn-secondary">+ Aggiungi</button>
+          </div>
         </div>
-      </div>
+      </details>
 
       <!-- OBIETTIVI STAGIONALI -->
-      <div class="scheda-section">
-        <h3>🎯 Obiettivi stagionali</h3>
-        <div id="scheda-obiettivi-list"></div>
-        <div class="nuovo-obiettivo">
-          <input type="text" id="scheda-nuovo-obiettivo-input" placeholder="Nuovo obiettivo...">
-          <button type="button" id="scheda-nuovo-obiettivo-btn" class="btn-secondary" style="padding:9px 16px;">+</button>
+      <details class="report-section">
+        <summary>🎯 Obiettivi stagionali</summary>
+        <div>
+          <div id="scheda-obiettivi-list"></div>
+          <div class="nuovo-obiettivo">
+            <input type="text" id="scheda-nuovo-obiettivo-input" placeholder="Nuovo obiettivo...">
+            <button type="button" id="scheda-nuovo-obiettivo-btn" class="btn-secondary" style="padding:9px 16px;">+</button>
+          </div>
         </div>
-      </div>
+      </details>
 
       <!-- NOTE LIBERE -->
-      <div class="scheda-section">
-        <h3>📝 Note dell'allenatore</h3>
-        <div id="scheda-note-list"></div>
-        <div class="nuova-nota">
-          <textarea id="scheda-nuova-nota-input" placeholder="Scrivi una nuova nota... (la data si aggiunge da sola)"></textarea>
-          <button type="button" id="scheda-nuova-nota-btn" class="btn-secondary" style="margin-top:8px;">+ Aggiungi nota</button>
+      <details class="report-section">
+        <summary>📝 Note dell'allenatore</summary>
+        <div>
+          <div id="scheda-note-list"></div>
+          <div class="nuova-nota">
+            <textarea id="scheda-nuova-nota-input" placeholder="Scrivi una nuova nota... (la data si aggiunge da sola)"></textarea>
+            <button type="button" id="scheda-nuova-nota-btn" class="btn-secondary" style="margin-top:8px;">+ Aggiungi nota</button>
+          </div>
         </div>
-      </div>
+      </details>
 
       <div class="save-bar">
         <button type="button" id="condividi-scheda-btn" class="btn-secondary">📤 Condividi scheda</button>
