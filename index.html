@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -1261,6 +1261,45 @@
   .trend-down{color:var(--danger);}
   .trend-stable{color:var(--text-dim);}
   .empty-note{color:var(--text-dim); font-size:13.5px; padding:8px 0;}
+
+  /* ---------- SCHEDA ATLETA ---------- */
+  .scheda-search{width:100%; padding:11px 14px; border:1.5px solid var(--border-strong); border-radius:10px; background:var(--surface); color:var(--text); font-size:14px; margin-bottom:14px; font-family:'Inter',sans-serif;}
+  .scheda-section{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:16px; box-shadow:var(--btn-shadow);}
+  .scheda-section h3{font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin:0 0 14px; display:flex; align-items:center; gap:8px;}
+  .fisico-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;}
+  .fisico-campo label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
+  .fisico-campo input, .fisico-campo select{width:100%; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:14px; font-family:'Inter',sans-serif;}
+  .fisico-note{margin-top:12px;}
+  .fisico-note label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
+  .fisico-note textarea{width:100%; min-height:56px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;}
+  .discipline-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px;}
+  .discipline-tab{flex-shrink:0; padding:7px 13px; border-radius:20px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text-dim); font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; font-family:'Inter',sans-serif;}
+  .discipline-tab.attiva{background:var(--primary); color:var(--primary-ink); border-color:var(--primary);}
+  .pb-attuale{display:flex; align-items:baseline; gap:8px; margin-bottom:10px;}
+  .pb-valore{font-family:'Oswald',sans-serif; font-size:26px; font-weight:700; color:var(--primary);}
+  .pb-eti{font-size:12px; color:var(--text-dim);}
+  .progressione-svg-wrap{overflow-x:auto; margin-bottom:6px;}
+  .storico-record{margin-top:6px;}
+  .storico-record-row{display:flex; justify-content:space-between; align-items:center; padding:8px 2px; border-bottom:1px solid var(--border); font-size:13.5px; gap:8px;}
+  .storico-record-row:last-child{border-bottom:none;}
+  .storico-record-row .val{font-weight:600; flex-shrink:0;}
+  .storico-record-row .dt{color:var(--text-dim); font-size:12.5px; flex:1;}
+  .nuovo-record-form{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border-strong);}
+  .nuovo-record-form input{flex:1 1 100px; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:'Inter',sans-serif;}
+  .obiettivo-row{display:flex; align-items:flex-start; gap:10px; padding:9px 2px; border-bottom:1px solid var(--border);}
+  .obiettivo-row:last-child{border-bottom:none;}
+  .obiettivo-check{width:20px; height:20px; border-radius:6px; border:2px solid var(--border-strong); flex-shrink:0; margin-top:1px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; background:none;}
+  .obiettivo-check.fatto{background:var(--primary); border-color:var(--primary);}
+  .obiettivo-testo{font-size:14px; flex:1;}
+  .obiettivo-testo.fatto{color:var(--text-dim); text-decoration:line-through;}
+  .obiettivo-anno{font-size:11px; color:var(--text-dim); background:var(--surface-2); padding:2px 8px; border-radius:10px; flex-shrink:0;}
+  .nuovo-obiettivo{display:flex; gap:8px; margin-top:12px;}
+  .nuovo-obiettivo input{flex:1; padding:9px 12px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:'Inter',sans-serif;}
+  .nota-row{padding:10px 2px; border-bottom:1px solid var(--border);}
+  .nota-row:last-child{border-bottom:none;}
+  .nota-data{font-size:11.5px; color:var(--text-dim); margin-bottom:3px; display:flex; justify-content:space-between;}
+  .nota-testo{font-size:13.5px; line-height:1.5; white-space:pre-wrap;}
+  .nuova-nota textarea{width:100%; min-height:50px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:'Inter',sans-serif; resize:vertical; margin-top:10px;}
 </style>
 </head>
 <body>
@@ -1344,6 +1383,11 @@
           <span class="dot" style="background:var(--c-ragazzi)"></span>
           <h3>Report del gruppo</h3>
           <p>KPI, grafico mensile, podio e trend atleti.</p>
+        </div>
+        <div class="card clickable" id="card-schede">
+          <span class="dot" style="background:var(--c-agnese)"></span>
+          <h3>📇 Schede atleti</h3>
+          <p>Dati fisici, record personali, obiettivi e note per ogni atleta.</p>
         </div>
       </div>
 
@@ -1506,6 +1550,113 @@
         <summary>📋 Storico risultati</summary>
         <div id="risultati-storico" class="risultati-list"></div>
       </details>
+    </main>
+  </section>
+
+  <!-- ===================== SCHEDE ATLETI: ELENCO ===================== -->
+  <section id="view-schede" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-coach-from-schede" aria-label="Torna alla home">←</button>
+        🏃 Atletica Silca <span class="role-tag">Schede atleti</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
+    </header>
+    <main>
+      <h2 id="schede-group-name">—</h2>
+      <p class="sub">Tocca un atleta per aprire la sua scheda personale.</p>
+      <input type="text" id="schede-search" class="scheda-search" placeholder="🔍 Cerca atleta...">
+      <div id="schede-roster"></div>
+    </main>
+  </section>
+
+  <!-- ===================== SCHEDE ATLETI: DETTAGLIO ===================== -->
+  <section id="view-scheda-atleta" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-schede-from-dettaglio" aria-label="Torna all'elenco">←</button>
+        <span id="scheda-atleta-nome">—</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
+    </header>
+    <main>
+      <span class="categoria-badge" id="scheda-atleta-gruppo">—</span>
+
+      <!-- DATI FISICI -->
+      <div class="scheda-section">
+        <h3>🧍 Dati fisici</h3>
+        <div class="fisico-grid">
+          <div class="fisico-campo">
+            <label for="scheda-fisico-nascita">Data di nascita</label>
+            <input type="date" id="scheda-fisico-nascita">
+          </div>
+          <div class="fisico-campo">
+            <label for="scheda-fisico-altezza">Altezza (cm)</label>
+            <input type="number" id="scheda-fisico-altezza" placeholder="es. 158">
+          </div>
+          <div class="fisico-campo">
+            <label for="scheda-fisico-peso">Peso (kg)</label>
+            <input type="number" id="scheda-fisico-peso" placeholder="es. 46">
+          </div>
+          <div class="fisico-campo">
+            <label for="scheda-fisico-dominante">Lato dominante</label>
+            <select id="scheda-fisico-dominante">
+              <option value="">—</option>
+              <option value="Destra">Destra</option>
+              <option value="Sinistra">Sinistra</option>
+            </select>
+          </div>
+        </div>
+        <div class="fisico-note">
+          <label for="scheda-fisico-note">Note fisiche (infortuni, allergie, indicazioni mediche)</label>
+          <textarea id="scheda-fisico-note" placeholder="es. Distorsione caviglia dx guarita a marzo 2025..."></textarea>
+        </div>
+        <div class="save-bar" style="margin-top:14px;">
+          <button type="button" id="salva-fisico-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Salva dati fisici</button>
+          <span id="scheda-fisico-feedback" class="save-feedback"></span>
+        </div>
+      </div>
+
+      <!-- RECORD PERSONALI -->
+      <div class="scheda-section">
+        <h3>🏅 Record personali</h3>
+        <div id="scheda-discipline-tabs" class="discipline-tabs"></div>
+        <div id="scheda-pb-attuale"></div>
+        <div class="progressione-svg-wrap" id="scheda-grafico-wrap"></div>
+        <div class="storico-record" id="scheda-storico-record"></div>
+        <div class="nuovo-record-form" id="scheda-nuovo-record-form" style="display:none;">
+          <input type="date" id="scheda-record-data" title="Data">
+          <input type="text" id="scheda-record-valore" placeholder="Valore (es. 14.82)">
+          <input type="text" id="scheda-record-gara" placeholder="Gara (facoltativo)">
+          <button type="button" id="scheda-record-salva-btn" class="btn-secondary">+ Aggiungi</button>
+        </div>
+      </div>
+
+      <!-- OBIETTIVI STAGIONALI -->
+      <div class="scheda-section">
+        <h3>🎯 Obiettivi stagionali</h3>
+        <div id="scheda-obiettivi-list"></div>
+        <div class="nuovo-obiettivo">
+          <input type="text" id="scheda-nuovo-obiettivo-input" placeholder="Nuovo obiettivo...">
+          <button type="button" id="scheda-nuovo-obiettivo-btn" class="btn-secondary" style="padding:9px 16px;">+</button>
+        </div>
+      </div>
+
+      <!-- NOTE LIBERE -->
+      <div class="scheda-section">
+        <h3>📝 Note dell'allenatore</h3>
+        <div id="scheda-note-list"></div>
+        <div class="nuova-nota">
+          <textarea id="scheda-nuova-nota-input" placeholder="Scrivi una nuova nota... (la data si aggiunge da sola)"></textarea>
+          <button type="button" id="scheda-nuova-nota-btn" class="btn-secondary" style="margin-top:8px;">+ Aggiungi nota</button>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button type="button" id="condividi-scheda-btn" class="btn-secondary">📤 Condividi scheda</button>
+      </div>
     </main>
   </section>
 
@@ -1867,6 +2018,34 @@
   let reportRisultatiDocs = [];  // [{data, atleta, ...}]
   let reportGareUnsub = null;
   let reportGareDocs = [];       // [{data, partecipanti:[nomi]}]
+
+  // Stato per Schede atleti
+  let schedeRosterUnsub = null;
+  let schedeRosterDocs = [];     // [{id, nome}]
+  let schedaDocUnsub = null;
+  let schedaAtletaId = null;
+  let schedaAtletaNome = null;
+  let schedaDatiCorrenti = null; // {fisico, record, obiettivi, note}
+  let schedaDisciplineUnsub = null;
+  let schedaDisciplineDocs = []; // [{id, nome}]
+  let schedaDisciplinaSelezionata = null;
+
+  function schedaDefault(){
+    return { fisico: { dataNascita:'', altezza:'', peso:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [] };
+  }
+
+  // Restituisce la stagione sportiva corrente nel formato "2025/26" (l'anno sportivo parte a settembre)
+  function stagioneCorrente(){
+    const oggi = new Date();
+    const anno = oggi.getFullYear();
+    const mese = oggi.getMonth() + 1; // 1-12
+    const inizio = mese >= 9 ? anno : anno - 1;
+    return `${inizio}/${String(inizio+1).slice(-2)}`;
+  }
+
+  function nuovoIdLocale(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
 
   // Stato per la Gestione atleti (Società)
   let adminRosterGruppoId = null;
@@ -3270,6 +3449,370 @@
     });
   }
 
+  // ===================== SCHEDE ATLETI =====================
+
+  function apriSchede(){
+    const g = GRUPPI[currentGruppoId];
+    document.getElementById('schede-group-name').textContent = g ? g.nome : "Il tuo gruppo";
+    document.getElementById('schede-search').value = "";
+
+    if(schedeRosterUnsub) schedeRosterUnsub();
+    const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
+    schedeRosterUnsub = onSnapshot(qAtleti, snap => {
+      schedeRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      renderSchedeRoster();
+    });
+
+    showView('view-schede');
+  }
+
+  function renderSchedeRoster(){
+    const cont = document.getElementById('schede-roster');
+    const filtro = (document.getElementById('schede-search').value || '').trim().toLowerCase();
+    const elenco = schedeRosterDocs.filter(a => a.nome.toLowerCase().includes(filtro));
+
+    if(elenco.length === 0){
+      cont.innerHTML = '<p class="empty-note">Nessun atleta trovato.</p>';
+      return;
+    }
+    cont.innerHTML = elenco.map(a => `
+      <div class="roster-item roster-item-clickable" data-id="${a.id}" data-nome="${a.nome}" style="cursor:pointer; margin-bottom:8px;">
+        <span class="nome">${a.nome}</span>
+        <span style="color:var(--text-dim); font-size:16px;">›</span>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('.roster-item-clickable').forEach(el => {
+      el.addEventListener('click', () => apriSchedaAtleta(el.dataset.id, el.dataset.nome));
+    });
+  }
+
+  document.getElementById('schede-search').addEventListener('input', renderSchedeRoster);
+
+  function apriSchedaAtleta(atletaId, nome){
+    schedaAtletaId = atletaId;
+    schedaAtletaNome = nome;
+    schedaDisciplinaSelezionata = null;
+
+    document.getElementById('scheda-atleta-nome').textContent = nome;
+    const g = GRUPPI[currentGruppoId];
+    document.getElementById('scheda-atleta-gruppo').textContent = g ? g.nome : "—";
+    document.getElementById('scheda-fisico-feedback').textContent = "";
+    document.getElementById('scheda-nuovo-record-form').style.display = 'none';
+
+    if(schedaDocUnsub) schedaDocUnsub();
+    if(schedaDisciplineUnsub) schedaDisciplineUnsub();
+
+    schedaDisciplineUnsub = onSnapshot(collection(db,'discipline'), snap => {
+      schedaDisciplineDocs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      if(!schedaDisciplinaSelezionata && schedaDisciplineDocs.length > 0){
+        schedaDisciplinaSelezionata = schedaDisciplineDocs[0].nome;
+      }
+      renderSchedaDisciplineTabs();
+      renderSchedaRecordArea();
+    });
+
+    schedaDocUnsub = onSnapshot(doc(db,'schedeAtleti', atletaId), snap => {
+      schedaDatiCorrenti = snap.exists() ? { ...schedaDefault(), ...snap.data() } : schedaDefault();
+      if(!schedaDatiCorrenti.fisico) schedaDatiCorrenti.fisico = schedaDefault().fisico;
+      if(!schedaDatiCorrenti.record) schedaDatiCorrenti.record = [];
+      if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
+      if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
+      renderSchedaFisico();
+      renderSchedaRecordArea();
+      renderSchedaObiettivi();
+      renderSchedaNote();
+    }, err => {
+      console.error('Errore lettura scheda atleta:', err);
+    });
+
+    showView('view-scheda-atleta');
+  }
+
+  function renderSchedaFisico(){
+    const f = schedaDatiCorrenti.fisico || {};
+    document.getElementById('scheda-fisico-nascita').value = f.dataNascita || '';
+    document.getElementById('scheda-fisico-altezza').value = f.altezza || '';
+    document.getElementById('scheda-fisico-peso').value = f.peso || '';
+    document.getElementById('scheda-fisico-dominante').value = f.dominante || '';
+    document.getElementById('scheda-fisico-note').value = f.note || '';
+  }
+
+  document.getElementById('salva-fisico-btn').addEventListener('click', async function(){
+    const feedback = document.getElementById('scheda-fisico-feedback');
+    const btn = this;
+    btn.disabled = true;
+    try{
+      schedaDatiCorrenti.fisico = {
+        dataNascita: document.getElementById('scheda-fisico-nascita').value,
+        altezza: document.getElementById('scheda-fisico-altezza').value,
+        peso: document.getElementById('scheda-fisico-peso').value,
+        dominante: document.getElementById('scheda-fisico-dominante').value,
+        note: document.getElementById('scheda-fisico-note').value
+      };
+      await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      feedback.textContent = "Salvato ✓";
+      setTimeout(() => { feedback.textContent = ""; }, 2500);
+    } catch(err){
+      console.error(err);
+      feedback.textContent = "Errore durante il salvataggio, riprova.";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function renderSchedaDisciplineTabs(){
+    const cont = document.getElementById('scheda-discipline-tabs');
+    if(schedaDisciplineDocs.length === 0){
+      cont.innerHTML = '<p class="empty-note">Nessuna disciplina configurata (chiedi alla Società di aggiungerle).</p>';
+      return;
+    }
+    cont.innerHTML = schedaDisciplineDocs.map(d => `
+      <button type="button" class="discipline-tab${d.nome === schedaDisciplinaSelezionata ? ' attiva' : ''}" data-nome="${d.nome}">${d.nome}</button>
+    `).join('');
+    cont.querySelectorAll('.discipline-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        schedaDisciplinaSelezionata = btn.dataset.nome;
+        renderSchedaDisciplineTabs();
+        renderSchedaRecordArea();
+      });
+    });
+  }
+
+  function renderSchedaRecordArea(){
+    const pbCont = document.getElementById('scheda-pb-attuale');
+    const graficoCont = document.getElementById('scheda-grafico-wrap');
+    const storicoCont = document.getElementById('scheda-storico-record');
+    const form = document.getElementById('scheda-nuovo-record-form');
+
+    if(!schedaDatiCorrenti || !schedaDisciplinaSelezionata){
+      pbCont.innerHTML = '';
+      graficoCont.innerHTML = '';
+      storicoCont.innerHTML = '';
+      form.style.display = 'none';
+      return;
+    }
+    form.style.display = 'flex';
+
+    const recordDisciplina = (schedaDatiCorrenti.record || [])
+      .filter(r => r.disciplina === schedaDisciplinaSelezionata)
+      .sort((a,b) => (a.data||'').localeCompare(b.data||''));
+
+    if(recordDisciplina.length === 0){
+      pbCont.innerHTML = `<p class="empty-note">Nessun risultato ancora per ${schedaDisciplinaSelezionata}.</p>`;
+      graficoCont.innerHTML = '';
+      storicoCont.innerHTML = '';
+      return;
+    }
+
+    const ultimo = recordDisciplina[recordDisciplina.length - 1];
+    pbCont.innerHTML = `
+      <div class="pb-attuale">
+        <span class="pb-valore">${ultimo.valore}</span>
+        <span class="pb-eti">più recente · ${schedaDisciplinaSelezionata}</span>
+      </div>
+    `;
+
+    // Grafico SVG della progressione (valori nel tempo, scala automatica sui dati disponibili)
+    graficoCont.innerHTML = renderGraficoProgressione(recordDisciplina);
+
+    const storicoOrdinatoDesc = [...recordDisciplina].reverse();
+    storicoCont.innerHTML = storicoOrdinatoDesc.map(r => `
+      <div class="storico-record-row">
+        <span class="val">${r.valore}</span>
+        <span class="dt">${r.data ? new Date(r.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}${r.gara ? ' · ' + r.gara : ''}</span>
+        <button type="button" class="btn-remove" data-id="${r.id}" style="flex-shrink:0;">Rimuovi</button>
+      </div>
+    `).join('');
+
+    storicoCont.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Rimuovere questo risultato?')) return;
+        schedaDatiCorrenti.record = (schedaDatiCorrenti.record || []).filter(r => r.id !== btn.dataset.id);
+        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      });
+    });
+  }
+
+  // Grafico a linea semplice, coerente con lo stile SVG già usato altrove nell'app.
+  // I valori vengono letti come numeri quando possibile (es. "14.82"); se non numerici, mostra solo lo storico senza grafico.
+  function renderGraficoProgressione(recordOrdinati){
+    const valori = recordOrdinati.map(r => parseFloat(String(r.valore).replace(',', '.')));
+    if(valori.some(v => isNaN(v)) || valori.length < 2){
+      return '<p class="empty-note" style="font-size:12.5px;">Il grafico appare con almeno 2 risultati numerici.</p>';
+    }
+    const W = Math.max(460, valori.length * 90);
+    const H = 140;
+    const padL = 34, padR = 14, padT = 14, padB = 26;
+    const min = Math.min(...valori), max = Math.max(...valori);
+    const range = (max - min) || 1;
+    const x = i => padL + (i * (W - padL - padR) / (valori.length - 1));
+    const y = v => padT + (H - padT - padB) * (1 - (v - min) / range);
+
+    const punti = valori.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+    const cerchi = valori.map((v,i) => `<circle cx="${x(i)}" cy="${y(v)}" r="4.5" fill="#3ecf8e"/>`).join('');
+    const etichette = recordOrdinati.map((r,i) => {
+      const label = r.data ? new Date(r.data + 'T00:00:00').toLocaleDateString('it-IT', { month:'short', year:'2-digit' }) : '';
+      return `<text x="${x(i)}" y="${H-6}" font-size="10" fill="var(--text-dim)" text-anchor="middle">${label}</text>`;
+    }).join('');
+
+    return `
+      <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="min-width:${W}px;">
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="var(--border)" stroke-width="1"/>
+        <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--border)" stroke-width="1"/>
+        <polyline points="${punti}" fill="none" stroke="#3ecf8e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        ${cerchi}
+        ${etichette}
+      </svg>
+    `;
+  }
+
+  document.getElementById('scheda-record-salva-btn').addEventListener('click', async function(){
+    const dataVal = document.getElementById('scheda-record-data').value;
+    const valoreVal = document.getElementById('scheda-record-valore').value.trim();
+    const garaVal = document.getElementById('scheda-record-gara').value.trim();
+
+    if(!dataVal || !valoreVal){
+      alert('Inserisci almeno data e valore.');
+      return;
+    }
+    if(!schedaDatiCorrenti.record) schedaDatiCorrenti.record = [];
+    schedaDatiCorrenti.record.push({ id: nuovoIdLocale(), disciplina: schedaDisciplinaSelezionata, valore: valoreVal, data: dataVal, gara: garaVal });
+
+    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+
+    document.getElementById('scheda-record-data').value = '';
+    document.getElementById('scheda-record-valore').value = '';
+    document.getElementById('scheda-record-gara').value = '';
+  });
+
+  function renderSchedaObiettivi(){
+    const cont = document.getElementById('scheda-obiettivi-list');
+    const obiettivi = (schedaDatiCorrenti.obiettivi || []).slice().sort((a,b) => (b.stagione||'').localeCompare(a.stagione||''));
+    if(obiettivi.length === 0){
+      cont.innerHTML = '<p class="empty-note">Nessun obiettivo ancora.</p>';
+      return;
+    }
+    cont.innerHTML = obiettivi.map(o => `
+      <div class="obiettivo-row">
+        <div class="obiettivo-check${o.fatto ? ' fatto' : ''}" data-id="${o.id}">${o.fatto ? '✓' : ''}</div>
+        <span class="obiettivo-testo${o.fatto ? ' fatto' : ''}">${o.testo}</span>
+        <span class="obiettivo-anno">${o.stagione || ''}</span>
+        <button type="button" class="btn-remove" data-remove-id="${o.id}" style="flex-shrink:0;">✕</button>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('.obiettivo-check').forEach(chk => {
+      chk.addEventListener('click', async () => {
+        const ob = schedaDatiCorrenti.obiettivi.find(o => o.id === chk.dataset.id);
+        if(ob) ob.fatto = !ob.fatto;
+        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      });
+    });
+    cont.querySelectorAll('[data-remove-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Rimuovere questo obiettivo?')) return;
+        schedaDatiCorrenti.obiettivi = schedaDatiCorrenti.obiettivi.filter(o => o.id !== btn.dataset.removeId);
+        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      });
+    });
+  }
+
+  document.getElementById('scheda-nuovo-obiettivo-btn').addEventListener('click', async function(){
+    const input = document.getElementById('scheda-nuovo-obiettivo-input');
+    const testo = input.value.trim();
+    if(!testo) return;
+    if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
+    schedaDatiCorrenti.obiettivi.push({ id: nuovoIdLocale(), testo, fatto: false, stagione: stagioneCorrente() });
+    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+    input.value = '';
+  });
+
+  function renderSchedaNote(){
+    const cont = document.getElementById('scheda-note-list');
+    const note = (schedaDatiCorrenti.note || []).slice().sort((a,b) => (b.data||'').localeCompare(a.data||''));
+    if(note.length === 0){
+      cont.innerHTML = '<p class="empty-note">Nessuna nota ancora.</p>';
+      return;
+    }
+    cont.innerHTML = note.map(n => `
+      <div class="nota-row">
+        <div class="nota-data">
+          <span>${n.data ? new Date(n.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}</span>
+          <button type="button" class="btn-remove" data-remove-id="${n.id}">Rimuovi</button>
+        </div>
+        <div class="nota-testo">${n.testo}</div>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('[data-remove-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Rimuovere questa nota?')) return;
+        schedaDatiCorrenti.note = schedaDatiCorrenti.note.filter(n => n.id !== btn.dataset.removeId);
+        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      });
+    });
+  }
+
+  document.getElementById('scheda-nuova-nota-btn').addEventListener('click', async function(){
+    const input = document.getElementById('scheda-nuova-nota-input');
+    const testo = input.value.trim();
+    if(!testo) return;
+    if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
+    schedaDatiCorrenti.note.push({ id: nuovoIdLocale(), testo, data: new Date().toISOString().slice(0,10) });
+    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+    input.value = '';
+  });
+
+  document.getElementById('condividi-scheda-btn').addEventListener('click', () => {
+    if(!schedaDatiCorrenti) return;
+    let testo = `📇 Scheda atleta — ${schedaAtletaNome}\n`;
+
+    const f = schedaDatiCorrenti.fisico || {};
+    const datiFisiciRighe = [];
+    if(f.dataNascita) datiFisiciRighe.push(`nato/a il ${new Date(f.dataNascita + 'T00:00:00').toLocaleDateString('it-IT')}`);
+    if(f.altezza) datiFisiciRighe.push(`${f.altezza} cm`);
+    if(f.peso) datiFisiciRighe.push(`${f.peso} kg`);
+    if(datiFisiciRighe.length > 0) testo += `\n🧍 ${datiFisiciRighe.join(' · ')}`;
+
+    const perDisciplina = new Map();
+    (schedaDatiCorrenti.record || []).forEach(r => {
+      const attuale = perDisciplina.get(r.disciplina);
+      if(!attuale || (r.data||'') > (attuale.data||'')) perDisciplina.set(r.disciplina, r);
+    });
+    if(perDisciplina.size > 0){
+      testo += `\n\n🏅 Record personali:`;
+      Array.from(perDisciplina.entries()).forEach(([disciplina, r]) => {
+        testo += `\n${disciplina}: ${r.valore}`;
+      });
+    }
+
+    const obiettivi = schedaDatiCorrenti.obiettivi || [];
+    if(obiettivi.length > 0){
+      testo += `\n\n🎯 Obiettivi ${stagioneCorrente()}:`;
+      obiettivi.filter(o => o.stagione === stagioneCorrente()).forEach(o => {
+        testo += `\n${o.fatto ? '✓' : '○'} ${o.testo}`;
+      });
+    }
+
+    if(navigator.share){
+      navigator.share({ text: testo }).catch(() => {});
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(testo), '_blank');
+    }
+  });
+
+  document.getElementById('back-to-coach-from-schede').addEventListener('click', () => {
+    if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
+    showView('view-coach');
+  });
+
+  document.getElementById('back-to-schede-from-dettaglio').addEventListener('click', () => {
+    if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
+    if(schedaDisciplineUnsub) { schedaDisciplineUnsub(); schedaDisciplineUnsub = null; }
+    showView('view-schede');
+  });
+
 
   function renderReport(){
     const d = calcolaReport();
@@ -3403,6 +3946,9 @@
       if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
       if(risultatiDisciplineUnsub) { risultatiDisciplineUnsub(); risultatiDisciplineUnsub = null; }
       if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
+      if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
+      if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
+      if(schedaDisciplineUnsub) { schedaDisciplineUnsub(); schedaDisciplineUnsub = null; }
 
       // Reset stato globale
       currentGruppoId = null;
@@ -3645,6 +4191,7 @@
 
   // --- Navigazione Risultati gare ---
   document.getElementById('card-risultati').addEventListener('click', apriRisultati);
+  document.getElementById('card-schede').addEventListener('click', apriSchede);
   document.getElementById('back-to-coach-from-risultati').addEventListener('click', () => {
     if(risultatiAtletiUnsub) { risultatiAtletiUnsub(); risultatiAtletiUnsub = null; }
     if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
