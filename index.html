@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -1279,6 +1279,27 @@
   .riepilogo-obiettivi-barra{width:70px; height:7px; background:var(--surface-2); border-radius:10px; overflow:hidden; flex-shrink:0;}
   .riepilogo-obiettivi-fill{height:100%; background:var(--primary);}
   .riepilogo-nota{font-size:12.5px; font-style:italic; color:var(--text-dim); text-align:right; max-width:220px;}
+
+  .stato-badge{display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; background:#fdf1de; border:1.5px solid var(--warn, #f5a623); color:#3a2400; margin-bottom:16px;}
+  body.tema-scuro .stato-badge{background:#3a2f14; color:#ffd699;}
+  .stato-badge .icona{font-size:20px;}
+  .stato-badge .info{flex:1;}
+  .stato-badge .titolo{font-weight:700; font-size:13.5px;}
+  .stato-badge .dettaglio{font-size:12px; opacity:.85; margin-top:2px;}
+  .stato-badge .btn-chiudi-stato{background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; padding:6px 10px; font-size:11.5px; font-weight:600; color:var(--text); cursor:pointer; flex-shrink:0;}
+  .report-section-note-sm{font-size:12.5px; color:var(--text-dim); margin:0 0 4px;}
+  .nuovo-stato-form label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px; margin-top:10px;}
+  .nuovo-stato-form select, .nuovo-stato-form input, .nuovo-stato-form textarea{width:100%; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:'Inter',sans-serif;}
+  .nuovo-stato-form textarea{min-height:50px; resize:vertical;}
+  .storico-stato-titolo{font-size:12.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin:20px 0 6px; font-family:'Oswald',sans-serif;}
+  .storico-stato-row{padding:10px 2px; border-bottom:1px solid var(--border); font-size:13px;}
+  .storico-stato-row:last-child{border-bottom:none;}
+  .storico-stato-row .periodo{font-weight:600; display:flex; align-items:center; gap:8px;}
+  .storico-stato-row .tag{font-size:10.5px; font-weight:700; text-transform:uppercase; background:var(--surface-2); color:var(--text-dim); padding:2px 7px; border-radius:8px;}
+  .storico-stato-row .tag.attivo{background:var(--warn, #f5a623); color:#3a2400;}
+  .storico-stato-row .durata{color:var(--text-dim); font-size:12px; margin-top:2px;}
+  .storico-stato-row .motivo{margin-top:4px; font-size:12.5px; line-height:1.4;}
+  .storico-stato-row .btn-remove{margin-top:6px;}
   .fisico-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;}
   .fisico-campo label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
   .fisico-campo input, .fisico-campo select{width:100%; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:14px; font-family:'Inter',sans-serif;}
@@ -1597,11 +1618,44 @@
     <main>
       <span class="categoria-badge" id="scheda-atleta-gruppo">—</span>
 
+      <!-- BADGE STATO ALLENAMENTO (visibile solo se c'è un periodo attivo) -->
+      <div class="stato-badge" id="scheda-stato-badge" style="display:none;">
+        <span class="icona">🩹</span>
+        <div class="info">
+          <div class="titolo" id="scheda-stato-badge-titolo"></div>
+          <div class="dettaglio" id="scheda-stato-badge-dettaglio"></div>
+        </div>
+        <button type="button" class="btn-chiudi-stato" id="scheda-stato-chiudi-btn">Chiudi periodo</button>
+      </div>
+
       <!-- PANNELLO DI RIEPILOGO: sempre aperto, sola lettura, si aggiorna da solo -->
       <div class="riepilogo">
         <p class="riepilogo-titolo">🔎 Riepilogo — colpo d'occhio</p>
         <div id="scheda-riepilogo-corpo"></div>
       </div>
+
+      <!-- STATO ALLENAMENTO -->
+      <details class="report-section">
+        <summary>🩹 Stato allenamento</summary>
+        <div>
+          <p class="report-section-note-sm">Attiva un nuovo periodo solo se l'atleta si allena in modo diverso dal solito (infortunio, ripresa, riposo precauzionale). Se non c'è nulla di attivo, non serve toccare questa sezione.</p>
+          <div class="nuovo-stato-form" id="scheda-stato-form">
+            <label for="scheda-stato-tipo">Tipo</label>
+            <select id="scheda-stato-tipo">
+              <option value="Infortunio">Infortunio</option>
+              <option value="Ripresa graduale">Ripresa graduale</option>
+              <option value="Riposo precauzionale">Riposo precauzionale</option>
+            </select>
+            <label for="scheda-stato-data-inizio">Data inizio</label>
+            <input type="date" id="scheda-stato-data-inizio">
+            <label for="scheda-stato-nota">Nota (motivo, indicazioni)</label>
+            <textarea id="scheda-stato-nota" placeholder="es. Distorsione caviglia, carico ridotto, niente scatti in pista..."></textarea>
+            <button type="button" id="scheda-stato-avvia-btn" class="btn-primary" style="width:auto; padding:11px 20px;">Avvia periodo</button>
+          </div>
+          <h4 class="storico-stato-titolo">Storico periodi</h4>
+          <div id="scheda-stato-storico"></div>
+        </div>
+      </details>
 
       <!-- DATI FISICI -->
       <details class="report-section">
@@ -2068,7 +2122,7 @@
   let schedaCrescitaTipoSelezionato = 'altezza'; // 'altezza' | 'peso'
 
   function schedaDefault(){
-    return { fisico: { dataNascita:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [], crescita: [] };
+    return { fisico: { dataNascita:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [], crescita: [], statoAllenamento: [] };
   }
 
   // Restituisce la stagione sportiva corrente nel formato "2025/26" (l'anno sportivo parte a settembre)
@@ -3537,6 +3591,8 @@
     document.getElementById('scheda-atleta-gruppo').textContent = g ? g.nome : "—";
     document.getElementById('scheda-fisico-feedback').textContent = "";
     document.getElementById('scheda-nuovo-record-form').style.display = 'none';
+    document.getElementById('scheda-stato-data-inizio').value = new Date().toISOString().slice(0,10);
+    document.getElementById('scheda-stato-nota').value = '';
 
     if(schedaDocUnsub) schedaDocUnsub();
     if(schedaDisciplineUnsub) schedaDisciplineUnsub();
@@ -3558,6 +3614,7 @@
       if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
       if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
       if(!schedaDatiCorrenti.crescita) schedaDatiCorrenti.crescita = [];
+      if(!schedaDatiCorrenti.statoAllenamento) schedaDatiCorrenti.statoAllenamento = [];
 
       // Migrazione una tantum: vecchi valori singoli altezza/peso -> prima riga dello storico crescita
       const legacyAltezza = schedaDatiCorrenti.fisico.altezza;
@@ -3579,6 +3636,8 @@
       renderSchedaCrescitaArea();
       renderSchedaObiettivi();
       renderSchedaNote();
+      renderSchedaStatoBadge();
+      renderSchedaStatoStorico();
       renderSchedaRiepilogo();
     }, err => {
       console.error('Errore lettura scheda atleta:', err);
@@ -3591,9 +3650,95 @@
 
     renderSchedaCrescitaTabs();
     renderSchedaCrescitaArea();
+    renderSchedaStatoBadge();
+    renderSchedaStatoStorico();
     renderSchedaRiepilogo();
     showView('view-scheda-atleta');
   }
+
+  // ---------- Stato allenamento (infortunio/ripresa) ----------
+
+  function schedaStatoAttivo(){
+    return (schedaDatiCorrenti.statoAllenamento || []).find(p => !p.dataFine) || null;
+  }
+
+  function renderSchedaStatoBadge(){
+    const badge = document.getElementById('scheda-stato-badge');
+    const attivo = schedaDatiCorrenti ? schedaStatoAttivo() : null;
+    if(!attivo){
+      badge.style.display = 'none';
+      return;
+    }
+    badge.style.display = 'flex';
+    const dataFmt = attivo.dataInizio ? new Date(attivo.dataInizio + 'T00:00:00').toLocaleDateString('it-IT') : '';
+    document.getElementById('scheda-stato-badge-titolo').textContent = `${attivo.tipo} dal ${dataFmt}`;
+    document.getElementById('scheda-stato-badge-dettaglio').textContent = attivo.nota || '';
+  }
+
+  function calcolaDurataGiorni(dataInizio, dataFine){
+    const inizio = new Date(dataInizio + 'T00:00:00');
+    const fine = new Date((dataFine || new Date().toISOString().slice(0,10)) + 'T00:00:00');
+    const giorni = Math.max(0, Math.round((fine - inizio) / (1000*60*60*24)));
+    if(giorni < 14) return `${giorni} giorn${giorni===1?'o':'i'}`;
+    return `${Math.round(giorni/7)} settimane`;
+  }
+
+  function renderSchedaStatoStorico(){
+    const cont = document.getElementById('scheda-stato-storico');
+    const periodi = (schedaDatiCorrenti.statoAllenamento || []).slice().sort((a,b) => (b.dataInizio||'').localeCompare(a.dataInizio||''));
+    if(periodi.length === 0){
+      cont.innerHTML = '<p class="empty-note">Nessun periodo registrato.</p>';
+      return;
+    }
+    cont.innerHTML = periodi.map(p => {
+      const attivo = !p.dataFine;
+      const durata = attivo
+        ? `dal ${new Date(p.dataInizio + 'T00:00:00').toLocaleDateString('it-IT')} · in corso da ${calcolaDurataGiorni(p.dataInizio, null)}`
+        : `${new Date(p.dataInizio + 'T00:00:00').toLocaleDateString('it-IT')} → ${new Date(p.dataFine + 'T00:00:00').toLocaleDateString('it-IT')} · ${calcolaDurataGiorni(p.dataInizio, p.dataFine)}`;
+      return `
+        <div class="storico-stato-row">
+          <div class="periodo">${p.tipo} <span class="tag${attivo ? ' attivo' : ''}">${attivo ? 'attivo' : 'chiuso'}</span></div>
+          <div class="durata">${durata}</div>
+          ${p.nota ? `<div class="motivo">${p.nota}</div>` : ''}
+          <button type="button" class="btn-remove" data-remove-id="${p.id}">Rimuovi</button>
+        </div>
+      `;
+    }).join('');
+
+    cont.querySelectorAll('[data-remove-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Rimuovere questo periodo dallo storico?')) return;
+        schedaDatiCorrenti.statoAllenamento = (schedaDatiCorrenti.statoAllenamento || []).filter(p => p.id !== btn.dataset.removeId);
+        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      });
+    });
+  }
+
+  document.getElementById('scheda-stato-avvia-btn').addEventListener('click', async () => {
+    if(schedaStatoAttivo()){
+      alert('C\'è già un periodo attivo: chiudilo prima di avviarne un altro.');
+      return;
+    }
+    const tipo = document.getElementById('scheda-stato-tipo').value;
+    const dataInizio = document.getElementById('scheda-stato-data-inizio').value;
+    const nota = document.getElementById('scheda-stato-nota').value.trim();
+    if(!dataInizio){
+      alert('Inserisci la data di inizio.');
+      return;
+    }
+    if(!schedaDatiCorrenti.statoAllenamento) schedaDatiCorrenti.statoAllenamento = [];
+    schedaDatiCorrenti.statoAllenamento.push({ id: nuovoIdLocale(), tipo, dataInizio, dataFine: null, nota });
+    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+    document.getElementById('scheda-stato-nota').value = '';
+  });
+
+  document.getElementById('scheda-stato-chiudi-btn').addEventListener('click', async () => {
+    const attivo = schedaStatoAttivo();
+    if(!attivo) return;
+    if(!confirm('Segnare come concluso questo periodo, da oggi?')) return;
+    attivo.dataFine = new Date().toISOString().slice(0,10);
+    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+  });
 
   // Calcola l'età (anni compiuti) da una data di nascita "YYYY-MM-DD"
   function calcolaEta(dataNascitaStr){
