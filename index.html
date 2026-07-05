@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -3493,6 +3493,7 @@
     schedaAtletaId = atletaId;
     schedaAtletaNome = nome;
     schedaDisciplinaSelezionata = null;
+    schedaDatiCorrenti = schedaDefault(); // mai null, evita crash se la lettura fallisce o è lenta
 
     document.getElementById('scheda-atleta-nome').textContent = nome;
     const g = GRUPPI[currentGruppoId];
@@ -3505,8 +3506,9 @@
 
     schedaDisciplineUnsub = onSnapshot(collection(db,'discipline'), snap => {
       schedaDisciplineDocs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b)=>a.nome.localeCompare(b.nome));
-      if(!schedaDisciplinaSelezionata && schedaDisciplineDocs.length > 0){
-        schedaDisciplinaSelezionata = schedaDisciplineDocs[0].nome;
+      const disciplineGruppo = schedaDisciplineFiltrate();
+      if(!schedaDisciplinaSelezionata && disciplineGruppo.length > 0){
+        schedaDisciplinaSelezionata = disciplineGruppo[0].nome;
       }
       renderSchedaDisciplineTabs();
       renderSchedaRecordArea();
@@ -3518,13 +3520,19 @@
       if(!schedaDatiCorrenti.record) schedaDatiCorrenti.record = [];
       if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
       if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
+      document.getElementById('scheda-fisico-feedback').textContent = "";
       renderSchedaFisico();
       renderSchedaRecordArea();
       renderSchedaObiettivi();
       renderSchedaNote();
     }, err => {
       console.error('Errore lettura scheda atleta:', err);
+      document.getElementById('scheda-fisico-feedback').textContent =
+        err.code === 'permission-denied'
+          ? "⚠️ Permessi Firestore non configurati per le schede atleti: contatta chi gestisce l'app."
+          : "⚠️ Errore nel caricamento della scheda.";
     });
+
 
     showView('view-scheda-atleta');
   }
@@ -3555,19 +3563,27 @@
       setTimeout(() => { feedback.textContent = ""; }, 2500);
     } catch(err){
       console.error(err);
-      feedback.textContent = "Errore durante il salvataggio, riprova.";
+      feedback.textContent = err.code === 'permission-denied'
+        ? "⚠️ Permessi Firestore non configurati per le schede atleti."
+        : "Errore durante il salvataggio, riprova.";
     } finally {
       btn.disabled = false;
     }
   });
 
+  function schedaDisciplineFiltrate(){
+    const consentite = (GRUPPI[currentGruppoId] && GRUPPI[currentGruppoId].disciplineConsentite) || [];
+    return consentite.length === 0 ? schedaDisciplineDocs : schedaDisciplineDocs.filter(d => consentite.includes(d.nome));
+  }
+
   function renderSchedaDisciplineTabs(){
     const cont = document.getElementById('scheda-discipline-tabs');
-    if(schedaDisciplineDocs.length === 0){
-      cont.innerHTML = '<p class="empty-note">Nessuna disciplina configurata (chiedi alla Società di aggiungerle).</p>';
+    const disciplineGruppo = schedaDisciplineFiltrate();
+    if(disciplineGruppo.length === 0){
+      cont.innerHTML = '<p class="empty-note">Nessuna disciplina consentita per questo gruppo (impostabile in Gestione gruppi).</p>';
       return;
     }
-    cont.innerHTML = schedaDisciplineDocs.map(d => `
+    cont.innerHTML = disciplineGruppo.map(d => `
       <button type="button" class="discipline-tab${d.nome === schedaDisciplinaSelezionata ? ' attiva' : ''}" data-nome="${d.nome}">${d.nome}</button>
     `).join('');
     cont.querySelectorAll('.discipline-tab').forEach(btn => {
