@@ -1593,14 +1593,6 @@
             <input type="date" id="scheda-fisico-nascita">
           </div>
           <div class="fisico-campo">
-            <label for="scheda-fisico-altezza">Altezza (cm)</label>
-            <input type="number" id="scheda-fisico-altezza" placeholder="es. 158">
-          </div>
-          <div class="fisico-campo">
-            <label for="scheda-fisico-peso">Peso (kg)</label>
-            <input type="number" id="scheda-fisico-peso" placeholder="es. 46">
-          </div>
-          <div class="fisico-campo">
             <label for="scheda-fisico-dominante">Lato dominante</label>
             <select id="scheda-fisico-dominante">
               <option value="">—</option>
@@ -1616,6 +1608,21 @@
         <div class="save-bar" style="margin-top:14px;">
           <button type="button" id="salva-fisico-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Salva dati fisici</button>
           <span id="scheda-fisico-feedback" class="save-feedback"></span>
+        </div>
+      </div>
+
+      <!-- STORICO CRESCITA -->
+      <div class="scheda-section">
+        <h3>📈 Storico crescita</h3>
+        <div id="scheda-crescita-tabs" class="discipline-tabs"></div>
+        <div id="scheda-crescita-attuale"></div>
+        <div class="progressione-svg-wrap" id="scheda-crescita-grafico-wrap"></div>
+        <div class="storico-record" id="scheda-crescita-storico"></div>
+        <div class="nuovo-record-form" id="scheda-crescita-form">
+          <input type="date" id="scheda-crescita-data" title="Data">
+          <input type="text" id="scheda-crescita-valore" placeholder="Valore">
+          <input type="text" id="scheda-crescita-nota" placeholder="Nota (facoltativa)">
+          <button type="button" id="scheda-crescita-salva-btn" class="btn-secondary">+ Aggiungi</button>
         </div>
       </div>
 
@@ -2029,9 +2036,10 @@
   let schedaDisciplineUnsub = null;
   let schedaDisciplineDocs = []; // [{id, nome}]
   let schedaDisciplinaSelezionata = null;
+  let schedaCrescitaTipoSelezionato = 'altezza'; // 'altezza' | 'peso'
 
   function schedaDefault(){
-    return { fisico: { dataNascita:'', altezza:'', peso:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [] };
+    return { fisico: { dataNascita:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [], crescita: [] };
   }
 
   // Restituisce la stagione sportiva corrente nel formato "2025/26" (l'anno sportivo parte a settembre)
@@ -3514,15 +3522,32 @@
       renderSchedaRecordArea();
     });
 
-    schedaDocUnsub = onSnapshot(doc(db,'schedeAtleti', atletaId), snap => {
+    schedaDocUnsub = onSnapshot(doc(db,'schedeAtleti', atletaId), async snap => {
       schedaDatiCorrenti = snap.exists() ? { ...schedaDefault(), ...snap.data() } : schedaDefault();
       if(!schedaDatiCorrenti.fisico) schedaDatiCorrenti.fisico = schedaDefault().fisico;
       if(!schedaDatiCorrenti.record) schedaDatiCorrenti.record = [];
       if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
       if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
+      if(!schedaDatiCorrenti.crescita) schedaDatiCorrenti.crescita = [];
+
+      // Migrazione una tantum: vecchi valori singoli altezza/peso -> prima riga dello storico crescita
+      const legacyAltezza = schedaDatiCorrenti.fisico.altezza;
+      const legacyPeso = schedaDatiCorrenti.fisico.peso;
+      if(schedaDatiCorrenti.crescita.length === 0 && (legacyAltezza || legacyPeso)){
+        const oggi = new Date().toISOString().slice(0,10);
+        if(legacyAltezza) schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo:'altezza', valore: String(legacyAltezza), data: oggi, nota: '' });
+        if(legacyPeso) schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo:'peso', valore: String(legacyPeso), data: oggi, nota: '' });
+        try{
+          await setDoc(doc(db,'schedeAtleti', atletaId), schedaDatiCorrenti, { merge: true });
+        } catch(err){
+          console.error('Migrazione storico crescita non riuscita:', err);
+        }
+      }
+
       document.getElementById('scheda-fisico-feedback').textContent = "";
       renderSchedaFisico();
       renderSchedaRecordArea();
+      renderSchedaCrescitaArea();
       renderSchedaObiettivi();
       renderSchedaNote();
     }, err => {
@@ -3534,14 +3559,14 @@
     });
 
 
+    renderSchedaCrescitaTabs();
+    renderSchedaCrescitaArea();
     showView('view-scheda-atleta');
   }
 
   function renderSchedaFisico(){
     const f = schedaDatiCorrenti.fisico || {};
     document.getElementById('scheda-fisico-nascita').value = f.dataNascita || '';
-    document.getElementById('scheda-fisico-altezza').value = f.altezza || '';
-    document.getElementById('scheda-fisico-peso').value = f.peso || '';
     document.getElementById('scheda-fisico-dominante').value = f.dominante || '';
     document.getElementById('scheda-fisico-note').value = f.note || '';
   }
@@ -3553,8 +3578,6 @@
     try{
       schedaDatiCorrenti.fisico = {
         dataNascita: document.getElementById('scheda-fisico-nascita').value,
-        altezza: document.getElementById('scheda-fisico-altezza').value,
-        peso: document.getElementById('scheda-fisico-peso').value,
         dominante: document.getElementById('scheda-fisico-dominante').value,
         note: document.getElementById('scheda-fisico-note').value
       };
@@ -3700,6 +3723,91 @@
     document.getElementById('scheda-record-data').value = '';
     document.getElementById('scheda-record-valore').value = '';
     document.getElementById('scheda-record-gara').value = '';
+  });
+
+  // ---------- Storico crescita (altezza/peso) ----------
+
+  const CRESCITA_ETICHETTE = { altezza: { nome:'Altezza', unita:'cm' }, peso: { nome:'Peso', unita:'kg' } };
+
+  function renderSchedaCrescitaTabs(){
+    const cont = document.getElementById('scheda-crescita-tabs');
+    cont.innerHTML = Object.keys(CRESCITA_ETICHETTE).map(tipo => `
+      <button type="button" class="discipline-tab${tipo === schedaCrescitaTipoSelezionato ? ' attiva' : ''}" data-tipo="${tipo}">${CRESCITA_ETICHETTE[tipo].nome}</button>
+    `).join('');
+    cont.querySelectorAll('.discipline-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        schedaCrescitaTipoSelezionato = btn.dataset.tipo;
+        renderSchedaCrescitaTabs();
+        renderSchedaCrescitaArea();
+      });
+    });
+  }
+
+  function renderSchedaCrescitaArea(){
+    const pbCont = document.getElementById('scheda-crescita-attuale');
+    const graficoCont = document.getElementById('scheda-crescita-grafico-wrap');
+    const storicoCont = document.getElementById('scheda-crescita-storico');
+    if(!schedaDatiCorrenti){
+      pbCont.innerHTML = ''; graficoCont.innerHTML = ''; storicoCont.innerHTML = '';
+      return;
+    }
+    const etichetta = CRESCITA_ETICHETTE[schedaCrescitaTipoSelezionato];
+    const misurazioni = (schedaDatiCorrenti.crescita || [])
+      .filter(m => m.tipo === schedaCrescitaTipoSelezionato)
+      .sort((a,b) => (a.data||'').localeCompare(b.data||''));
+
+    if(misurazioni.length === 0){
+      pbCont.innerHTML = `<p class="empty-note">Nessuna misurazione ancora per ${etichetta.nome.toLowerCase()}.</p>`;
+      graficoCont.innerHTML = '';
+      storicoCont.innerHTML = '';
+      return;
+    }
+
+    const ultima = misurazioni[misurazioni.length - 1];
+    pbCont.innerHTML = `
+      <div class="pb-attuale">
+        <span class="pb-valore">${ultima.valore} ${etichetta.unita}</span>
+        <span class="pb-eti">ultima misurazione · ${ultima.data ? new Date(ultima.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}</span>
+      </div>
+    `;
+
+    graficoCont.innerHTML = renderGraficoProgressione(misurazioni);
+
+    const ordinateDesc = [...misurazioni].reverse();
+    storicoCont.innerHTML = ordinateDesc.map(m => `
+      <div class="storico-record-row">
+        <span class="val">${m.valore} ${etichetta.unita}</span>
+        <span class="dt">${m.data ? new Date(m.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}${m.nota ? ' · ' + m.nota : ''}</span>
+        <button type="button" class="btn-remove" data-id="${m.id}" style="flex-shrink:0;">Rimuovi</button>
+      </div>
+    `).join('');
+
+    storicoCont.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Rimuovere questa misurazione?')) return;
+        schedaDatiCorrenti.crescita = (schedaDatiCorrenti.crescita || []).filter(m => m.id !== btn.dataset.id);
+        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      });
+    });
+  }
+
+  document.getElementById('scheda-crescita-salva-btn').addEventListener('click', async function(){
+    const dataVal = document.getElementById('scheda-crescita-data').value;
+    const valoreVal = document.getElementById('scheda-crescita-valore').value.trim();
+    const notaVal = document.getElementById('scheda-crescita-nota').value.trim();
+
+    if(!dataVal || !valoreVal){
+      alert('Inserisci almeno data e valore.');
+      return;
+    }
+    if(!schedaDatiCorrenti.crescita) schedaDatiCorrenti.crescita = [];
+    schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo: schedaCrescitaTipoSelezionato, valore: valoreVal, data: dataVal, nota: notaVal });
+
+    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+
+    document.getElementById('scheda-crescita-data').value = '';
+    document.getElementById('scheda-crescita-valore').value = '';
+    document.getElementById('scheda-crescita-nota').value = '';
   });
 
   function renderSchedaObiettivi(){
