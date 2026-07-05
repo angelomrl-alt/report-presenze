@@ -1264,6 +1264,21 @@
 
   /* ---------- SCHEDA ATLETA ---------- */
   .scheda-search{width:100%; padding:11px 14px; border:1.5px solid var(--border-strong); border-radius:10px; background:var(--surface); color:var(--text); font-size:14px; margin-bottom:14px; font-family:'Inter',sans-serif;}
+  .riepilogo{background:var(--surface); border:1.5px solid var(--primary); border-radius:var(--radius); padding:18px; margin-bottom:18px; box-shadow:var(--btn-shadow);}
+  .riepilogo-titolo{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--primary); margin:0 0 14px;}
+  .riepilogo-riga{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:9px 0; border-bottom:1px solid var(--border);}
+  .riepilogo-riga:last-child{border-bottom:none;}
+  .riepilogo-etichetta{font-size:12.5px; color:var(--text-dim); flex-shrink:0;}
+  .riepilogo-valore{font-size:14px; font-weight:600; text-align:right;}
+  .riepilogo-trend-su{color:#1f8a5a;}
+  .riepilogo-trend-giu{color:#c0432f;}
+  .riepilogo-mini-pb-grid{display:flex; flex-direction:column; gap:6px; align-items:flex-end;}
+  .riepilogo-mini-pb-riga{font-size:13px;}
+  .riepilogo-mini-pb-riga .disc{color:var(--text-dim); margin-right:6px;}
+  .riepilogo-obiettivi-wrap{display:flex; align-items:center; gap:8px;}
+  .riepilogo-obiettivi-barra{width:70px; height:7px; background:var(--surface-2); border-radius:10px; overflow:hidden; flex-shrink:0;}
+  .riepilogo-obiettivi-fill{height:100%; background:var(--primary);}
+  .riepilogo-nota{font-size:12.5px; font-style:italic; color:var(--text-dim); text-align:right; max-width:220px;}
   .fisico-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;}
   .fisico-campo label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
   .fisico-campo input, .fisico-campo select{width:100%; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:14px; font-family:'Inter',sans-serif;}
@@ -1581,6 +1596,12 @@
     </header>
     <main>
       <span class="categoria-badge" id="scheda-atleta-gruppo">—</span>
+
+      <!-- PANNELLO DI RIEPILOGO: sempre aperto, sola lettura, si aggiorna da solo -->
+      <div class="riepilogo">
+        <p class="riepilogo-titolo">🔎 Riepilogo — colpo d'occhio</p>
+        <div id="scheda-riepilogo-corpo"></div>
+      </div>
 
       <!-- DATI FISICI -->
       <details class="report-section">
@@ -3558,6 +3579,7 @@
       renderSchedaCrescitaArea();
       renderSchedaObiettivi();
       renderSchedaNote();
+      renderSchedaRiepilogo();
     }, err => {
       console.error('Errore lettura scheda atleta:', err);
       document.getElementById('scheda-fisico-feedback').textContent =
@@ -3569,7 +3591,107 @@
 
     renderSchedaCrescitaTabs();
     renderSchedaCrescitaArea();
+    renderSchedaRiepilogo();
     showView('view-scheda-atleta');
+  }
+
+  // Calcola l'età (anni compiuti) da una data di nascita "YYYY-MM-DD"
+  function calcolaEta(dataNascitaStr){
+    if(!dataNascitaStr) return null;
+    const nascita = new Date(dataNascitaStr + 'T00:00:00');
+    const oggi = new Date();
+    let eta = oggi.getFullYear() - nascita.getFullYear();
+    const compleannoQuestAnno = new Date(oggi.getFullYear(), nascita.getMonth(), nascita.getDate());
+    if(oggi < compleannoQuestAnno) eta--;
+    return eta;
+  }
+
+  function renderSchedaRiepilogo(){
+    const cont = document.getElementById('scheda-riepilogo-corpo');
+    if(!schedaDatiCorrenti){ cont.innerHTML = ''; return; }
+
+    const righe = [];
+
+    // Età
+    const eta = calcolaEta(schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dataNascita);
+    righe.push(`
+      <div class="riepilogo-riga">
+        <span class="riepilogo-etichetta">Età</span>
+        <span class="riepilogo-valore">${eta !== null ? eta + ' anni' : '—'}</span>
+      </div>
+    `);
+
+    // Altezza / peso attuali con tendenza rispetto alla misurazione precedente
+    const crescitaTesto = ['altezza','peso'].map(tipo => {
+      const misurazioni = (schedaDatiCorrenti.crescita || []).filter(m => m.tipo === tipo).sort((a,b) => (a.data||'').localeCompare(b.data||''));
+      if(misurazioni.length === 0) return null;
+      const ultima = misurazioni[misurazioni.length - 1];
+      const precedente = misurazioni.length > 1 ? misurazioni[misurazioni.length - 2] : null;
+      let freccia = '';
+      if(precedente){
+        const diff = parseFloat(String(ultima.valore).replace(',','.')) - parseFloat(String(precedente.valore).replace(',','.'));
+        if(!isNaN(diff) && diff > 0) freccia = ' <span class="riepilogo-trend-su">▲</span>';
+        else if(!isNaN(diff) && diff < 0) freccia = ' <span class="riepilogo-trend-giu">▼</span>';
+      }
+      const unita = CRESCITA_ETICHETTE[tipo].unita;
+      return `${ultima.valore} ${unita}${freccia}`;
+    }).filter(Boolean);
+
+    righe.push(`
+      <div class="riepilogo-riga">
+        <span class="riepilogo-etichetta">Altezza / Peso attuali</span>
+        <span class="riepilogo-valore">${crescitaTesto.length > 0 ? crescitaTesto.join(' · ') : '—'}</span>
+      </div>
+    `);
+
+    // Record più recente per ogni disciplina con almeno un risultato
+    const perDisciplina = new Map();
+    (schedaDatiCorrenti.record || []).forEach(r => {
+      const attuale = perDisciplina.get(r.disciplina);
+      if(!attuale || (r.data||'') > (attuale.data||'')) perDisciplina.set(r.disciplina, r);
+    });
+    const righePb = Array.from(perDisciplina.entries()).map(([disciplina, r]) => `
+      <div class="riepilogo-mini-pb-riga"><span class="disc">${disciplina}</span><strong>${r.valore}</strong></div>
+    `).join('');
+
+    righe.push(`
+      <div class="riepilogo-riga">
+        <span class="riepilogo-etichetta">Record più recenti</span>
+        ${righePb ? `<div class="riepilogo-mini-pb-grid">${righePb}</div>` : '<span class="riepilogo-valore">—</span>'}
+      </div>
+    `);
+
+    // Obiettivi della stagione corrente: quanti fatti su quanti totali
+    const stagione = stagioneCorrente();
+    const obiettiviStagione = (schedaDatiCorrenti.obiettivi || []).filter(o => o.stagione === stagione);
+    const fatti = obiettiviStagione.filter(o => o.fatto).length;
+    const totali = obiettiviStagione.length;
+    const percentuale = totali > 0 ? Math.round((fatti / totali) * 100) : 0;
+
+    righe.push(`
+      <div class="riepilogo-riga">
+        <span class="riepilogo-etichetta">Obiettivi stagione ${stagione}</span>
+        ${totali > 0 ? `
+          <div class="riepilogo-obiettivi-wrap">
+            <div class="riepilogo-obiettivi-barra"><div class="riepilogo-obiettivi-fill" style="width:${percentuale}%;"></div></div>
+            <span class="riepilogo-valore" style="font-size:13px;">${fatti}/${totali}</span>
+          </div>
+        ` : '<span class="riepilogo-valore">—</span>'}
+      </div>
+    `);
+
+    // Nota più recente
+    const noteOrdinate = (schedaDatiCorrenti.note || []).slice().sort((a,b) => (b.data||'').localeCompare(a.data||''));
+    const ultimaNota = noteOrdinate[0];
+
+    righe.push(`
+      <div class="riepilogo-riga">
+        <span class="riepilogo-etichetta">Ultima nota</span>
+        <span class="riepilogo-nota">${ultimaNota ? `"${ultimaNota.testo}" · ${new Date(ultimaNota.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'short' })}` : '—'}</span>
+      </div>
+    `);
+
+    cont.innerHTML = righe.join('');
   }
 
   function renderSchedaFisico(){
