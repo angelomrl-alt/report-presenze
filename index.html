@@ -3622,13 +3622,23 @@
       if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
       if(!schedaDatiCorrenti.crescita) schedaDatiCorrenti.crescita = [];
 
-      // Migrazione una tantum: vecchi valori singoli altezza/peso -> prima riga dello storico crescita
+      // Migrazione una tantum: vecchi valori singoli altezza/peso -> prima riga dello storico crescita.
+      // Importante: dopo la migrazione i vecchi campi legacy vengono rimossi definitivamente da fisico,
+      // altrimenti se in futuro lo storico torna vuoto (es. cancellando l'unica misurazione) la migrazione
+      // ripartirebbe da sola e "resusciterebbe" un dato già cancellato dall'allenatore.
       const legacyAltezza = schedaDatiCorrenti.fisico.altezza;
       const legacyPeso = schedaDatiCorrenti.fisico.peso;
-      if(schedaDatiCorrenti.crescita.length === 0 && (legacyAltezza || legacyPeso)){
-        const oggi = new Date().toISOString().slice(0,10);
-        if(legacyAltezza) schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo:'altezza', valore: String(legacyAltezza), data: oggi, nota: '' });
-        if(legacyPeso) schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo:'peso', valore: String(legacyPeso), data: oggi, nota: '' });
+      if(legacyAltezza || legacyPeso){
+        if(schedaDatiCorrenti.crescita.length === 0){
+          const oggi = new Date().toISOString().slice(0,10);
+          if(legacyAltezza) schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo:'altezza', valore: String(legacyAltezza), data: oggi, nota: '' });
+          if(legacyPeso) schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo:'peso', valore: String(legacyPeso), data: oggi, nota: '' });
+        }
+        schedaDatiCorrenti.fisico = {
+          dataNascita: schedaDatiCorrenti.fisico.dataNascita || '',
+          dominante: schedaDatiCorrenti.fisico.dominante || '',
+          note: schedaDatiCorrenti.fisico.note || ''
+        };
         try{
           await setDoc(doc(db,'schedeAtleti', atletaId), schedaDatiCorrenti, { merge: true });
         } catch(err){
