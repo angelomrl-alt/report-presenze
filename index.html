@@ -1280,6 +1280,12 @@
   .riepilogo-obiettivi-fill{height:100%; background:var(--primary);}
   .riepilogo-nota{font-size:12.5px; font-style:italic; color:var(--text-dim); text-align:right; max-width:220px;}
 
+  .medico-badge{display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; background:#fdeaea; border:1.5px solid var(--danger); color:#5a1a15; margin-bottom:16px;}
+  body.tema-scuro .medico-badge{background:#3a1a17; color:#ffb3ab;}
+  .medico-badge .icona{font-size:20px;}
+  .medico-badge .info{flex:1;}
+  .medico-badge .titolo{font-weight:700; font-size:13.5px;}
+  .medico-badge .dettaglio{font-size:12.5px; opacity:.9; margin-top:2px; line-height:1.4; white-space:pre-wrap;}
   .stato-badge{display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; background:#fdf1de; border:1.5px solid var(--warn, #f5a623); color:#3a2400; margin-bottom:16px;}
   body.tema-scuro .stato-badge{background:#3a2f14; color:#ffd699;}
   .stato-badge .icona{font-size:20px;}
@@ -1618,6 +1624,15 @@
     </header>
     <main>
       <span class="categoria-badge" id="scheda-atleta-gruppo">—</span>
+
+      <!-- BADGE NOTE MEDICHE (visibile solo se il campo note fisiche non è vuoto) -->
+      <div class="medico-badge" id="scheda-medico-badge" style="display:none;">
+        <span class="icona">⚕️</span>
+        <div class="info">
+          <div class="titolo">Da sapere su questo atleta</div>
+          <div class="dettaglio" id="scheda-medico-badge-testo"></div>
+        </div>
+      </div>
 
       <!-- BADGE STATO ALLENAMENTO (visibile solo se c'è un periodo attivo) -->
       <div class="stato-badge" id="scheda-stato-badge" style="display:none;">
@@ -3646,6 +3661,7 @@
     });
 
 
+    renderSchedaFisico();
     renderSchedaCrescitaTabs();
     renderSchedaCrescitaArea();
     renderSchedaStatoBadge();
@@ -3842,6 +3858,14 @@
     document.getElementById('scheda-fisico-nascita').value = f.dataNascita || '';
     document.getElementById('scheda-fisico-dominante').value = f.dominante || '';
     document.getElementById('scheda-fisico-note').value = f.note || '';
+
+    const badge = document.getElementById('scheda-medico-badge');
+    if(f.note && f.note.trim()){
+      badge.style.display = 'flex';
+      document.getElementById('scheda-medico-badge-testo').textContent = f.note.trim();
+    } else {
+      badge.style.display = 'none';
+    }
   }
 
   document.getElementById('salva-fisico-btn').addEventListener('click', async function(){
