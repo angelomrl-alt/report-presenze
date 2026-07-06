@@ -1306,6 +1306,7 @@
   .fisico-note{margin-top:12px;}
   .fisico-note label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
   .fisico-note textarea{width:100%; min-height:56px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;}
+  .promemoria-crescita{font-size:12px; color:var(--text-dim); background:var(--surface-2); border-radius:10px; padding:10px 12px; margin-top:16px; line-height:1.5;}
   .discipline-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px;}
   .discipline-tab{flex-shrink:0; padding:7px 13px; border-radius:20px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text-dim); font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; font-family:'Inter',sans-serif;}
   .discipline-tab.attiva{background:var(--primary); color:var(--primary-ink); border-color:var(--primary);}
@@ -1657,9 +1658,9 @@
         </div>
       </details>
 
-      <!-- DATI FISICI -->
+      <!-- DATI FISICI + STORICO CRESCITA (unica finestra) -->
       <details class="report-section">
-        <summary>🧍 Dati fisici</summary>
+        <summary>🧍 Dati fisici e crescita</summary>
         <div>
           <div class="fisico-grid">
             <div class="fisico-campo">
@@ -1683,13 +1684,10 @@
             <button type="button" id="salva-fisico-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Salva dati fisici</button>
             <span id="scheda-fisico-feedback" class="save-feedback"></span>
           </div>
-        </div>
-      </details>
 
-      <!-- STORICO CRESCITA -->
-      <details class="report-section">
-        <summary>📈 Storico crescita</summary>
-        <div>
+          <p class="promemoria-crescita">💡 Per atleti giovani, altezza e peso possono cambiare in fretta: aggiornali ogni 2-3 mesi per tenere il grafico di crescita affidabile.</p>
+
+          <h4 class="storico-stato-titolo" style="margin-top:22px;">📈 Storico crescita</h4>
           <div id="scheda-crescita-tabs" class="discipline-tabs"></div>
           <div id="scheda-crescita-attuale"></div>
           <div class="progressione-svg-wrap" id="scheda-crescita-grafico-wrap"></div>
