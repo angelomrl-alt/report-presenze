@@ -1294,6 +1294,43 @@
   .fisico-note label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
   .fisico-note textarea{width:100%; min-height:56px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;}
   .promemoria-crescita{font-size:12px; color:var(--text-dim); background:var(--surface-2); border-radius:10px; padding:10px 12px; margin-top:16px; line-height:1.5;}
+
+  /* ---------- Vista di stampa: report stagionale ---------- */
+  #vista-stampa-report{display:none;}
+  body.stampa-attiva > *:not(#vista-stampa-report){display:none !important;}
+  body.stampa-attiva #vista-stampa-report{display:block; background:#fff; color:#1a1f29; font-family:'Inter',system-ui,sans-serif; min-height:100vh;}
+  .pagina-report{max-width:760px; margin:0 auto; padding:32px 24px;}
+  .intestazione-report{display:flex; justify-content:space-between; align-items:flex-end; border-bottom:3px solid #2f9e6e; padding-bottom:16px; margin-bottom:24px;}
+  .intestazione-report h1{font-family:'Oswald',sans-serif; font-size:24px; margin:0 0 4px;}
+  .sotto-report{font-size:13px; color:#5c584c;}
+  .periodo-report{text-align:right; font-size:12.5px; color:#5c584c; line-height:1.6;}
+  .periodo-report strong{color:#1a1f29; font-size:13.5px;}
+  .sezione-report{margin-bottom:28px; page-break-inside:avoid;}
+  .sezione-report h2{font-family:'Oswald',sans-serif; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:#2f9e6e; border-bottom:1px solid #dcd8cc; padding-bottom:6px; margin:0 0 14px;}
+  .badge-medica-report{background:#fdeaea; border:1px solid #e2a29b; border-radius:8px; padding:10px 14px; font-size:12.5px; margin-bottom:20px;}
+  .badge-medica-report strong{display:block; margin-bottom:2px; font-size:12px;}
+  .griglia-fisici-report{display:flex; gap:28px; flex-wrap:wrap; font-size:13px;}
+  .griglia-fisici-report div span{display:block; color:#5c584c; font-size:11px; margin-bottom:2px;}
+  .grafici-crescita-report{display:flex; gap:24px; flex-wrap:wrap;}
+  .grafici-crescita-report .mini-grafico-report{flex:1; min-width:180px;}
+  .grafici-crescita-report .titolo-mini-report{font-size:12px; font-weight:600; margin-bottom:6px;}
+  .disciplina-blocco-report{margin-bottom:20px;}
+  .disciplina-blocco-report .titolo-disciplina-report{font-size:13px; font-weight:700; margin-bottom:6px; display:flex; justify-content:space-between;}
+  .disciplina-blocco-report .valore-attuale-report{color:#2f9e6e;}
+  table.obiettivi-report{width:100%; border-collapse:collapse; font-size:13px;}
+  table.obiettivi-report td{padding:7px 4px; border-bottom:1px solid #dcd8cc;}
+  table.obiettivi-report td:first-child{width:24px; text-align:center;}
+  .fatto-si-report{color:#2f9e6e; font-weight:700;}
+  .fatto-no-report{color:#5c584c;}
+  .nota-riga-report{font-size:12.5px; padding:8px 0; border-bottom:1px solid #dcd8cc; line-height:1.5;}
+  .nota-riga-report .data-nota-report{color:#5c584c; font-size:11px; margin-bottom:2px;}
+  .firma-report{margin-top:40px; display:flex; justify-content:space-between; font-size:12px; color:#5c584c;}
+  .empty-note-report{color:#5c584c; font-size:12.5px;}
+  .stagione-select-wrap{display:flex; align-items:center; gap:8px;}
+  .stagione-select-wrap select{padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13px; font-family:'Inter',sans-serif;}
+  @media print{
+    @page{ margin:16mm; }
+  }
   .discipline-tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:10px;}
   .discipline-tab{flex-shrink:0; padding:7px 13px; border-radius:20px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text-dim); font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; font-family:'Inter',sans-serif;}
   .discipline-tab.attiva{background:var(--primary); color:var(--primary-ink); border-color:var(--primary);}
@@ -1707,6 +1744,13 @@
 
       <div class="save-bar">
         <button type="button" id="condividi-scheda-btn" class="btn-secondary">📤 Condividi scheda</button>
+      </div>
+      <div class="save-bar" style="margin-top:10px; flex-wrap:wrap;">
+        <div class="stagione-select-wrap">
+          <label for="report-stagione-select" style="font-size:12.5px; color:var(--text-dim);">Stagione:</label>
+          <select id="report-stagione-select"></select>
+        </div>
+        <button type="button" id="report-stagione-btn" class="btn-secondary">🖨️ Report stagione (PDF)</button>
       </div>
     </main>
   </section>
@@ -3599,6 +3643,7 @@
       renderSchedaObiettivi();
       renderSchedaNote();
       renderSchedaRiepilogo();
+      renderReportStagioneSelect();
     }, err => {
       console.error('Errore lettura scheda atleta:', err);
       document.getElementById('scheda-fisico-feedback').textContent =
@@ -3612,6 +3657,7 @@
     renderSchedaCrescitaTabs();
     renderSchedaCrescitaArea();
     renderSchedaRiepilogo();
+    renderReportStagioneSelect();
     showView('view-scheda-atleta');
   }
 
@@ -4082,6 +4128,147 @@
     } else {
       window.open('https://wa.me/?text=' + encodeURIComponent(testo), '_blank');
     }
+  });
+
+  // ---------- Report stagionale stampabile/PDF ----------
+
+  // Dato "2025/26" restituisce l'intervallo date della stagione sportiva (1 set -> 31 ago)
+  function rangeStagione(stagioneStr){
+    const inizioAnno = parseInt(stagioneStr.split('/')[0], 10);
+    return { inizio: `${inizioAnno}-09-01`, fine: `${inizioAnno + 1}-08-31` };
+  }
+
+  function renderReportStagioneSelect(){
+    const select = document.getElementById('report-stagione-select');
+    if(!schedaDatiCorrenti) return;
+    const stagioni = new Set([stagioneCorrente()]);
+    (schedaDatiCorrenti.obiettivi || []).forEach(o => { if(o.stagione) stagioni.add(o.stagione); });
+    const elenco = Array.from(stagioni).sort().reverse();
+    const selezionataPrima = select.value;
+    select.innerHTML = elenco.map(s => `<option value="${s}">${s}</option>`).join('');
+    select.value = elenco.includes(selezionataPrima) ? selezionataPrima : stagioneCorrente();
+  }
+
+  function generaReportStagione(){
+    if(!schedaDatiCorrenti) return;
+    const stagioneScelta = document.getElementById('report-stagione-select').value;
+    const { inizio, fine } = rangeStagione(stagioneScelta);
+    const dentroStagione = data => data && data >= inizio && data <= fine;
+
+    // Intestazione
+    document.getElementById('stampa-nome-atleta').textContent = schedaAtletaNome;
+    const g = GRUPPI[currentGruppoId];
+    document.getElementById('stampa-gruppo-atleta').textContent = (g ? g.nome : '—') + ' — Atletica Silca';
+    document.getElementById('stampa-stagione-label').textContent = `Stagione ${stagioneScelta}`;
+    document.getElementById('stampa-intervallo-date').textContent =
+      `${new Date(inizio + 'T00:00:00').toLocaleDateString('it-IT')} – ${new Date(fine + 'T00:00:00').toLocaleDateString('it-IT')}`;
+    document.getElementById('stampa-data-generazione').textContent = `Report generato il ${new Date().toLocaleDateString('it-IT')}`;
+
+    // Badge note mediche
+    const badge = document.getElementById('stampa-badge-medica');
+    const noteMediche = (schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.note || '').trim();
+    if(noteMediche){
+      badge.style.display = 'block';
+      document.getElementById('stampa-badge-medica-testo').textContent = noteMediche;
+    } else {
+      badge.style.display = 'none';
+    }
+
+    // Dati fisici attuali (età, lato dominante, altezza/torace/peso con variazione nella stagione)
+    const eta = calcolaEta(schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dataNascita);
+    const fisiciRighe = [];
+    fisiciRighe.push(`<div><span>Età</span>${eta !== null ? eta + ' anni' : '—'}</div>`);
+    fisiciRighe.push(`<div><span>Lato dominante</span>${(schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dominante) || '—'}</div>`);
+    ['altezza','torace','peso'].forEach(tipo => {
+      const tutte = (schedaDatiCorrenti.crescita || []).filter(m => m.tipo === tipo).sort((a,b) => (a.data||'').localeCompare(b.data||''));
+      const inStagione = tutte.filter(m => dentroStagione(m.data));
+      const attuale = (inStagione[inStagione.length-1] || tutte[tutte.length-1]);
+      if(!attuale){
+        fisiciRighe.push(`<div><span>${CRESCITA_ETICHETTE[tipo].nome}</span>—</div>`);
+        return;
+      }
+      let variazioneTxt = '';
+      if(inStagione.length > 1){
+        const diff = parseFloat(String(inStagione[inStagione.length-1].valore).replace(',','.')) - parseFloat(String(inStagione[0].valore).replace(',','.'));
+        if(!isNaN(diff)) variazioneTxt = ` (${diff >= 0 ? '+' : ''}${diff.toFixed(1)} ${CRESCITA_ETICHETTE[tipo].unita} nella stagione)`;
+      }
+      fisiciRighe.push(`<div><span>${CRESCITA_ETICHETTE[tipo].nome}</span>${attuale.valore} ${CRESCITA_ETICHETTE[tipo].unita}${variazioneTxt}</div>`);
+    });
+    document.getElementById('stampa-dati-fisici').innerHTML = fisiciRighe.join('');
+
+    // Grafici crescita nella stagione
+    const graficiCrescita = ['altezza','torace','peso'].map(tipo => {
+      const inStagione = (schedaDatiCorrenti.crescita || [])
+        .filter(m => m.tipo === tipo && dentroStagione(m.data))
+        .sort((a,b) => (a.data||'').localeCompare(b.data||''));
+      const contenuto = inStagione.length >= 2
+        ? renderGraficoProgressione(inStagione)
+        : `<p class="empty-note-report">Nessuna misurazione sufficiente nella stagione.</p>`;
+      return `
+        <div class="mini-grafico-report">
+          <div class="titolo-mini-report">${CRESCITA_ETICHETTE[tipo].nome} (${CRESCITA_ETICHETTE[tipo].unita})</div>
+          ${contenuto}
+        </div>
+      `;
+    }).join('');
+    document.getElementById('stampa-grafici-crescita').innerHTML = graficiCrescita;
+
+    // Record personali nella stagione, un blocco per disciplina
+    const disciplineConRecord = new Map();
+    (schedaDatiCorrenti.record || []).forEach(r => {
+      if(!dentroStagione(r.data)) return;
+      if(!disciplineConRecord.has(r.disciplina)) disciplineConRecord.set(r.disciplina, []);
+      disciplineConRecord.get(r.disciplina).push(r);
+    });
+    if(disciplineConRecord.size === 0){
+      document.getElementById('stampa-record-personali').innerHTML = '<p class="empty-note-report">Nessun risultato registrato in questa stagione.</p>';
+    } else {
+      document.getElementById('stampa-record-personali').innerHTML = Array.from(disciplineConRecord.entries()).map(([disciplina, righe]) => {
+        const ordinati = righe.slice().sort((a,b) => (a.data||'').localeCompare(b.data||''));
+        const ultimo = ordinati[ordinati.length-1];
+        const contenuto = ordinati.length >= 2
+          ? renderGraficoProgressione(ordinati)
+          : '';
+        return `
+          <div class="disciplina-blocco-report">
+            <div class="titolo-disciplina-report">${disciplina} <span class="valore-attuale-report">${ultimo.valore} (attuale)</span></div>
+            ${contenuto}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Obiettivi della stagione
+    document.getElementById('stampa-obiettivi-titolo').textContent = `Obiettivi stagione ${stagioneScelta}`;
+    const obiettiviStagione = (schedaDatiCorrenti.obiettivi || []).filter(o => o.stagione === stagioneScelta);
+    document.getElementById('stampa-obiettivi').innerHTML = obiettiviStagione.length > 0
+      ? obiettiviStagione.map(o => `
+          <tr><td class="${o.fatto ? 'fatto-si-report' : 'fatto-no-report'}">${o.fatto ? '✓' : '○'}</td><td>${o.testo}</td></tr>
+        `).join('')
+      : '<tr><td colspan="2" class="empty-note-report">Nessun obiettivo per questa stagione.</td></tr>';
+
+    // Note dell'allenatore nella stagione
+    const noteStagione = (schedaDatiCorrenti.note || [])
+      .filter(n => dentroStagione(n.data))
+      .sort((a,b) => (b.data||'').localeCompare(a.data||''));
+    document.getElementById('stampa-note').innerHTML = noteStagione.length > 0
+      ? noteStagione.map(n => `
+          <div class="nota-riga-report">
+            <div class="data-nota-report">${new Date(n.data + 'T00:00:00').toLocaleDateString('it-IT')}</div>
+            ${n.testo}
+          </div>
+        `).join('')
+      : '<p class="empty-note-report">Nessuna nota registrata in questa stagione.</p>';
+
+    // Attiva la vista di stampa e stampa
+    document.body.classList.add('stampa-attiva');
+    window.print();
+  }
+
+  document.getElementById('report-stagione-btn').addEventListener('click', generaReportStagione);
+
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('stampa-attiva');
   });
 
   document.getElementById('back-to-coach-from-schede').addEventListener('click', () => {
@@ -5008,6 +5195,58 @@
 <div id="menu-overlay"></div>
 <div id="side-panel">
   <div id="side-panel-content"></div>
+</div>
+
+<!-- VISTA DI STAMPA: report stagionale scheda atleta (nascosta, mostrata solo per la stampa/PDF) -->
+<div id="vista-stampa-report">
+  <div class="pagina-report">
+    <div class="intestazione-report">
+      <div>
+        <h1 id="stampa-nome-atleta"></h1>
+        <div class="sotto-report" id="stampa-gruppo-atleta"></div>
+      </div>
+      <div class="periodo-report">
+        <strong id="stampa-stagione-label"></strong><br>
+        <span id="stampa-intervallo-date"></span><br>
+        <span id="stampa-data-generazione"></span>
+      </div>
+    </div>
+
+    <div class="badge-medica-report" id="stampa-badge-medica" style="display:none;">
+      <strong>⚕️ Da sapere su questo atleta</strong>
+      <span id="stampa-badge-medica-testo"></span>
+    </div>
+
+    <div class="sezione-report">
+      <h2>Dati fisici</h2>
+      <div class="griglia-fisici-report" id="stampa-dati-fisici"></div>
+    </div>
+
+    <div class="sezione-report">
+      <h2>Andamento crescita nella stagione</h2>
+      <div class="grafici-crescita-report" id="stampa-grafici-crescita"></div>
+    </div>
+
+    <div class="sezione-report">
+      <h2>Record personali — progressione nella stagione</h2>
+      <div id="stampa-record-personali"></div>
+    </div>
+
+    <div class="sezione-report">
+      <h2 id="stampa-obiettivi-titolo">Obiettivi stagione</h2>
+      <table class="obiettivi-report" id="stampa-obiettivi"></table>
+    </div>
+
+    <div class="sezione-report">
+      <h2>Note dell'allenatore nella stagione</h2>
+      <div id="stampa-note"></div>
+    </div>
+
+    <div class="firma-report">
+      <div>Allenatore: ___________________</div>
+      <div>Data: ___________________</div>
+    </div>
+  </div>
 </div>
 </body>
 </html>
