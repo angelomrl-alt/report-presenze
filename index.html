@@ -38,6 +38,7 @@
     --c-ragazzi:#5b8def;
     --c-lanci:#f5a623;
     --c-salti:#f472b6;
+    --clay:#c0432f;
     --radius:14px;
     --btn-shadow:0 2px 5px rgba(26,31,41,.16), 0 1px 2px rgba(26,31,41,.08);
     --btn-shadow-active:0 1px 2px rgba(26,31,41,.14);
@@ -56,6 +57,7 @@
     --remove-border:#4a3030;
     --remove-text:#e0a39c;
     --cert-banner-text:#f7a8a0;
+    --clay:#d9573f;
     --btn-shadow:0 2px 6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
     --btn-shadow-active:0 1px 2px rgba(0,0,0,.4);
   }
@@ -485,25 +487,50 @@
   main h2{font-size:22px; font-weight:600; margin:0 0 4px;}
   main .sub{color:var(--text-dim); font-size:14px; margin:0 0 24px;}
 
-  .cards-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:16px;
+  .header-gruppo-corsie{padding:4px 0 22px;}
+  .header-gruppo-corsie .eyebrow-clay{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--clay); margin:0 0 6px; font-family:'Oswald',sans-serif;}
+  .header-gruppo-corsie h2{font-size:clamp(28px,7vw,34px); font-weight:700; letter-spacing:.01em; line-height:1; margin:0;}
+  .header-gruppo-corsie .sub{display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--text-dim); margin:12px 0 0;}
+  .header-gruppo-corsie .sub .num{font-family:'Oswald',sans-serif; font-weight:600; color:var(--text); font-variant-numeric:tabular-nums;}
+  .header-gruppo-corsie .sub .sep{width:3px; height:3px; border-radius:50%; background:var(--border-strong); flex-shrink:0;}
+
+  .foglio-batteria{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;
   }
-  .card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:20px;
+  .corsia{
+    display:flex; align-items:stretch; cursor:pointer;
+    border-bottom:1px solid var(--border); transition:background .12s;
   }
-  .card.clickable{cursor:pointer; transition:border-color .15s;}
-  .card.clickable:hover{border-color:var(--border-hover);}
-  .card h3{font-size:15px; font-weight:600; margin:0 0 6px;}
-  .card p{font-size:13px; color:var(--text-dim); margin:0; line-height:1.5;}
-  .card .dot{
-    width:10px;height:10px;border-radius:50%;
-    display:inline-block; margin-bottom:10px;
+  .corsia:last-child{border-bottom:none;}
+  .corsia:hover, .corsia:active{background:var(--bg-track);}
+  .corsia-riga{width:4px; flex-shrink:0;}
+  .corsia-corpo{display:flex; align-items:center; gap:14px; padding:18px 16px; flex:1; min-width:0;}
+  .corsia-icona{
+    width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+    font-size:19px; flex-shrink:0;
   }
+  .corsia-testi{flex:1; min-width:0;}
+  .corsia-titolo{font-size:15.5px; font-weight:600; margin-bottom:2px;}
+  .corsia-desc{font-size:12.5px; color:var(--text-dim); line-height:1.4;}
+  .corsia-freccia{color:var(--border-strong); font-size:18px; align-self:center; padding-right:14px; flex-shrink:0;}
+
+  .c-presenze .corsia-riga{background:var(--primary);}
+  .c-presenze .corsia-icona{background:color-mix(in srgb, var(--primary) 16%, var(--surface));}
+  .c-gara .corsia-riga{background:var(--clay);}
+  .c-gara .corsia-icona{background:color-mix(in srgb, var(--clay) 14%, var(--surface));}
+  .c-report .corsia-riga{background:var(--c-ragazzi);}
+  .c-report .corsia-icona{background:color-mix(in srgb, var(--c-ragazzi) 14%, var(--surface));}
+  .c-schede .corsia-riga{background:var(--c-agnese);}
+  .c-schede .corsia-icona{background:color-mix(in srgb, var(--c-agnese) 14%, var(--surface));}
+
+  .eventi-strip{
+    margin-top:20px; border-radius:var(--radius); padding:16px 18px;
+    background:color-mix(in srgb, var(--accent-lane) 12%, var(--surface));
+    border:1px solid color-mix(in srgb, var(--accent-lane) 35%, var(--border));
+  }
+  .eventi-strip .eyebrow-lane{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-lane); margin:0 0 2px; font-family:'Oswald',sans-serif;}
+  .eventi-strip .eventi-titolo{font-size:16px; font-weight:600;}
+  .eventi-strip .empty-note{padding-top:4px;}
 
   .groups-grid{
     display:grid;
@@ -1425,35 +1452,67 @@
       <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
-      <h2 id="coach-group-name">—</h2>
-      <p class="sub" id="coach-group-sub">—</p>
-      <div class="cards-grid">
-        <div class="card clickable" id="card-presenze">
-          <span class="dot" style="background:var(--c-cadetti)"></span>
-          <h3>Registra presenze</h3>
-          <p>Segna chi c'era oggi, allenamento o gara.</p>
+      <div class="header-gruppo-corsie">
+        <p class="eyebrow-clay">Gruppo</p>
+        <h2 id="coach-group-name">—</h2>
+        <p class="sub" id="coach-group-sub">—</p>
+      </div>
+
+      <div class="foglio-batteria">
+        <div class="corsia c-presenze" id="card-presenze">
+          <div class="corsia-riga"></div>
+          <div class="corsia-corpo">
+            <div class="corsia-icona">🟢</div>
+            <div class="corsia-testi">
+              <div class="corsia-titolo">Registra presenze</div>
+              <div class="corsia-desc">Segna chi c'era oggi, allenamento o gara.</div>
+            </div>
+          </div>
+          <div class="corsia-freccia">›</div>
         </div>
-        <div class="card clickable" id="card-risultati">
-          <span class="dot" style="background:var(--c-lanci)"></span>
-          <h3>Gara</h3>
-          <p>Segna chi ha partecipato e inserisci subito i risultati.</p>
+
+        <div class="corsia c-gara" id="card-risultati">
+          <div class="corsia-riga"></div>
+          <div class="corsia-corpo">
+            <div class="corsia-icona">🏁</div>
+            <div class="corsia-testi">
+              <div class="corsia-titolo">Gara</div>
+              <div class="corsia-desc">Segna chi ha partecipato e inserisci subito i risultati.</div>
+            </div>
+          </div>
+          <div class="corsia-freccia">›</div>
         </div>
-        <div class="card clickable" id="card-report">
-          <span class="dot" style="background:var(--c-ragazzi)"></span>
-          <h3>Report del gruppo</h3>
-          <p>KPI, grafico mensile, podio e trend atleti.</p>
+
+        <div class="corsia c-report" id="card-report">
+          <div class="corsia-riga"></div>
+          <div class="corsia-corpo">
+            <div class="corsia-icona">📊</div>
+            <div class="corsia-testi">
+              <div class="corsia-titolo">Report del gruppo</div>
+              <div class="corsia-desc">KPI, grafico mensile, podio e trend atleti.</div>
+            </div>
+          </div>
+          <div class="corsia-freccia">›</div>
         </div>
-        <div class="card clickable" id="card-schede">
-          <span class="dot" style="background:var(--c-agnese)"></span>
-          <h3>📇 Schede atleti</h3>
-          <p>Dati fisici, record personali, obiettivi e note per ogni atleta.</p>
+
+        <div class="corsia c-schede" id="card-schede">
+          <div class="corsia-riga"></div>
+          <div class="corsia-corpo">
+            <div class="corsia-icona">📇</div>
+            <div class="corsia-testi">
+              <div class="corsia-titolo">Schede atleti</div>
+              <div class="corsia-desc">Dati fisici, record personali, obiettivi e note per ogni atleta.</div>
+            </div>
+          </div>
+          <div class="corsia-freccia">›</div>
         </div>
       </div>
 
-      <details class="report-section" style="margin-top:28px;">
-        <summary>📅 Prossimi eventi</summary>
-        <div id="coach-eventi-list" style="padding-bottom:12px;"></div>
-      </details>
+      <div class="eventi-strip">
+        <p class="eyebrow-lane">📅 In programma</p>
+        <div class="eventi-titolo">Prossimi eventi</div>
+        <div id="coach-eventi-list"></div>
+      </div>
     </main>
   </section>
 
