@@ -1322,6 +1322,18 @@
   .fisico-note textarea{width:100%; min-height:56px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;}
   .promemoria-crescita{font-size:12px; color:var(--text-dim); background:var(--surface-2); border-radius:10px; padding:10px 12px; margin-top:16px; line-height:1.5;}
 
+  .link-discreto{font-size:13px; color:var(--text-dim); text-decoration:underline; text-decoration-color:var(--border-strong);}
+  .btn-archivia-testo{
+    background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px;
+    color:var(--text-dim); font-size:12.5px; font-weight:600; padding:8px 12px; cursor:pointer; flex-shrink:0;
+  }
+  .btn-archivia-testo:hover{border-color:var(--danger); color:var(--danger);}
+  .sezione-archiviati{margin-top:28px;}
+  .sezione-archiviati h3{font-size:12.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin:0 0 10px; font-family:'Oswald',sans-serif;}
+  .archiviato-row{display:flex; justify-content:space-between; align-items:center; padding:9px 2px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text-dim);}
+  .archiviato-row:last-child{border-bottom:none;}
+  .btn-ripristina{background:none; border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:12px; font-weight:600; padding:5px 10px; cursor:pointer;}
+
   /* ---------- Vista di stampa: report stagionale ---------- */
   #vista-stampa-report{display:none;}
   body.stampa-attiva > *:not(#vista-stampa-report){display:none !important;}
@@ -1573,6 +1585,34 @@
         <button id="salva-presenze-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva presenze</button>
         <button type="button" id="nuova-registrazione-btn" class="btn-secondary">Nuova registrazione</button>
         <span id="save-feedback" class="save-feedback"></span>
+      </div>
+
+      <p style="margin-top:22px;">
+        <a href="javascript:void(0)" id="link-gestisci-atleti" class="link-discreto">⚙️ Gestisci atleti del gruppo (archivia chi non fa più parte)</a>
+      </p>
+    </main>
+  </section>
+
+  <!-- ===================== GESTISCI ATLETI DEL GRUPPO (allenatore) ===================== -->
+  <section id="view-gestisci-atleti" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-presenze-from-gestisci" aria-label="Torna a Registra presenze">←</button>
+        🏃 Atletica Silca <span class="role-tag">Gestisci atleti</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
+    </header>
+    <main>
+      <h2 id="gestisci-atleti-group-name">—</h2>
+      <p class="sub">Qui puoi archiviare un atleta che non fa più parte del gruppo. Per segnare presenze o gare usa le altre sezioni: qui non c'è nulla legato al giorno per giorno, apposta per evitare tocchi per errore.</p>
+
+      <input type="text" id="gestisci-atleti-search" class="scheda-search" placeholder="🔍 Cerca atleta...">
+      <div id="gestisci-atleti-lista" class="roster-list"></div>
+
+      <div class="sezione-archiviati">
+        <h3>Archiviati di recente</h3>
+        <div id="gestisci-atleti-archiviati"></div>
       </div>
     </main>
   </section>
@@ -2158,6 +2198,8 @@
   let currentRuolo = null;
   let squadreGruppoSelezionato = '';
   let rosterDocs = [];           // [{id, nome}]
+  let gestisciAtletiUnsub = null;
+  let gestisciAtletiDocs = [];   // [{id, nome, archiviato}] — TUTTI, attivi e archiviati
   let presenzaMap = new Map();   // atletaId -> bool (presente)
   let rosterUnsub = null;
   let tipoSelezionato = "allenamento";
@@ -2813,6 +2855,86 @@
     });
   }
 
+  // ---------- Gestisci atleti del gruppo (archiviazione, allenatore) ----------
+
+  function apriGestisciAtleti(){
+    const g = GRUPPI[currentGruppoId];
+    document.getElementById('gestisci-atleti-group-name').textContent = g ? g.nome : "Il tuo gruppo";
+    document.getElementById('gestisci-atleti-search').value = "";
+
+    if(gestisciAtletiUnsub) gestisciAtletiUnsub();
+    const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
+    gestisciAtletiUnsub = onSnapshot(q, snap => {
+      gestisciAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, archiviato: !!d.data().archiviato }))
+        .sort((a,b)=>a.nome.localeCompare(b.nome));
+      renderGestisciAtletiListe();
+    });
+
+    showView('view-gestisci-atleti');
+  }
+
+  function renderGestisciAtletiListe(){
+    const filtro = (document.getElementById('gestisci-atleti-search').value || '').trim().toLowerCase();
+    const attivi = gestisciAtletiDocs.filter(a => !a.archiviato && a.nome.toLowerCase().includes(filtro));
+    const archiviati = gestisciAtletiDocs.filter(a => a.archiviato);
+
+    const listaCont = document.getElementById('gestisci-atleti-lista');
+    listaCont.innerHTML = attivi.length === 0
+      ? '<div class="roster-empty">Nessun atleta trovato.</div>'
+      : attivi.map(a => `
+          <div class="roster-item">
+            <span class="nome">${a.nome}</span>
+            <button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Archivia</button>
+          </div>
+        `).join('');
+
+    listaCont.querySelectorAll('.btn-archivia-testo').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const conferma = confirm(`Archiviare ${btn.dataset.nome}?\n\nSparirà da presenze, gara e schede atleti di questo gruppo. Tutto lo storico già registrato resta salvato — puoi ripristinarlo tu stesso da qui in qualsiasi momento.`);
+        if(!conferma) return;
+        try{
+          await updateDoc(doc(db,'atleti', btn.dataset.id), { archiviato: true, archiviatoIl: new Date().toISOString().slice(0,10) });
+        } catch(err){
+          console.error(err);
+          alert('Errore durante l\'archiviazione: ' + err.message);
+        }
+      });
+    });
+
+    const archCont = document.getElementById('gestisci-atleti-archiviati');
+    archCont.innerHTML = archiviati.length === 0
+      ? '<p class="empty-note">Nessun atleta archiviato.</p>'
+      : archiviati.map(a => `
+          <div class="archiviato-row">
+            <span>${a.nome}</span>
+            <button type="button" class="btn-ripristina" data-id="${a.id}" data-nome="${a.nome}">Ripristina</button>
+          </div>
+        `).join('');
+
+    archCont.querySelectorAll('.btn-ripristina').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try{
+          await updateDoc(doc(db,'atleti', btn.dataset.id), { archiviato: false });
+        } catch(err){
+          console.error(err);
+          alert('Errore durante il ripristino: ' + err.message);
+        }
+      });
+    });
+  }
+
+  document.getElementById('gestisci-atleti-search').addEventListener('input', renderGestisciAtletiListe);
+
+  document.getElementById('link-gestisci-atleti').addEventListener('click', () => {
+    if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
+    apriGestisciAtleti();
+  });
+
+  document.getElementById('back-to-presenze-from-gestisci').addEventListener('click', () => {
+    if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
+    apriPresenze();
+  });
+
   async function controllaRegistrazioneEsistente(){
     const data = document.getElementById('presenze-data').value;
     const banner = document.getElementById('presenze-esistente-banner');
@@ -2863,7 +2985,7 @@
 
     const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     rosterUnsub = onSnapshot(q, snap => {
-      rosterDocs = snap.docs.map(d => ({ id: d.id, nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      rosterDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id: d.id, nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
       controllaRegistrazioneEsistente();
     });
 
@@ -3015,7 +3137,7 @@
     if(adminRosterUnsub) adminRosterUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
     adminRosterUnsub = onSnapshot(q, snap => {
-      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', archiviato: !!d.data().archiviato })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderAdminRosterList();
     });
 
@@ -3024,22 +3146,25 @@
 
   function renderAdminRosterList(){
     const list = document.getElementById('admin-roster-list');
-    if(adminRosterDocs.length === 0){
+    const attivi = adminRosterDocs.filter(a => !a.archiviato);
+    const archiviati = adminRosterDocs.filter(a => a.archiviato);
+
+    if(attivi.length === 0){
       list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungili qui sotto.</div>';
-      return;
+    } else {
+      list.innerHTML = attivi.map(a => {
+        const cert = statoCertificato(a.scadenzaCertificato);
+        return `
+        <div class="roster-item">
+          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}</span>
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
+            <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
+          </span>
+        </div>
+      `;
+      }).join('');
     }
-    list.innerHTML = adminRosterDocs.map(a => {
-      const cert = statoCertificato(a.scadenzaCertificato);
-      return `
-      <div class="roster-item">
-        <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}</span>
-        <span style="display:flex; align-items:center; gap:8px;">
-          <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
-          <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
-        </span>
-      </div>
-    `;
-    }).join('');
 
     list.querySelectorAll('.cert-input').forEach(input => {
       input.addEventListener('change', async (e) => {
@@ -3061,6 +3186,43 @@
         }
       });
     });
+
+    // Atleti archiviati dall'allenatore: la società può ripristinarli o eliminarli definitivamente
+    let archCont = document.getElementById('admin-roster-archiviati');
+    if(!archCont){
+      archCont = document.createElement('div');
+      archCont.id = 'admin-roster-archiviati';
+      archCont.className = 'sezione-archiviati';
+      list.insertAdjacentElement('afterend', archCont);
+    }
+    if(archiviati.length === 0){
+      archCont.innerHTML = '';
+    } else {
+      archCont.innerHTML = `
+        <h3>Atleti archiviati (${archiviati.length})</h3>
+        ${archiviati.map(a => `
+          <div class="archiviato-row">
+            <span>${a.nome}</span>
+            <span style="display:flex; gap:8px;">
+              <button type="button" class="btn-ripristina" data-id="${a.id}">Ripristina</button>
+              <button type="button" class="btn-remove" data-id="${a.id}" data-nome="${a.nome}">Elimina definitivamente</button>
+            </span>
+          </div>
+        `).join('')}
+      `;
+      archCont.querySelectorAll('.btn-ripristina').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await updateDoc(doc(db,'atleti', btn.dataset.id), { archiviato: false });
+        });
+      });
+      archCont.querySelectorAll('.btn-remove').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if(confirm(`Eliminare definitivamente ${btn.dataset.nome}? L'azione non si può annullare.`)){
+            await deleteDoc(doc(db,'atleti', btn.dataset.id));
+          }
+        });
+      });
+    }
   }
 
 
@@ -3544,7 +3706,7 @@
 
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     risultatiAtletiUnsub = onSnapshot(qAtleti, snap => {
-      risultatiAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      risultatiAtletiDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
       controllaGaraEsistente();
     });
 
@@ -3625,7 +3787,7 @@
     if(schedeRosterUnsub) schedeRosterUnsub();
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     schedeRosterUnsub = onSnapshot(qAtleti, snap => {
-      schedeRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      schedeRosterDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderSchedeRoster();
     });
 
@@ -4445,7 +4607,8 @@
         document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
         const qConteggio = query(collection(db,'atleti'), where('gruppoId','==', dati.gruppoId));
         const snapConteggio = await getDocs(qConteggio);
-        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${snapConteggio.size} atleti` : "";
+        const conteggioAttivi = snapConteggio.docs.filter(d => !d.data().archiviato).length;
+        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${conteggioAttivi} atleti` : "";
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
         document.getElementById('card-schede').style.display = (g && g.nome === 'Cadetti') ? '' : 'none';
         showView('view-coach');
@@ -4496,6 +4659,7 @@
       if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
       if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
       if(schedaDisciplineUnsub) { schedaDisciplineUnsub(); schedaDisciplineUnsub = null; }
+      if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
 
       // Reset stato globale
       currentGruppoId = null;
