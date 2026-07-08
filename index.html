@@ -1150,8 +1150,8 @@
   .kpi-label{font-size:12px; color:var(--text-dim);}
   .kpi-medaglie{display:flex; gap:12px; font-size:17px; font-weight:700; font-family:'Oswald',sans-serif;}
 
-  /* KPI più piccoli, sempre in una sola riga di 3, solo nella Home Società */
-  #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:8px;}
+  /* KPI più piccoli, in griglia 2x2, solo nella Home Società */
+  #admin-kpi-grid{grid-template-columns:repeat(2,1fr); gap:8px;}
   #admin-kpi-grid .kpi-card{padding:14px 8px; gap:3px; align-items:center; text-align:center; border-radius:12px; border-color:var(--border);}
   #admin-kpi-grid .kpi-value{font-size:22px;}
   #admin-kpi-grid .kpi-label{font-size:10px;}
@@ -2459,6 +2459,11 @@
       if(p===1) c.oro++; else if(p===2) c.argento++; else c.bronzo++;
     });
 
+    // Giorni di allenamento totali a livello società = somma di tutti gli allenamenti di tutti i gruppi
+    // (a differenza delle gare, qui NON si deduplica per data: ogni gruppo che si allena in un giorno
+    // conta come una sessione a sé, anche se altri gruppi si allenano lo stesso giorno)
+    const totaleGiorniAllenamento = Object.values(conteggiAllenamenti).reduce((somma, n) => somma + n, 0);
+
     document.getElementById('admin-kpi-grid').innerHTML = `
       <div class="kpi-card"><span class="kpi-value">${snapAtleti.size}</span><span class="kpi-label">Atleti totali</span></div>
       <div class="kpi-card"><span class="kpi-value">${totaleGare}</span><span class="kpi-label">Gare totali</span></div>
@@ -2468,6 +2473,7 @@
         </div>
         <span class="kpi-label">Podi in gara</span>
       </div>
+      <div class="kpi-card"><span class="kpi-value">${totaleGiorniAllenamento}</span><span class="kpi-label">Giorni di allenamento totali</span></div>
     `;
 
     // Riepilogo ultima giornata di gare
@@ -2648,14 +2654,15 @@
       return `<svg class="chart-confronto-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${barre}${etichetteX}</svg>`;
     }
     const legendaGruppi = `<div class="chart-confronto-legenda">${Object.entries(GRUPPI).map(([gid,g]) => `<span><span class="dot" style="background:${g.colore}"></span>${g.nome}</span>`).join('')}</div>`;
+    const legendaGruppiConTotaliAllenamenti = `<div class="chart-confronto-legenda">${Object.entries(GRUPPI).map(([gid,g]) => `<span><span class="dot" style="background:${g.colore}"></span>${g.nome} (${conteggiAllenamenti[gid] || 0})</span>`).join('')}</div>`;
 
-    function impostaGraficoConfronto(elId, dati){
+    function impostaGraficoConfronto(elId, dati, legenda){
       const cont = document.getElementById(elId);
-      cont.innerHTML = `<div class="chart-confronto-scroll">${renderGraficoConfronto(dati)}</div>` + legendaGruppi;
+      cont.innerHTML = `<div class="chart-confronto-scroll">${renderGraficoConfronto(dati)}</div>` + (legenda || legendaGruppi);
       const scrollBox = cont.querySelector('.chart-confronto-scroll');
       if(scrollBox) scrollBox.scrollLeft = scrollBox.scrollWidth;
     }
-    impostaGraficoConfronto('chart-confronto-allenamenti', mensileAllenamentiPerGruppo);
+    impostaGraficoConfronto('chart-confronto-allenamenti', mensileAllenamentiPerGruppo, legendaGruppiConTotaliAllenamenti);
     impostaGraficoConfronto('chart-confronto-gare', mensileGareContiPerGruppo);
     aggiornaPannelloSquadre();
 
