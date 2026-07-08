@@ -2296,6 +2296,21 @@
     });
   }
 
+  // --- Andamento società: la home Società (KPI, confronto gruppi, ultima giornata) si aggiorna da sola
+  //     quando cambia qualsiasi presenza/gara/risultato/atleta, non solo quando la si riapre ---
+  let attivitaSocietaListenerAvviato = false;
+  function avviaListenerAttivitaSocieta(){
+    if(attivitaSocietaListenerAvviato) return;
+    attivitaSocietaListenerAvviato = true;
+    const aggiornaSeAdminAperta = () => {
+      if(document.getElementById('view-admin').classList.contains('active')) renderGroupsGrid();
+    };
+    onSnapshot(collection(db,'presenze'), aggiornaSeAdminAperta);
+    onSnapshot(collection(db,'gare'), aggiornaSeAdminAperta);
+    onSnapshot(collection(db,'risultati'), aggiornaSeAdminAperta);
+    onSnapshot(collection(db,'atleti'), aggiornaSeAdminAperta);
+  }
+
   function renderEventiInline(contId, modificabile){
     const cont = document.getElementById(contId);
     if(!cont) return;
@@ -4589,6 +4604,7 @@
     avviaListenerGruppi();
     avviaListenerImpostazioni();
     avviaListenerEventi();
+    avviaListenerAttivitaSocieta();
     await gruppiPronti;
     try{
       const snap = await getDoc(doc(db, "utenti", user.uid));
