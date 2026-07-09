@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -2129,7 +2129,7 @@
     EmailAuthProvider, reauthenticateWithCredential, updatePassword
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, documentId, onSnapshot, serverTimestamp
+    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Tema chiaro/scuro: applicato subito per evitare lampeggi al caricamento ---
@@ -2225,8 +2225,6 @@
 
   // Stato per Schede atleti
   let schedeRosterUnsub = null;
-  let schedeCompilateUnsubs = []; // array di unsub, uno ogni blocco di massimo 30 atleti
-  let schedeCompilateSet = new Set(); // id atleta -> ha almeno un dato nella scheda
   let schedeRosterDocs = [];     // [{id, nome}]
   let schedaDocUnsub = null;
   let schedaAtletaId = null;
@@ -3800,48 +3798,6 @@
 
   // ===================== SCHEDE ATLETI =====================
 
-  // Firestore nega un'intera lettura "list" se anche un solo documento potenzialmente restituito
-  // non è autorizzato — quindi non si può ascoltare l'intera collezione schedeAtleti in un colpo solo
-  // (conterrebbe anche atleti di altri gruppi). Si interroga invece solo per gli ID effettivamente
-  // nel roster di questo gruppo, a blocchi di massimo 30 (limite della clausola 'in' di Firestore).
-  function aggiornaListenerSchedeCompilate(idAtleti){
-    schedeCompilateUnsubs.forEach(unsub => unsub());
-    schedeCompilateUnsubs = [];
-    schedeCompilateSet = new Set();
-
-    if(idAtleti.length === 0){
-      renderSchedeRoster();
-      return;
-    }
-
-    const risultatiPerBlocco = {}; // indice blocco -> Set id con dati
-
-    for(let i = 0; i < idAtleti.length; i += 30){
-      const blocco = idAtleti.slice(i, i + 30);
-      const indiceBlocco = i;
-      const q = query(collection(db,'schedeAtleti'), where(documentId(), 'in', blocco));
-      const unsub = onSnapshot(q, snap => {
-        const setBlocco = new Set();
-        snap.docs.forEach(d => {
-          const s = d.data();
-          const haQualcosa =
-            (s.fisico && (s.fisico.dataNascita || s.fisico.dominante || s.fisico.note)) ||
-            (s.record && s.record.length > 0) ||
-            (s.crescita && s.crescita.length > 0) ||
-            (s.obiettivi && s.obiettivi.length > 0) ||
-            (s.note && s.note.length > 0);
-          if(haQualcosa) setBlocco.add(d.id);
-        });
-        risultatiPerBlocco[indiceBlocco] = setBlocco;
-        schedeCompilateSet = new Set(Object.values(risultatiPerBlocco).flatMap(s => Array.from(s)));
-        renderSchedeRoster();
-      }, err => {
-        console.error('Errore lettura schedeAtleti (puntino compilata):', err);
-      });
-      schedeCompilateUnsubs.push(unsub);
-    }
-  }
-
   function apriSchede(){
     const g = GRUPPI[currentGruppoId];
     if(!g || g.nome !== 'Cadetti'){
@@ -3854,9 +3810,10 @@
     if(schedeRosterUnsub) schedeRosterUnsub();
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     schedeRosterUnsub = onSnapshot(qAtleti, snap => {
-      schedeRosterDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      schedeRosterDocs = snap.docs.filter(d => !d.data().archiviato)
+        .map(d => ({ id:d.id, nome:d.data().nome, schedaCompilata: !!d.data().schedaCompilata }))
+        .sort((a,b)=>a.nome.localeCompare(b.nome));
       renderSchedeRoster();
-      aggiornaListenerSchedeCompilate(schedeRosterDocs.map(a => a.id));
     });
 
     showView('view-schede');
@@ -3874,7 +3831,7 @@
     cont.innerHTML = elenco.map(a => `
       <div class="roster-item roster-item-clickable" data-id="${a.id}" data-nome="${a.nome}" style="cursor:pointer; margin-bottom:8px;">
         <span style="display:flex; align-items:center; gap:10px;">
-          <span class="puntino-scheda${schedeCompilateSet.has(a.id) ? ' compilata' : ''}"></span>
+          <span class="puntino-scheda${a.schedaCompilata ? ' compilata' : ''}"></span>
           <span class="nome">${a.nome}</span>
         </span>
         <span style="color:var(--text-dim); font-size:16px;">›</span>
@@ -3887,6 +3844,29 @@
   }
 
   document.getElementById('schede-search').addEventListener('input', renderSchedeRoster);
+
+  // Vero se la scheda ha almeno un dato inserito in una qualsiasi sezione
+  function schedaHaContenuto(s){
+    return !!(
+      (s.fisico && (s.fisico.dataNascita || s.fisico.dominante || s.fisico.note)) ||
+      (s.record && s.record.length > 0) ||
+      (s.crescita && s.crescita.length > 0) ||
+      (s.obiettivi && s.obiettivi.length > 0) ||
+      (s.note && s.note.length > 0)
+    );
+  }
+
+  // Salva la scheda e allinea un flag "schedaCompilata" sul documento dell'atleta stesso:
+  // così l'elenco può sapere chi ha già dati senza dover interrogare schedeAtleti di tutti
+  // (che le regole Firestore non permettono di leggere in blocco per atleti di altri gruppi).
+  async function salvaScheda(idAtleta){
+    await setDoc(doc(db,'schedeAtleti', idAtleta), schedaDatiCorrenti, { merge: true });
+    try{
+      await updateDoc(doc(db,'atleti', idAtleta), { schedaCompilata: schedaHaContenuto(schedaDatiCorrenti) });
+    } catch(err){
+      console.error('Impossibile aggiornare il flag schedaCompilata su atleti:', err);
+    }
+  }
 
   function apriSchedaAtleta(atletaId, nome){
     schedaAtletaId = atletaId;
@@ -3939,7 +3919,7 @@
           note: schedaDatiCorrenti.fisico.note || ''
         };
         try{
-          await setDoc(doc(db,'schedeAtleti', atletaId), schedaDatiCorrenti, { merge: true });
+          await salvaScheda(atletaId);
         } catch(err){
           console.error('Migrazione storico crescita non riuscita:', err);
         }
@@ -4094,7 +4074,7 @@
         dominante: document.getElementById('scheda-fisico-dominante').value,
         note: document.getElementById('scheda-fisico-note').value
       };
-      await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+      await salvaScheda(schedaAtletaId);
       feedback.textContent = "Salvato ✓";
       setTimeout(() => { feedback.textContent = ""; }, 2500);
     } catch(err){
@@ -4181,7 +4161,7 @@
       btn.addEventListener('click', async () => {
         if(!confirm('Rimuovere questo risultato?')) return;
         schedaDatiCorrenti.record = (schedaDatiCorrenti.record || []).filter(r => r.id !== btn.dataset.id);
-        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+        await salvaScheda(schedaAtletaId);
       });
     });
   }
@@ -4231,7 +4211,7 @@
     if(!schedaDatiCorrenti.record) schedaDatiCorrenti.record = [];
     schedaDatiCorrenti.record.push({ id: nuovoIdLocale(), disciplina: schedaDisciplinaSelezionata, valore: valoreVal, data: dataVal, gara: garaVal });
 
-    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+    await salvaScheda(schedaAtletaId);
 
     document.getElementById('scheda-record-data').value = '';
     document.getElementById('scheda-record-valore').value = '';
@@ -4299,7 +4279,7 @@
       btn.addEventListener('click', async () => {
         if(!confirm('Rimuovere questa misurazione?')) return;
         schedaDatiCorrenti.crescita = (schedaDatiCorrenti.crescita || []).filter(m => m.id !== btn.dataset.id);
-        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+        await salvaScheda(schedaAtletaId);
       });
     });
   }
@@ -4316,7 +4296,7 @@
     if(!schedaDatiCorrenti.crescita) schedaDatiCorrenti.crescita = [];
     schedaDatiCorrenti.crescita.push({ id: nuovoIdLocale(), tipo: schedaCrescitaTipoSelezionato, valore: valoreVal, data: dataVal, nota: notaVal });
 
-    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+    await salvaScheda(schedaAtletaId);
 
     document.getElementById('scheda-crescita-data').value = '';
     document.getElementById('scheda-crescita-valore').value = '';
@@ -4343,14 +4323,14 @@
       chk.addEventListener('click', async () => {
         const ob = schedaDatiCorrenti.obiettivi.find(o => o.id === chk.dataset.id);
         if(ob) ob.fatto = !ob.fatto;
-        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+        await salvaScheda(schedaAtletaId);
       });
     });
     cont.querySelectorAll('[data-remove-id]').forEach(btn => {
       btn.addEventListener('click', async () => {
         if(!confirm('Rimuovere questo obiettivo?')) return;
         schedaDatiCorrenti.obiettivi = schedaDatiCorrenti.obiettivi.filter(o => o.id !== btn.dataset.removeId);
-        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+        await salvaScheda(schedaAtletaId);
       });
     });
   }
@@ -4361,7 +4341,7 @@
     if(!testo) return;
     if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
     schedaDatiCorrenti.obiettivi.push({ id: nuovoIdLocale(), testo, fatto: false, stagione: stagioneCorrente() });
-    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+    await salvaScheda(schedaAtletaId);
     input.value = '';
   });
 
@@ -4386,7 +4366,7 @@
       btn.addEventListener('click', async () => {
         if(!confirm('Rimuovere questa nota?')) return;
         schedaDatiCorrenti.note = schedaDatiCorrenti.note.filter(n => n.id !== btn.dataset.removeId);
-        await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+        await salvaScheda(schedaAtletaId);
       });
     });
   }
@@ -4397,7 +4377,7 @@
     if(!testo) return;
     if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
     schedaDatiCorrenti.note.push({ id: nuovoIdLocale(), testo, data: new Date().toISOString().slice(0,10) });
-    await setDoc(doc(db,'schedeAtleti', schedaAtletaId), schedaDatiCorrenti, { merge: true });
+    await salvaScheda(schedaAtletaId);
     input.value = '';
   });
 
@@ -4582,7 +4562,6 @@
 
   document.getElementById('back-to-coach-from-schede').addEventListener('click', () => {
     if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
-    schedeCompilateUnsubs.forEach(unsub => unsub()); schedeCompilateUnsubs = [];
     showView('view-coach');
   });
 
@@ -4730,8 +4709,7 @@
       if(risultatiDisciplineUnsub) { risultatiDisciplineUnsub(); risultatiDisciplineUnsub = null; }
       if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
       if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
-      schedeCompilateUnsubs.forEach(unsub => unsub()); schedeCompilateUnsubs = [];
-      if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
+        if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
       if(schedaDisciplineUnsub) { schedaDisciplineUnsub(); schedaDisciplineUnsub = null; }
       if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
 
