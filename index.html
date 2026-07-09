@@ -2129,7 +2129,7 @@
     EmailAuthProvider, reauthenticateWithCredential, updatePassword
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
+    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, documentId, onSnapshot, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Tema chiaro/scuro: applicato subito per evitare lampeggi al caricamento ---
@@ -2225,7 +2225,7 @@
 
   // Stato per Schede atleti
   let schedeRosterUnsub = null;
-  let schedeCompilateUnsub = null;
+  let schedeCompilateUnsubs = []; // array di unsub, uno ogni blocco di massimo 30 atleti
   let schedeCompilateSet = new Set(); // id atleta -> ha almeno un dato nella scheda
   let schedeRosterDocs = [];     // [{id, nome}]
   let schedaDocUnsub = null;
@@ -3800,6 +3800,48 @@
 
   // ===================== SCHEDE ATLETI =====================
 
+  // Firestore nega un'intera lettura "list" se anche un solo documento potenzialmente restituito
+  // non è autorizzato — quindi non si può ascoltare l'intera collezione schedeAtleti in un colpo solo
+  // (conterrebbe anche atleti di altri gruppi). Si interroga invece solo per gli ID effettivamente
+  // nel roster di questo gruppo, a blocchi di massimo 30 (limite della clausola 'in' di Firestore).
+  function aggiornaListenerSchedeCompilate(idAtleti){
+    schedeCompilateUnsubs.forEach(unsub => unsub());
+    schedeCompilateUnsubs = [];
+    schedeCompilateSet = new Set();
+
+    if(idAtleti.length === 0){
+      renderSchedeRoster();
+      return;
+    }
+
+    const risultatiPerBlocco = {}; // indice blocco -> Set id con dati
+
+    for(let i = 0; i < idAtleti.length; i += 30){
+      const blocco = idAtleti.slice(i, i + 30);
+      const indiceBlocco = i;
+      const q = query(collection(db,'schedeAtleti'), where(documentId(), 'in', blocco));
+      const unsub = onSnapshot(q, snap => {
+        const setBlocco = new Set();
+        snap.docs.forEach(d => {
+          const s = d.data();
+          const haQualcosa =
+            (s.fisico && (s.fisico.dataNascita || s.fisico.dominante || s.fisico.note)) ||
+            (s.record && s.record.length > 0) ||
+            (s.crescita && s.crescita.length > 0) ||
+            (s.obiettivi && s.obiettivi.length > 0) ||
+            (s.note && s.note.length > 0);
+          if(haQualcosa) setBlocco.add(d.id);
+        });
+        risultatiPerBlocco[indiceBlocco] = setBlocco;
+        schedeCompilateSet = new Set(Object.values(risultatiPerBlocco).flatMap(s => Array.from(s)));
+        renderSchedeRoster();
+      }, err => {
+        console.error('Errore lettura schedeAtleti (puntino compilata):', err);
+      });
+      schedeCompilateUnsubs.push(unsub);
+    }
+  }
+
   function apriSchede(){
     const g = GRUPPI[currentGruppoId];
     if(!g || g.nome !== 'Cadetti'){
@@ -3814,26 +3856,7 @@
     schedeRosterUnsub = onSnapshot(qAtleti, snap => {
       schedeRosterDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderSchedeRoster();
-    });
-
-    // Le regole Firestore restituiscono solo le schedeAtleti degli atleti del proprio gruppo:
-    // si può ascoltare l'intera collezione senza rischio di vedere dati di altri gruppi.
-    if(schedeCompilateUnsub) schedeCompilateUnsub();
-    schedeCompilateUnsub = onSnapshot(collection(db,'schedeAtleti'), snap => {
-      schedeCompilateSet = new Set();
-      snap.docs.forEach(d => {
-        const s = d.data();
-        const haQualcosa =
-          (s.fisico && (s.fisico.dataNascita || s.fisico.dominante || s.fisico.note)) ||
-          (s.record && s.record.length > 0) ||
-          (s.crescita && s.crescita.length > 0) ||
-          (s.obiettivi && s.obiettivi.length > 0) ||
-          (s.note && s.note.length > 0);
-        if(haQualcosa) schedeCompilateSet.add(d.id);
-      });
-      renderSchedeRoster();
-    }, err => {
-      console.error('Errore lettura elenco schedeAtleti (puntino compilata):', err);
+      aggiornaListenerSchedeCompilate(schedeRosterDocs.map(a => a.id));
     });
 
     showView('view-schede');
@@ -4559,7 +4582,7 @@
 
   document.getElementById('back-to-coach-from-schede').addEventListener('click', () => {
     if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
-    if(schedeCompilateUnsub) { schedeCompilateUnsub(); schedeCompilateUnsub = null; }
+    schedeCompilateUnsubs.forEach(unsub => unsub()); schedeCompilateUnsubs = [];
     showView('view-coach');
   });
 
@@ -4707,7 +4730,7 @@
       if(risultatiDisciplineUnsub) { risultatiDisciplineUnsub(); risultatiDisciplineUnsub = null; }
       if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
       if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
-      if(schedeCompilateUnsub) { schedeCompilateUnsub(); schedeCompilateUnsub = null; }
+      schedeCompilateUnsubs.forEach(unsub => unsub()); schedeCompilateUnsubs = [];
       if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
       if(schedaDisciplineUnsub) { schedaDisciplineUnsub(); schedaDisciplineUnsub = null; }
       if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
