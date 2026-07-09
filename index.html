@@ -1291,6 +1291,10 @@
 
   /* ---------- SCHEDA ATLETA ---------- */
   .scheda-search{width:100%; padding:11px 14px; border:1.5px solid var(--border-strong); border-radius:10px; background:var(--surface); color:var(--text); font-size:14px; margin-bottom:14px; font-family:'Inter',sans-serif;}
+  .legenda-schede{display:flex; gap:16px; font-size:12px; color:var(--text-dim); margin-bottom:14px; flex-wrap:wrap;}
+  .legenda-schede span{display:flex; align-items:center; gap:6px;}
+  .puntino-scheda{width:9px; height:9px; border-radius:50%; flex-shrink:0; background:var(--border-strong); display:inline-block;}
+  .puntino-scheda.compilata{background:var(--primary);}
   .riepilogo{background:var(--surface); border:1.5px solid var(--primary); border-radius:var(--radius); padding:18px; margin-bottom:18px; box-shadow:var(--btn-shadow);}
   .riepilogo-titolo{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--primary); margin:0 0 14px;}
   .riepilogo-riga{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:9px 0; border-bottom:1px solid var(--border);}
@@ -1724,6 +1728,10 @@
     <main>
       <h2 id="schede-group-name">—</h2>
       <p class="sub">Tocca un atleta per aprire la sua scheda personale.</p>
+      <div class="legenda-schede">
+        <span><span class="puntino-scheda compilata"></span> Scheda con almeno un dato</span>
+        <span><span class="puntino-scheda"></span> Scheda ancora vuota</span>
+      </div>
       <input type="text" id="schede-search" class="scheda-search" placeholder="🔍 Cerca atleta...">
       <div id="schede-roster"></div>
     </main>
@@ -2217,6 +2225,8 @@
 
   // Stato per Schede atleti
   let schedeRosterUnsub = null;
+  let schedeCompilateUnsub = null;
+  let schedeCompilateSet = new Set(); // id atleta -> ha almeno un dato nella scheda
   let schedeRosterDocs = [];     // [{id, nome}]
   let schedaDocUnsub = null;
   let schedaAtletaId = null;
@@ -3806,6 +3816,24 @@
       renderSchedeRoster();
     });
 
+    // Le regole Firestore restituiscono solo le schedeAtleti degli atleti del proprio gruppo:
+    // si può ascoltare l'intera collezione senza rischio di vedere dati di altri gruppi.
+    if(schedeCompilateUnsub) schedeCompilateUnsub();
+    schedeCompilateUnsub = onSnapshot(collection(db,'schedeAtleti'), snap => {
+      schedeCompilateSet = new Set();
+      snap.docs.forEach(d => {
+        const s = d.data();
+        const haQualcosa =
+          (s.fisico && (s.fisico.dataNascita || s.fisico.dominante || s.fisico.note)) ||
+          (s.record && s.record.length > 0) ||
+          (s.crescita && s.crescita.length > 0) ||
+          (s.obiettivi && s.obiettivi.length > 0) ||
+          (s.note && s.note.length > 0);
+        if(haQualcosa) schedeCompilateSet.add(d.id);
+      });
+      renderSchedeRoster();
+    });
+
     showView('view-schede');
   }
 
@@ -3820,7 +3848,10 @@
     }
     cont.innerHTML = elenco.map(a => `
       <div class="roster-item roster-item-clickable" data-id="${a.id}" data-nome="${a.nome}" style="cursor:pointer; margin-bottom:8px;">
-        <span class="nome">${a.nome}</span>
+        <span style="display:flex; align-items:center; gap:10px;">
+          <span class="puntino-scheda${schedeCompilateSet.has(a.id) ? ' compilata' : ''}"></span>
+          <span class="nome">${a.nome}</span>
+        </span>
         <span style="color:var(--text-dim); font-size:16px;">›</span>
       </div>
     `).join('');
@@ -4526,6 +4557,7 @@
 
   document.getElementById('back-to-coach-from-schede').addEventListener('click', () => {
     if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
+    if(schedeCompilateUnsub) { schedeCompilateUnsub(); schedeCompilateUnsub = null; }
     showView('view-coach');
   });
 
@@ -4673,6 +4705,7 @@
       if(risultatiDisciplineUnsub) { risultatiDisciplineUnsub(); risultatiDisciplineUnsub = null; }
       if(adminDisciplineUnsub) { adminDisciplineUnsub(); adminDisciplineUnsub = null; }
       if(schedeRosterUnsub) { schedeRosterUnsub(); schedeRosterUnsub = null; }
+      if(schedeCompilateUnsub) { schedeCompilateUnsub(); schedeCompilateUnsub = null; }
       if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
       if(schedaDisciplineUnsub) { schedaDisciplineUnsub(); schedaDisciplineUnsub = null; }
       if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
