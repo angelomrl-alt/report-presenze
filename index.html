@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -3832,6 +3832,8 @@
         if(haQualcosa) schedeCompilateSet.add(d.id);
       });
       renderSchedeRoster();
+    }, err => {
+      console.error('Errore lettura elenco schedeAtleti (puntino compilata):', err);
     });
 
     showView('view-schede');
