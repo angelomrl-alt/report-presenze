@@ -1166,6 +1166,7 @@
   }
   .kpi-value{font-family:'Oswald',sans-serif; font-size:30px; font-weight:700;}
   .kpi-label{font-size:12px; color:var(--text-dim);}
+  .kpi-ritirati{display:block; font-size:10.5px; color:var(--clay); margin-top:3px; font-weight:600;}
   .kpi-medaglie{display:flex; gap:12px; font-size:17px; font-weight:700; font-family:'Oswald',sans-serif;}
 
   /* KPI più piccoli, in griglia 2x2, solo nella Home Società */
@@ -1610,7 +1611,7 @@
       </div>
 
       <p style="margin-top:22px;">
-        <a href="javascript:void(0)" id="link-gestisci-atleti" class="link-discreto">⚙️ Gestisci atleti del gruppo (archivia chi non fa più parte)</a>
+        <a href="javascript:void(0)" id="link-gestisci-atleti" class="link-discreto">⚙️ Gestisci atleti del gruppo (segna chi si è ritirato)</a>
       </p>
     </main>
   </section>
@@ -1627,13 +1628,13 @@
     </header>
     <main>
       <h2 id="gestisci-atleti-group-name">—</h2>
-      <p class="sub">Qui puoi archiviare un atleta che non fa più parte del gruppo. Per segnare presenze o gare usa le altre sezioni: qui non c'è nulla legato al giorno per giorno, apposta per evitare tocchi per errore.</p>
+      <p class="sub">Qui puoi segnare come ritirato un atleta che non fa più parte del gruppo. Per segnare presenze o gare usa le altre sezioni: qui non c'è nulla legato al giorno per giorno, apposta per evitare tocchi per errore.</p>
 
       <input type="text" id="gestisci-atleti-search" class="scheda-search" placeholder="🔍 Cerca atleta...">
       <div id="gestisci-atleti-lista" class="roster-list"></div>
 
       <div class="sezione-archiviati">
-        <h3>Archiviati di recente</h3>
+        <h3>Ritirati di recente</h3>
         <div id="gestisci-atleti-archiviati"></div>
       </div>
     </main>
@@ -1657,7 +1658,7 @@
       <div class="kpi-grid">
         <div class="kpi-card"><span class="kpi-value" id="kpi-allenamenti">0</span><span class="kpi-label">Allenamenti</span></div>
         <div class="kpi-card"><span class="kpi-value" id="kpi-gare">0</span><span class="kpi-label">Gare</span></div>
-        <div class="kpi-card"><span class="kpi-value" id="kpi-atleti">0</span><span class="kpi-label">Atleti</span></div>
+        <div class="kpi-card"><span class="kpi-value" id="kpi-atleti">0</span><span class="kpi-label">Atleti</span><span class="kpi-ritirati" id="kpi-atleti-ritirati" style="display:none;"></span></div>
         <div class="kpi-card"><span class="kpi-value" id="kpi-media">0</span><span class="kpi-label">Media/sessione</span></div>
       </div>
 
@@ -2609,8 +2610,28 @@
     // conta come una sessione a sé, anche se altri gruppi si allenano lo stesso giorno)
     const totaleGiorniAllenamento = Object.values(conteggiAllenamenti).reduce((somma, n) => somma + n, 0);
 
+    // Atleti totali = solo attivi (chi si è ritirato non deve gonfiare il numero);
+    // separatamente, quanti si sono ritirati nella stagione sportiva corrente (visibilità sull'abbandono).
+    const stagioneAttualeKpi = stagioneCorrente();
+    const rangeStagioneKpi = rangeStagione(stagioneAttualeKpi);
+    let atletiAttiviCount = 0, ritiratiStagioneCount = 0;
+    snapAtleti.docs.forEach(d => {
+      const dati = d.data();
+      if(dati.archiviato){
+        if(dati.archiviatoIl && dati.archiviatoIl >= rangeStagioneKpi.inizio && dati.archiviatoIl <= rangeStagioneKpi.fine){
+          ritiratiStagioneCount++;
+        }
+      } else {
+        atletiAttiviCount++;
+      }
+    });
+
     document.getElementById('admin-kpi-grid').innerHTML = `
-      <div class="kpi-card"><span class="kpi-value">${snapAtleti.size}</span><span class="kpi-label">Atleti totali</span></div>
+      <div class="kpi-card">
+        <span class="kpi-value">${atletiAttiviCount}</span>
+        <span class="kpi-label">Atleti totali</span>
+        ${ritiratiStagioneCount > 0 ? `<span class="kpi-ritirati">${ritiratiStagioneCount} ritirat${ritiratiStagioneCount===1?'o':'i'} in stagione</span>` : ''}
+      </div>
       <div class="kpi-card"><span class="kpi-value">${totaleGare}</span><span class="kpi-label">Gare totali</span></div>
       <div class="kpi-card">
         <div class="kpi-medaglie">
@@ -2988,26 +3009,26 @@
       : attivi.map(a => `
           <div class="roster-item">
             <span class="nome">${a.nome}</span>
-            <button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Archivia</button>
+            <button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Ritira</button>
           </div>
         `).join('');
 
     listaCont.querySelectorAll('.btn-archivia-testo').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const conferma = confirm(`Archiviare ${btn.dataset.nome}?\n\nSparirà da presenze, gara e schede atleti di questo gruppo. Tutto lo storico già registrato resta salvato — puoi ripristinarlo tu stesso da qui in qualsiasi momento.`);
+        const conferma = confirm(`Segnare ${btn.dataset.nome} come ritirato/a?\n\nSparirà da presenze, gara e schede atleti di questo gruppo. Tutto lo storico già registrato resta salvato — puoi ripristinarlo tu stesso da qui in qualsiasi momento.`);
         if(!conferma) return;
         try{
           await updateDoc(doc(db,'atleti', btn.dataset.id), { archiviato: true, archiviatoIl: new Date().toISOString().slice(0,10) });
         } catch(err){
           console.error(err);
-          alert('Errore durante l\'archiviazione: ' + err.message);
+          alert('Errore durante il ritiro: ' + err.message);
         }
       });
     });
 
     const archCont = document.getElementById('gestisci-atleti-archiviati');
     archCont.innerHTML = archiviati.length === 0
-      ? '<p class="empty-note">Nessun atleta archiviato.</p>'
+      ? '<p class="empty-note">Nessun atleta ritirato.</p>'
       : archiviati.map(a => `
           <div class="archiviato-row">
             <span>${a.nome}</span>
@@ -3107,7 +3128,7 @@
 
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     reportAtletiUnsub = onSnapshot(qAtleti, snap => {
-      reportAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome }));
+      reportAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, archiviato: !!d.data().archiviato, archiviatoIl: d.data().archiviatoIl || '' }));
       renderReport();
     });
 
@@ -3224,8 +3245,15 @@
     const podioAllenamenti = listaAllenamenti.filter(a => a.totale > 0).slice(0,3);
     const podioGare = listaGare.filter(a => a.totale > 0).slice(0,3);
 
+    // Atleti = solo attivi; separatamente, quanti ritirati nella stagione corrente
+    const rangeStagioneReport = rangeStagione(stagioneCorrente());
+    const atletiAttiviReport = reportAtletiDocs.filter(a => !a.archiviato).length;
+    const ritiratiStagioneReport = reportAtletiDocs.filter(a =>
+      a.archiviato && a.archiviatoIl >= rangeStagioneReport.inizio && a.archiviatoIl <= rangeStagioneReport.fine
+    ).length;
+
     return {
-      kpi: { allenamenti:nAllenamenti, gare:nGare, atleti:reportAtletiDocs.length, media:media.toFixed(1) },
+      kpi: { allenamenti:nAllenamenti, gare:nGare, atleti:atletiAttiviReport, ritiratiStagione:ritiratiStagioneReport, media:media.toFixed(1) },
       mensile, listaAllenamenti, listaGare, podioAllenamenti, podioGare
     };
   }
@@ -3303,7 +3331,7 @@
       archCont.innerHTML = '';
     } else {
       archCont.innerHTML = `
-        <h3>Atleti archiviati (${archiviati.length})</h3>
+        <h3>Atleti ritirati (${archiviati.length})</h3>
         ${archiviati.map(a => `
           <div class="archiviato-row">
             <span>${a.nome}</span>
@@ -4665,6 +4693,13 @@
     document.getElementById('kpi-gare').textContent = d.kpi.gare;
     document.getElementById('kpi-atleti').textContent = d.kpi.atleti;
     document.getElementById('kpi-media').textContent = d.kpi.media;
+    const ritiratiEl = document.getElementById('kpi-atleti-ritirati');
+    if(d.kpi.ritiratiStagione > 0){
+      ritiratiEl.textContent = `${d.kpi.ritiratiStagione} ritirat${d.kpi.ritiratiStagione===1?'o':'i'} in stagione`;
+      ritiratiEl.style.display = '';
+    } else {
+      ritiratiEl.style.display = 'none';
+    }
 
     // Podio
     const podioHtml = (titolo, lista) => `
