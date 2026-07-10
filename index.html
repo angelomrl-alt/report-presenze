@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -531,6 +531,24 @@
   .eventi-strip .eyebrow-lane{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-lane); margin:0 0 2px; font-family:'Oswald',sans-serif;}
   .eventi-strip .eventi-titolo{font-size:16px; font-weight:600;}
   .eventi-strip .empty-note{padding-top:4px;}
+
+  /* Tendine in stile "corsia", per Attività recente/Consultazione nella home Società */
+  .corsia-details{border-bottom:1px solid var(--border);}
+  .corsia-details:last-child{border-bottom:none;}
+  .corsia-summary{
+    display:flex; align-items:center; gap:14px; padding:16px; cursor:pointer; list-style:none;
+  }
+  .corsia-summary::-webkit-details-marker{display:none;}
+  .corsia-summary .corsia-riga{align-self:stretch; margin:-16px 0 -16px -16px;}
+  .corsia-freccia-details{color:var(--border-strong); font-size:18px; margin-left:auto; padding-right:2px; transition:transform .15s; flex-shrink:0;}
+  details[open] .corsia-freccia-details{transform:rotate(90deg); color:var(--text-dim);}
+  .corsia-details-corpo{padding:0 16px 18px 16px; font-size:13.5px;}
+
+  /* Elenco squadre nella home Società */
+  .squadra-riga.selezionata{background:var(--bg-track);}
+  .squadra-riga.selezionata .corsia-titolo{color:var(--primary);}
+  .dettaglio-gruppo-riga{display:flex; justify-content:space-between; padding:6px 0; font-size:13px;}
+  .dettaglio-gruppo-riga span:first-child{color:var(--text-dim);}
 
   .groups-grid{
     display:grid;
@@ -1870,41 +1888,70 @@
       <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
     <main>
-      <h2 style="margin-bottom:20px;">Andamento società</h2>
-
-      <div id="admin-gruppo-detail"></div>
+      <div class="header-gruppo-corsie" style="padding-bottom:6px;">
+        <p class="eyebrow-clay">Società</p>
+        <h2>Andamento</h2>
+      </div>
 
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
 
-      <p class="section-eyebrow section-eyebrow-accent" style="margin-top:24px;">● Attività recente</p>
+      <p class="section-eyebrow" style="margin-top:26px;">Squadre</p>
+      <div class="foglio-batteria" id="admin-squadre-foglio"></div>
+      <div id="admin-gruppo-detail"></div>
 
-      <details class="report-section report-section-accent">
-        <summary>📅 Ultima giornata di gare</summary>
-        <div id="ultima-giornata-gare" style="padding-bottom:12px;"></div>
-      </details>
+      <p class="section-eyebrow section-eyebrow-accent" style="margin-top:26px;">● Attività recente</p>
 
-      <details class="report-section report-section-accent">
-        <summary>📅 Prossimi eventi</summary>
-        <div id="admin-eventi-list" style="padding-bottom:12px;"></div>
-      </details>
+      <div class="foglio-batteria">
+        <details class="corsia-details">
+          <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:var(--clay);"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, var(--clay) 14%, var(--surface));">🏁</span>
+            <span class="corsia-testi"><span class="corsia-titolo">Ultima giornata di gare</span></span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo" id="ultima-giornata-gare"></div>
+        </details>
+
+        <details class="corsia-details">
+          <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:var(--accent-lane);"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, var(--accent-lane) 16%, var(--surface));">📅</span>
+            <span class="corsia-testi"><span class="corsia-titolo">Prossimi eventi</span></span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo" id="admin-eventi-list"></div>
+        </details>
+      </div>
 
       <p class="section-eyebrow" style="margin-top:26px;">Consultazione</p>
 
-      <details class="report-section report-section-faded">
-        <summary>📋 Allenatori</summary>
-        <div id="categorie-allenatori" style="padding-bottom:12px;"></div>
-      </details>
+      <div class="foglio-batteria">
+        <details class="corsia-details">
+          <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:var(--c-ragazzi);"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, var(--c-ragazzi) 14%, var(--surface));">📋</span>
+            <span class="corsia-testi"><span class="corsia-titolo">Allenatori</span></span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo" id="categorie-allenatori"></div>
+        </details>
 
-      <details class="report-section report-section-faded">
-        <summary>📊 Confronto tra i gruppi</summary>
-        <div style="padding-bottom:12px;">
-          <h3 class="section-title">Confronto allenamenti tra i gruppi</h3>
-          <div id="chart-confronto-allenamenti" class="chart-confronto-wrap"></div>
+        <details class="corsia-details">
+          <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:var(--c-agnese);"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, var(--c-agnese) 14%, var(--surface));">📊</span>
+            <span class="corsia-testi"><span class="corsia-titolo">Confronto tra i gruppi</span></span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo">
+            <h3 class="section-title">Confronto allenamenti tra i gruppi</h3>
+            <div id="chart-confronto-allenamenti" class="chart-confronto-wrap"></div>
 
-          <h3 class="section-title" style="margin-top:24px;">Confronto gare tra i gruppi</h3>
-          <div id="chart-confronto-gare" class="chart-confronto-wrap"></div>
-        </div>
-      </details>
+            <h3 class="section-title" style="margin-top:24px;">Confronto gare tra i gruppi</h3>
+            <div id="chart-confronto-gare" class="chart-confronto-wrap"></div>
+          </div>
+        </details>
+      </div>
     </main>
   </section>
 
@@ -2444,6 +2491,39 @@
     await Promise.all(snapR.docs.map(d => updateDoc(doc(db,'risultati', d.id), { atleta: nuovoNome })));
   }
 
+  // Righe "Squadre" nella home Società: al tocco selezionano/deselezionano il gruppo
+  // e riusano lo stesso pannello di dettaglio già esistente (renderDettaglioGruppo).
+  function renderSquadreFoglio(){
+    const cont = document.getElementById('admin-squadre-foglio');
+    if(!cont) return;
+    const gruppiOrdinati = Object.entries(GRUPPI).sort((a,b) => a[1].nome.localeCompare(b[1].nome));
+    if(gruppiOrdinati.length === 0){
+      cont.innerHTML = '<p class="empty-note" style="padding:16px;">Nessun gruppo configurato ancora.</p>';
+      return;
+    }
+    cont.innerHTML = gruppiOrdinati.map(([id,g]) => `
+      <div class="corsia squadra-riga${squadreGruppoSelezionato===id ? ' selezionata' : ''}" data-id="${id}">
+        <div class="corsia-riga" style="background:${g.colore || 'var(--border-strong)'};"></div>
+        <div class="corsia-corpo">
+          <div class="corsia-icona" style="background:color-mix(in srgb, ${g.colore || '#999999'} 16%, var(--surface));">🏃</div>
+          <div class="corsia-testi">
+            <div class="corsia-titolo">${g.nome}</div>
+            <div class="corsia-desc">${g.coach || 'Nessun allenatore assegnato'}</div>
+          </div>
+        </div>
+        <span class="corsia-freccia">${squadreGruppoSelezionato===id ? '▾' : '›'}</span>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('.squadra-riga').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.dataset.id;
+        squadreGruppoSelezionato = (squadreGruppoSelezionato === id) ? '' : id;
+        if(typeof renderGroupsGrid === 'function') renderGroupsGrid();
+      });
+    });
+  }
+
   async function renderGroupsGrid(){
     const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
       getDocs(collection(db,'atleti')),
@@ -2827,6 +2907,7 @@
       if(btnGestisci) btnGestisci.addEventListener('click', () => apriAdminRoster(btnGestisci.dataset.gruppo));
     }
     renderDettaglioGruppo();
+    renderSquadreFoglio();
   }
 
   function renderRoster(){
@@ -3622,13 +3703,14 @@
               ${righe.map((r,i) => {
                 const consentite = (GRUPPI[currentGruppoId] && GRUPPI[currentGruppoId].disciplineConsentite) || [];
                 const disciplineGruppo = consentite.length === 0 ? risultatiDisciplineDocs : risultatiDisciplineDocs.filter(d => consentite.includes(d.nome));
+                const haPiazzamento = r.piazzamento !== '' && r.piazzamento !== undefined && r.piazzamento !== null;
                 return `
                 <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
-                  <select class="gr-disciplina">
+                  <input type="number" class="gr-piazzamento" placeholder="Ordine arrivo" min="1" value="${r.piazzamento||''}">
+                  <select class="gr-disciplina" style="${haPiazzamento ? '' : 'display:none;'}">
                     <option value="">Disciplina…</option>
                     ${disciplineGruppo.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
                   </select>
-                  <input type="number" class="gr-piazzamento" placeholder="Pos." min="1" value="${r.piazzamento||''}">
                   <button type="button" class="gr-remove" data-id="${a.id}" data-idx="${i}">✕</button>
                 </div>
               `;}).join('')}
@@ -3666,8 +3748,12 @@
 
     cont.querySelectorAll('.gara-risultato-row').forEach(row => {
       const rec = garaPartecipanti.get(row.dataset.id)[parseInt(row.dataset.idx,10)];
-      row.querySelector('.gr-disciplina').addEventListener('change', e => { rec.disciplina = e.target.value; });
-      row.querySelector('.gr-piazzamento').addEventListener('input', e => { rec.piazzamento = e.target.value; });
+      const selectDisciplina = row.querySelector('.gr-disciplina');
+      selectDisciplina.addEventListener('change', e => { rec.disciplina = e.target.value; });
+      row.querySelector('.gr-piazzamento').addEventListener('input', e => {
+        rec.piazzamento = e.target.value;
+        selectDisciplina.style.display = e.target.value ? '' : 'none';
+      });
     });
   }
 
@@ -4777,11 +4863,6 @@
 
     if(currentRuolo === 'societa'){
       html += `<div id="side-panel-content-inner">
-        <p class="side-panel-title">👥 Squadre</p>
-        <select class="side-panel-select" id="side-panel-squadre">
-          <option value="">— Scegli gruppo —</option>
-          ${Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}" ${squadreGruppoSelezionato===id?'selected':''}>${g.nome}</option>`).join('')}
-        </select>
         <p class="side-panel-title">⚙️ Gestione</p>
         <button type="button" class="side-panel-btn" id="sp-gestisci-gruppi">🗂️ Gestisci gruppi</button>
         <button type="button" class="side-panel-btn" id="sp-gestisci-discipline">⚙️ Gestisci discipline gara</button>
@@ -4811,13 +4892,6 @@
     });
 
     if(currentRuolo === 'societa'){
-      document.getElementById('side-panel-squadre')?.addEventListener('change', (e) => {
-        squadreGruppoSelezionato = e.target.value;
-        chiudiPannello();
-        if(typeof renderGroupsGrid === 'function') renderGroupsGrid();
-        else if(typeof renderDettaglioGruppoStandalone === 'function') renderDettaglioGruppoStandalone();
-        else document.getElementById('admin-gruppo-detail') && (document.getElementById('admin-gruppo-detail').innerHTML = '');
-      });
       document.getElementById('sp-gestisci-gruppi')?.addEventListener('click', () => { chiudiPannello(); apriAdminGruppi(); });
       document.getElementById('sp-gestisci-discipline')?.addEventListener('click', () => { chiudiPannello(); apriAdminDiscipline(); });
       document.getElementById('sp-importa-storico')?.addEventListener('click', () => { chiudiPannello(); apriImporta(); });
@@ -4839,7 +4913,7 @@
   }
 
   function aggiornaPannelloSquadre(){
-    // Se il pannello è aperto e siamo su view-admin, aggiorna il select squadre
+    // Se il pannello laterale è aperto, lo ri-genera (contenuto invariato salvo aggiornamenti dati)
     if(sidePanel.classList.contains('open') && currentRuolo === 'societa'){
       renderPannello();
     }
