@@ -545,8 +545,6 @@
   .corsia-details-corpo{padding:0 16px 18px 16px; font-size:13.5px;}
 
   /* Elenco squadre nella home Società */
-  .squadra-riga.selezionata{background:var(--bg-track);}
-  .squadra-riga.selezionata .corsia-titolo{color:var(--primary);}
   .dettaglio-gruppo-riga{display:flex; justify-content:space-between; padding:6px 0; font-size:13px;}
   .dettaglio-gruppo-riga span:first-child{color:var(--text-dim);}
 
@@ -1897,7 +1895,7 @@
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
 
       <p class="section-eyebrow" style="margin-top:26px;">Squadre</p>
-      <div class="foglio-batteria" id="admin-squadre-foglio"></div>
+      <select id="admin-squadre-select" class="scheda-search"></select>
       <div id="admin-gruppo-detail"></div>
 
       <p class="section-eyebrow section-eyebrow-accent" style="margin-top:26px;">● Attività recente</p>
@@ -2492,37 +2490,24 @@
     await Promise.all(snapR.docs.map(d => updateDoc(doc(db,'risultati', d.id), { atleta: nuovoNome })));
   }
 
-  // Righe "Squadre" nella home Società: al tocco selezionano/deselezionano il gruppo
-  // e riusano lo stesso pannello di dettaglio già esistente (renderDettaglioGruppo).
+  // Menù a tendina "Squadre" nella home Società: alla scelta mostra il dettaglio
+  // del gruppo scelto, riusando lo stesso pannello già esistente (renderDettaglioGruppo).
   function renderSquadreFoglio(){
-    const cont = document.getElementById('admin-squadre-foglio');
-    if(!cont) return;
+    const select = document.getElementById('admin-squadre-select');
+    if(!select) return;
     const gruppiOrdinati = Object.entries(GRUPPI).sort((a,b) => a[1].nome.localeCompare(b[1].nome));
     if(gruppiOrdinati.length === 0){
-      cont.innerHTML = '<p class="empty-note" style="padding:16px;">Nessun gruppo configurato ancora.</p>';
+      select.innerHTML = '<option value="">Nessun gruppo configurato ancora</option>';
       return;
     }
-    cont.innerHTML = gruppiOrdinati.map(([id,g]) => `
-      <div class="corsia squadra-riga${squadreGruppoSelezionato===id ? ' selezionata' : ''}" data-id="${id}">
-        <div class="corsia-riga" style="background:${g.colore || 'var(--border-strong)'};"></div>
-        <div class="corsia-corpo">
-          <div class="corsia-icona" style="background:color-mix(in srgb, ${g.colore || '#999999'} 16%, var(--surface));">🏃</div>
-          <div class="corsia-testi">
-            <div class="corsia-titolo">${g.nome}</div>
-            <div class="corsia-desc">${g.coach || 'Nessun allenatore assegnato'}</div>
-          </div>
-        </div>
-        <span class="corsia-freccia">${squadreGruppoSelezionato===id ? '▾' : '›'}</span>
-      </div>
-    `).join('');
+    select.innerHTML =
+      `<option value="">— Scegli una squadra —</option>` +
+      gruppiOrdinati.map(([id,g]) => `<option value="${id}" ${squadreGruppoSelezionato===id?'selected':''}>${g.nome}${g.coach ? ' · ' + g.coach : ''}</option>`).join('');
 
-    cont.querySelectorAll('.squadra-riga').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.dataset.id;
-        squadreGruppoSelezionato = (squadreGruppoSelezionato === id) ? '' : id;
-        if(typeof renderGroupsGrid === 'function') renderGroupsGrid();
-      });
-    });
+    select.onchange = (e) => {
+      squadreGruppoSelezionato = e.target.value;
+      if(typeof renderGroupsGrid === 'function') renderGroupsGrid();
+    };
   }
 
   async function renderGroupsGrid(){
