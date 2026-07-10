@@ -2823,7 +2823,12 @@
       const detailCont = document.getElementById('admin-gruppo-detail');
       if(!g){ detailCont.innerHTML = ''; return; }
 
-      const atletiGruppo = (atletiPerGruppo[id] || []).slice().sort((a,b) => a.nome.localeCompare(b.nome));
+      const atletiGruppoTutti = (atletiPerGruppo[id] || []).slice().sort((a,b) => a.nome.localeCompare(b.nome));
+      const atletiGruppo = atletiGruppoTutti.filter(a => !a.archiviato);
+      const rangeStagioneGruppo = rangeStagione(stagioneCorrente());
+      const ritiratiStagioneGruppo = atletiGruppoTutti.filter(a =>
+        a.archiviato && a.archiviatoIl && a.archiviatoIl >= rangeStagioneGruppo.inizio && a.archiviatoIl <= rangeStagioneGruppo.fine
+      ).length;
 
       const totaliHtml = `
         <div style="display:flex; gap:20px; margin:16px 0 0;">
@@ -2901,7 +2906,9 @@
             ${podioMedaglieHtml}
           </div>
           <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
-            <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">👤 Atleti (${atletiGruppo.length})</p>
+            <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">
+              👤 Atleti (${atletiGruppo.length})${ritiratiStagioneGruppo > 0 ? ` <span style="color:var(--clay); text-transform:none; letter-spacing:normal;">· ${ritiratiStagioneGruppo} ritirat${ritiratiStagioneGruppo===1?'o':'i'} in stagione</span>` : ''}
+            </p>
             ${elencoHtml}
           </div>
         </div>
