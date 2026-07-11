@@ -921,8 +921,9 @@
     font-size:13.5px;
     font-family:'Inter',sans-serif;
   }
-  .gr-disciplina{flex:2; min-width:140px;}
-  .gr-piazzamento{width:64px;}
+  .gr-disciplina{flex:1 1 130px; min-width:120px;}
+  .gr-piazzamento{flex:1 1 130px; min-width:120px;}
+  .gr-prestazione{flex:1 1 130px; min-width:120px;}
   .gr-remove{
     background:none;
     border:1px solid var(--remove-border);
@@ -3726,11 +3727,15 @@
                 const haPiazzamento = r.piazzamento !== '' && r.piazzamento !== undefined && r.piazzamento !== null;
                 return `
                 <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
-                  <input type="number" class="gr-piazzamento" placeholder="Ordine arrivo" min="1" value="${r.piazzamento||''}">
+                  <select class="gr-piazzamento">
+                    <option value="">Podio o arrivo…</option>
+                    ${Array.from({length:20}, (_,n) => n+1).map(n => `<option value="${n}" ${String(r.piazzamento)===String(n)?'selected':''}>${n}°</option>`).join('')}
+                  </select>
                   <select class="gr-disciplina" style="${haPiazzamento ? '' : 'display:none;'}">
                     <option value="">Disciplina…</option>
                     ${disciplineGruppo.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
                   </select>
+                  <input type="text" class="gr-prestazione" style="${haPiazzamento ? '' : 'display:none;'}" placeholder="Prestazione (es. 14.82)" value="${r.prestazione||''}">
                   <button type="button" class="gr-remove" data-id="${a.id}" data-idx="${i}">✕</button>
                 </div>
               `;}).join('')}
@@ -3745,14 +3750,14 @@
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
         if(garaPartecipanti.has(id)) garaPartecipanti.delete(id);
-        else garaPartecipanti.set(id, [{disciplina:'', piazzamento:''}]);
+        else garaPartecipanti.set(id, [{disciplina:'', piazzamento:'', prestazione:''}]);
         renderGaraRoster();
       });
     });
 
     cont.querySelectorAll('.gr-add').forEach(btn => {
       btn.addEventListener('click', () => {
-        garaPartecipanti.get(btn.dataset.id).push({disciplina:'', piazzamento:''});
+        garaPartecipanti.get(btn.dataset.id).push({disciplina:'', piazzamento:'', prestazione:''});
         renderGaraRoster();
       });
     });
@@ -3761,7 +3766,7 @@
       btn.addEventListener('click', () => {
         const arr = garaPartecipanti.get(btn.dataset.id);
         arr.splice(parseInt(btn.dataset.idx,10), 1);
-        if(arr.length === 0) arr.push({disciplina:'', piazzamento:''});
+        if(arr.length === 0) arr.push({disciplina:'', piazzamento:'', prestazione:''});
         renderGaraRoster();
       });
     });
@@ -3769,10 +3774,13 @@
     cont.querySelectorAll('.gara-risultato-row').forEach(row => {
       const rec = garaPartecipanti.get(row.dataset.id)[parseInt(row.dataset.idx,10)];
       const selectDisciplina = row.querySelector('.gr-disciplina');
+      const inputPrestazione = row.querySelector('.gr-prestazione');
       selectDisciplina.addEventListener('change', e => { rec.disciplina = e.target.value; });
-      row.querySelector('.gr-piazzamento').addEventListener('input', e => {
+      inputPrestazione.addEventListener('input', e => { rec.prestazione = e.target.value; });
+      row.querySelector('.gr-piazzamento').addEventListener('change', e => {
         rec.piazzamento = e.target.value;
         selectDisciplina.style.display = e.target.value ? '' : 'none';
+        inputPrestazione.style.display = e.target.value ? '' : 'none';
       });
     });
   }
@@ -5105,6 +5113,7 @@
           const datiRisultato = {
             gruppoId: currentGruppoId, data, atleta: atleta.nome,
             disciplina: r.disciplina, piazzamento: r.piazzamento || null,
+            prestazione: r.prestazione || null,
             gara: nome, luogo
           };
           if(r.docId){
