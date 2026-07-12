@@ -3728,7 +3728,7 @@
                 return `
                 <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
                   <select class="gr-piazzamento">
-                    <option value="">Podio o arrivo…</option>
+                    <option value="">Arrivo…</option>
                     ${Array.from({length:20}, (_,n) => n+1).map(n => `<option value="${n}" ${String(r.piazzamento)===String(n)?'selected':''}>${n}°</option>`).join('')}
                   </select>
                   <select class="gr-disciplina" style="${haPiazzamento ? '' : 'display:none;'}">
