@@ -3561,6 +3561,41 @@
 
   let importaCertMatch = []; // [{nomeSheet, atletaId, gruppoNome, dataIso, trovato, giaUguale}]
 
+  // Racchiude un valore tra virgolette CSV, raddoppiando eventuali virgolette interne
+  function csvEscape(valore){
+    const testo = String(valore ?? '');
+    return `"${testo.replace(/"/g, '""')}"`;
+  }
+
+  async function esportaAtletiCSV(){
+    const snap = await getDocs(collection(db,'atleti'));
+    const righe = snap.docs.map(d => {
+      const a = d.data();
+      const gruppo = GRUPPI[a.gruppoId];
+      const scadenzaFmt = a.scadenzaCertificato ? new Date(a.scadenzaCertificato + 'T00:00:00').toLocaleDateString('it-IT') : '';
+      return {
+        nome: a.nome || '',
+        gruppo: gruppo ? gruppo.nome : '—',
+        scadenza: scadenzaFmt,
+        stato: a.archiviato ? 'Ritirato' : 'Attivo'
+      };
+    }).sort((x,y) => x.gruppo.localeCompare(y.gruppo) || x.nome.localeCompare(y.nome));
+
+    const intestazione = ['Nome', 'Squadra', 'Scadenza certificato', 'Stato'];
+    const corpo = righe.map(r => [r.nome, r.gruppo, r.scadenza, r.stato].map(csvEscape).join(','));
+    const csv = '\uFEFF' + [intestazione.map(csvEscape).join(','), ...corpo].join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `atleti_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   function apriImportaCertificati(){
     document.getElementById('importa-cert-testo').value = '';
     document.getElementById('importa-cert-anteprima').innerHTML = '';
@@ -5067,6 +5102,7 @@
         <button type="button" class="side-panel-btn" id="sp-gestisci-discipline">⚙️ Gestisci discipline gara</button>
         <button type="button" class="side-panel-btn" id="sp-importa-storico">📥 Importa storico (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-importa-certificati">🩺 Importa certificati (in blocco)</button>
+        <button type="button" class="side-panel-btn" id="sp-esporta-atleti">📤 Esporta atleti (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-crea-evento">📅 Crea evento</button>
         <button type="button" class="side-panel-btn" id="sp-impostazioni">🔧 Impostazioni</button>
       </div>`;
@@ -5096,6 +5132,7 @@
       document.getElementById('sp-gestisci-discipline')?.addEventListener('click', () => { chiudiPannello(); apriAdminDiscipline(); });
       document.getElementById('sp-importa-storico')?.addEventListener('click', () => { chiudiPannello(); apriImporta(); });
       document.getElementById('sp-importa-certificati')?.addEventListener('click', () => { chiudiPannello(); apriImportaCertificati(); });
+      document.getElementById('sp-esporta-atleti')?.addEventListener('click', () => { chiudiPannello(); esportaAtletiCSV(); });
       document.getElementById('sp-crea-evento')?.addEventListener('click', () => {
         chiudiPannello();
         document.getElementById('evento-nuovo-nome').value = '';
