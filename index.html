@@ -3592,7 +3592,10 @@
     const trovaAtleta = nomeCercato => atletiTutti.find(a => a.nome.trim().toLowerCase() === nomeCercato.trim().toLowerCase());
 
     importaCertMatch = righe.map(riga => {
-      const colonne = riga.includes('\t') ? riga.split('\t') : riga.split(',');
+      // Riconosce: tab veri, virgole, o 2+ spazi consecutivi (il copia-incolla da Sheets su mobile
+      // a volte converte il tab tra colonne in semplici spazi). Un singolo spazio non separa colonne,
+      // così i nomi composti (es. "LORENZO NICOLO'") restano interi in un'unica colonna.
+      const colonne = riga.split(/\t+|,\s*|\s{2,}/).map(c => c.trim()).filter(c => c !== '');
       if(colonne.length < 3){
         return { nomeSheet: riga, dataIso: null, trovato: false, motivo: 'Riga non riconosciuta (servono 3 colonne: Cognome, Nome, Data)' };
       }
