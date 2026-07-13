@@ -1883,7 +1883,7 @@
   <!-- ===================== HOME SOCIETÀ ===================== -->
   <section id="view-admin" class="view">
     <header class="topbar">
-      <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Società</span></div>
+      <div class="brand-mini">🏃 Atletica Silca <span class="role-tag" id="admin-role-tag">Società</span></div>
       <button class="btn-logout" data-logout>Esci</button>
       <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
@@ -2100,6 +2100,37 @@
     </main>
   </section>
 
+  <!-- ===================== IMPORTA CERTIFICATI (Società) ===================== -->
+  <section id="view-importa-certificati" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-admin-from-importa-cert" aria-label="Torna alla home">←</button>
+        🏃 Atletica Silca <span class="role-tag">Importa certificati</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+    </header>
+    <main>
+      <h2>Importa scadenze certificati</h2>
+      <p class="sub">
+        Dal tuo Google Sheet, seleziona le colonne <strong>Cognome</strong>, <strong>Nome</strong> e <strong>Scadenza</strong> (in questo ordine, formato gg/mm/aaaa), copia (Ctrl+C) e incolla qui sotto.
+        L'app abbina automaticamente ogni riga all'atleta già presente, in qualsiasi gruppo.
+      </p>
+
+      <textarea id="importa-cert-testo" placeholder="Incolla qui le righe copiate da Google Sheet..." style="width:100%; min-height:160px; padding:12px; border:1.5px solid var(--border-strong); border-radius:10px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;"></textarea>
+
+      <div class="save-bar" style="margin-top:14px;">
+        <button type="button" id="importa-cert-analizza-btn" class="btn-secondary">Analizza</button>
+      </div>
+
+      <div id="importa-cert-anteprima" style="margin-top:20px;"></div>
+
+      <div class="save-bar" style="margin-top:16px;">
+        <button type="button" id="importa-cert-confirm-btn" class="btn-primary" style="width:auto; padding:13px 28px; display:none;">Conferma e aggiorna</button>
+        <span id="importa-cert-feedback" class="save-feedback"></span>
+      </div>
+    </main>
+  </section>
+
   <!-- ===================== IMPOSTAZIONI (Società) ===================== -->
   <section id="view-impostazioni" class="view">
     <header class="topbar">
@@ -2251,6 +2282,11 @@
 
   let currentGruppoId = null;
   let currentRuolo = null;
+
+  // "societa_lettura" vede esattamente le stesse schermate di "societa" ma senza poter scrivere nulla:
+  // le regole Firestore bloccano comunque ogni scrittura anche se un bottone sfuggisse alla schermatura qui.
+  function isSocietaConScrittura(){ return currentRuolo === 'societa'; }
+  function isRuoloSocieta(){ return currentRuolo === 'societa' || currentRuolo === 'societa_lettura'; }
   let squadreGruppoSelezionato = '';
   let rosterDocs = [];           // [{id, nome}]
   let gestisciAtletiUnsub = null;
@@ -2346,7 +2382,7 @@
       eventiDocs = snap.docs.map(d => ({ id:d.id, ...d.data() }))
         .filter(ev => !ev.data || ev.data >= oggi)
         .sort((a,b) => (a.data||'').localeCompare(b.data||''));
-      renderEventiInline('admin-eventi-list', true);
+      renderEventiInline('admin-eventi-list', isSocietaConScrittura());
       renderEventiInline('coach-eventi-list', false);
     });
   }
@@ -2913,9 +2949,11 @@
             ${elencoHtml}
           </div>
         </div>
-        <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-bottom:16px;">
-          👥 Gestisci atleti ${g.nome}
-        </button>
+        ${isSocietaConScrittura() ? `
+          <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-bottom:16px;">
+            👥 Gestisci atleti ${g.nome}
+          </button>
+        ` : ''}
       `;
       const btnGestisci = detailCont.querySelector('.gruppo-gestisci-btn');
       if(btnGestisci) btnGestisci.addEventListener('click', () => apriAdminRoster(btnGestisci.dataset.gruppo));
@@ -3519,6 +3557,128 @@
   let importaRisultatiParse = [];
   const DATA_PATTERN = /^\d{2}\/\d{2}\/\d{4}$/;
 
+  // ===================== IMPORTA CERTIFICATI IN BLOCCO =====================
+
+  let importaCertMatch = []; // [{nomeSheet, atletaId, gruppoNome, dataIso, trovato, giaUguale}]
+
+  function apriImportaCertificati(){
+    document.getElementById('importa-cert-testo').value = '';
+    document.getElementById('importa-cert-anteprima').innerHTML = '';
+    document.getElementById('importa-cert-confirm-btn').style.display = 'none';
+    document.getElementById('importa-cert-feedback').textContent = '';
+    importaCertMatch = [];
+    showView('view-importa-certificati');
+  }
+
+  // Converte "gg/mm/aaaa" in "aaaa-mm-gg" (formato usato internamente per scadenzaCertificato)
+  function dataItalianaAIso(str){
+    const m = String(str).trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+    if(!m) return null;
+    const [,gg,mm,aaaa] = m;
+    return `${aaaa}-${mm.padStart(2,'0')}-${gg.padStart(2,'0')}`;
+  }
+
+  async function analizzaImportaCertificati(){
+    const testo = document.getElementById('importa-cert-testo').value;
+    const righe = testo.split('\n').map(r => r.trim()).filter(Boolean);
+    if(righe.length === 0){
+      document.getElementById('importa-cert-anteprima').innerHTML = '<p class="empty-note">Incolla prima qualche riga.</p>';
+      return;
+    }
+
+    // Tutti gli atleti di tutti i gruppi, per abbinare indipendentemente da quale squadra
+    const snapTutti = await getDocs(collection(db,'atleti'));
+    const atletiTutti = snapTutti.docs.map(d => ({ id:d.id, ...d.data() }));
+    const trovaAtleta = nomeCercato => atletiTutti.find(a => a.nome.trim().toLowerCase() === nomeCercato.trim().toLowerCase());
+
+    importaCertMatch = righe.map(riga => {
+      const colonne = riga.includes('\t') ? riga.split('\t') : riga.split(',');
+      if(colonne.length < 3){
+        return { nomeSheet: riga, dataIso: null, trovato: false, motivo: 'Riga non riconosciuta (servono 3 colonne: Cognome, Nome, Data)' };
+      }
+      const [cognome, nome, dataStr] = colonne.map(c => c.trim());
+      const nomeSheet = `${cognome} ${nome}`;
+      const dataIso = dataItalianaAIso(dataStr);
+      if(!dataIso){
+        return { nomeSheet, dataIso: null, trovato: false, motivo: `Data non riconosciuta ("${dataStr}", serve gg/mm/aaaa)` };
+      }
+      const atleta = trovaAtleta(nomeSheet);
+      if(!atleta){
+        return { nomeSheet, dataIso, trovato: false, motivo: 'Nessun atleta corrispondente trovato in nessun gruppo' };
+      }
+      const gruppo = GRUPPI[atleta.gruppoId];
+      return {
+        nomeSheet, atletaId: atleta.id, dataIso,
+        trovato: true,
+        gruppoNome: gruppo ? gruppo.nome : '—',
+        dataAttuale: atleta.scadenzaCertificato || '',
+        giaUguale: atleta.scadenzaCertificato === dataIso
+      };
+    });
+
+    renderAnteprimaImportaCertificati();
+  }
+
+  function renderAnteprimaImportaCertificati(){
+    const cont = document.getElementById('importa-cert-anteprima');
+    const trovati = importaCertMatch.filter(r => r.trovato && !r.giaUguale);
+    const giaAggiornati = importaCertMatch.filter(r => r.trovato && r.giaUguale);
+    const nonTrovati = importaCertMatch.filter(r => !r.trovato);
+
+    cont.innerHTML = `
+      <p style="font-size:13.5px; margin:0 0 14px;">
+        <strong style="color:var(--primary);">${trovati.length} da aggiornare</strong>
+        ${giaAggiornati.length > 0 ? ` · ${giaAggiornati.length} già corretti` : ''}
+        ${nonTrovati.length > 0 ? ` · <strong style="color:var(--danger);">${nonTrovati.length} non trovati</strong>` : ''}
+      </p>
+      ${trovati.length > 0 ? `
+        <p class="section-eyebrow">Verranno aggiornati</p>
+        ${trovati.map(r => `
+          <div class="risultato-row" style="margin-bottom:6px;">
+            <span class="principale">${r.nomeSheet} <span style="color:var(--text-dim); font-weight:400;">(${r.gruppoNome})</span></span>
+            <span style="font-size:12.5px; color:var(--text-dim);">${r.dataAttuale ? new Date(r.dataAttuale+'T00:00:00').toLocaleDateString('it-IT') : '—'} → <strong style="color:var(--text);">${new Date(r.dataIso+'T00:00:00').toLocaleDateString('it-IT')}</strong></span>
+          </div>
+        `).join('')}
+      ` : ''}
+      ${nonTrovati.length > 0 ? `
+        <p class="section-eyebrow" style="margin-top:18px; color:var(--danger);">Da controllare a mano</p>
+        ${nonTrovati.map(r => `
+          <div class="risultato-row" style="margin-bottom:6px;">
+            <span class="principale">${r.nomeSheet}</span>
+            <span style="font-size:12.5px; color:var(--danger);">${r.motivo}</span>
+          </div>
+        `).join('')}
+      ` : ''}
+    `;
+
+    document.getElementById('importa-cert-confirm-btn').style.display = trovati.length > 0 ? '' : 'none';
+  }
+
+  document.getElementById('importa-cert-analizza-btn').addEventListener('click', analizzaImportaCertificati);
+
+  document.getElementById('importa-cert-confirm-btn').addEventListener('click', async function(){
+    const btn = this;
+    const feedback = document.getElementById('importa-cert-feedback');
+    const daAggiornare = importaCertMatch.filter(r => r.trovato && !r.giaUguale);
+    if(daAggiornare.length === 0) return;
+    btn.disabled = true;
+    feedback.textContent = 'Aggiornamento in corso…';
+    try{
+      await Promise.all(daAggiornare.map(r => updateDoc(doc(db,'atleti', r.atletaId), { scadenzaCertificato: r.dataIso })));
+      feedback.textContent = `✓ Aggiornati ${daAggiornare.length} certificati.`;
+      btn.style.display = 'none';
+    } catch(err){
+      console.error(err);
+      feedback.textContent = 'Errore durante l\'aggiornamento: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('back-to-admin-from-importa-cert').addEventListener('click', () => {
+    showView('view-admin');
+  });
+
   function apriImporta(){
     const select = document.getElementById('importa-gruppo');
     select.innerHTML = Object.entries(GRUPPI).map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
@@ -3728,7 +3888,7 @@
                 return `
                 <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
                   <select class="gr-piazzamento">
-                    <option value="">Arrivo…</option>
+                    <option value="">Podio o arrivo…</option>
                     ${Array.from({length:20}, (_,n) => n+1).map(n => `<option value="${n}" ${String(r.piazzamento)===String(n)?'selected':''}>${n}°</option>`).join('')}
                   </select>
                   <select class="gr-disciplina" style="${haPiazzamento ? '' : 'display:none;'}">
@@ -4771,7 +4931,8 @@
       }
       const dati = snap.data();
       currentRuolo = dati.ruolo;
-      if(dati.ruolo === "societa"){
+      if(dati.ruolo === "societa" || dati.ruolo === "societa_lettura"){
+        document.getElementById('admin-role-tag').textContent = dati.ruolo === "societa_lettura" ? "🔒 Sola lettura" : "Società";
         renderGroupsGrid();
         showView('view-admin');
       } else if(dati.ruolo === "allenatore"){
@@ -4902,6 +5063,7 @@
         <button type="button" class="side-panel-btn" id="sp-gestisci-gruppi">🗂️ Gestisci gruppi</button>
         <button type="button" class="side-panel-btn" id="sp-gestisci-discipline">⚙️ Gestisci discipline gara</button>
         <button type="button" class="side-panel-btn" id="sp-importa-storico">📥 Importa storico (CSV)</button>
+        <button type="button" class="side-panel-btn" id="sp-importa-certificati">🩺 Importa certificati (in blocco)</button>
         <button type="button" class="side-panel-btn" id="sp-crea-evento">📅 Crea evento</button>
         <button type="button" class="side-panel-btn" id="sp-impostazioni">🔧 Impostazioni</button>
       </div>`;
@@ -4917,7 +5079,7 @@
     document.getElementById('sp-password')?.addEventListener('click', () => { chiudiPannello(); cambiaPassword(); });
     document.getElementById('sp-guida')?.addEventListener('click', () => {
       chiudiPannello();
-      document.getElementById('guida-content').innerHTML = currentRuolo === 'societa' ? guidaContenutoSocieta : guidaContenutoAllenatore;
+      document.getElementById('guida-content').innerHTML = isRuoloSocieta() ? guidaContenutoSocieta : guidaContenutoAllenatore;
       vistaPrimaGuida = document.querySelector('.view.active')?.id || 'view-coach';
       showView('view-guida');
     });
@@ -4930,6 +5092,7 @@
       document.getElementById('sp-gestisci-gruppi')?.addEventListener('click', () => { chiudiPannello(); apriAdminGruppi(); });
       document.getElementById('sp-gestisci-discipline')?.addEventListener('click', () => { chiudiPannello(); apriAdminDiscipline(); });
       document.getElementById('sp-importa-storico')?.addEventListener('click', () => { chiudiPannello(); apriImporta(); });
+      document.getElementById('sp-importa-certificati')?.addEventListener('click', () => { chiudiPannello(); apriImportaCertificati(); });
       document.getElementById('sp-crea-evento')?.addEventListener('click', () => {
         chiudiPannello();
         document.getElementById('evento-nuovo-nome').value = '';
