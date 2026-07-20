@@ -939,10 +939,12 @@
   .add-atleta-form{
     display:flex;
     gap:10px;
+    flex-wrap:wrap;
     margin-bottom:28px;
   }
   .add-atleta-form input{
     flex:1;
+    min-width:140px;
     padding:11px 14px;
     border-radius:10px;
     border:1px solid var(--border-strong);
@@ -951,6 +953,7 @@
     font-size:14px;
     font-family:'Inter',sans-serif;
   }
+  .add-atleta-form input[type="date"]{flex:0 1 150px;}
   .add-atleta-form input::placeholder{color:var(--placeholder);}
 
   .admin-textarea{
@@ -1339,6 +1342,7 @@
   .fisico-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;}
   .fisico-campo label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
   .fisico-campo input, .fisico-campo select{width:100%; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:14px; font-family:'Inter',sans-serif;}
+  .fisico-valore-sola-lettura{width:100%; padding:9px 10px; border:1.5px dashed var(--border-strong); border-radius:8px; background:transparent; color:var(--text-dim); font-size:14px; box-sizing:border-box;}
   .fisico-note{margin-top:12px;}
   .fisico-note label{display:block; font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
   .fisico-note textarea{width:100%; min-height:56px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;}
@@ -1790,7 +1794,8 @@
           <div class="fisico-grid">
             <div class="fisico-campo">
               <label for="scheda-fisico-nascita">Data di nascita</label>
-              <input type="date" id="scheda-fisico-nascita">
+              <div id="scheda-fisico-nascita" class="fisico-valore-sola-lettura">—</div>
+              <p style="font-size:10.5px; color:var(--text-dim); margin:4px 0 0;">Gestita dalla società</p>
             </div>
             <div class="fisico-campo">
               <label for="scheda-fisico-dominante">Lato dominante</label>
@@ -2037,6 +2042,7 @@
 
       <form id="admin-add-atleta-form" class="add-atleta-form">
         <input type="text" id="admin-nuovo-atleta" placeholder="Nome e cognome nuovo atleta" required>
+        <input type="date" id="admin-nuovo-atleta-nascita" title="Data di nascita (facoltativa)">
         <button type="submit" class="btn-secondary">+ Aggiungi</button>
       </form>
 
@@ -2112,7 +2118,8 @@
     <main>
       <h2>Importa scadenze certificati</h2>
       <p class="sub">
-        Dal tuo Google Sheet, seleziona le colonne <strong>Cognome</strong>, <strong>Nome</strong> e <strong>Scadenza</strong> (in questo ordine, formato gg/mm/aaaa), copia (Ctrl+C) e incolla qui sotto.
+        Dal tuo Google Sheet, seleziona le colonne <strong>Cognome</strong>, <strong>Nome</strong> ed eventualmente <strong>Data di nascita</strong>, e <strong>Scadenza</strong> (in questo ordine, formato gg/mm/aaaa), copia (Ctrl+C) e incolla qui sotto.
+        Vanno bene sia 3 colonne (Cognome, Nome, Scadenza) sia 4 (Cognome, Nome, Data di nascita, Scadenza).
         L'app abbina automaticamente ogni riga all'atleta già presente, in qualsiasi gruppo.
       </p>
 
@@ -2310,6 +2317,8 @@
   let schedeRosterUnsub = null;
   let schedeRosterDocs = [];     // [{id, nome}]
   let schedaDocUnsub = null;
+  let schedaAtletaAnagraficaUnsub = null;
+  let schedaAtletaDataNascita = ''; // gestita dalla società sul documento atleta, sola lettura qui
   let schedaAtletaId = null;
   let schedaAtletaNome = null;
   let schedaDatiCorrenti = null; // {fisico, record, obiettivi, note}
@@ -3320,7 +3329,8 @@
         return `
         <div class="roster-item">
           <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}</span>
-          <span style="display:flex; align-items:center; gap:8px;">
+          <span style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <input type="date" class="nascita-input" data-id="${a.id}" value="${a.dataNascita || ''}" title="Data di nascita">
             <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
             <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
           </span>
@@ -3328,6 +3338,12 @@
       `;
       }).join('');
     }
+
+    list.querySelectorAll('.nascita-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        await updateDoc(doc(db,'atleti', input.dataset.id), { dataNascita: e.target.value });
+      });
+    });
 
     list.querySelectorAll('.cert-input').forEach(input => {
       input.addEventListener('change', async (e) => {
@@ -3632,13 +3648,24 @@
       // così i nomi composti (es. "LORENZO NICOLO'") restano interi in un'unica colonna.
       const colonne = riga.split(/\t+|,\s*|\s{2,}/).map(c => c.trim()).filter(c => c !== '');
       if(colonne.length < 3){
-        return { nomeSheet: riga, dataIso: null, trovato: false, motivo: 'Riga non riconosciuta (servono 3 colonne: Cognome, Nome, Data)' };
+        return { nomeSheet: riga, dataIso: null, trovato: false, motivo: 'Riga non riconosciuta (servono almeno 3 colonne: Cognome, Nome, Scadenza — oppure 4 con anche la Data di nascita)' };
       }
-      const [cognome, nome, dataStr] = colonne.map(c => c.trim());
+      // 3 colonne: Cognome, Nome, Scadenza. 4 colonne: Cognome, Nome, Data di nascita, Scadenza.
+      const haDataNascita = colonne.length >= 4;
+      const [cognome, nome, terza, quarta] = colonne;
+      const dataStr = haDataNascita ? quarta : terza;
+      const dataNascitaStr = haDataNascita ? terza : null;
       const nomeSheet = `${cognome} ${nome}`;
       const dataIso = dataItalianaAIso(dataStr);
       if(!dataIso){
         return { nomeSheet, dataIso: null, trovato: false, motivo: `Data non riconosciuta ("${dataStr}", serve gg/mm/aaaa)` };
+      }
+      let dataNascitaIso = null;
+      if(dataNascitaStr){
+        dataNascitaIso = dataItalianaAIso(dataNascitaStr);
+        if(!dataNascitaIso){
+          return { nomeSheet, dataIso: null, trovato: false, motivo: `Data di nascita non riconosciuta ("${dataNascitaStr}", serve gg/mm/aaaa)` };
+        }
       }
       const atleta = trovaAtleta(nomeSheet);
       if(!atleta){
@@ -3646,11 +3673,12 @@
       }
       const gruppo = GRUPPI[atleta.gruppoId];
       return {
-        nomeSheet, atletaId: atleta.id, dataIso,
+        nomeSheet, atletaId: atleta.id, dataIso, dataNascitaIso,
         trovato: true,
         gruppoNome: gruppo ? gruppo.nome : '—',
         dataAttuale: atleta.scadenzaCertificato || '',
-        giaUguale: atleta.scadenzaCertificato === dataIso
+        dataNascitaAttuale: atleta.dataNascita || '',
+        giaUguale: atleta.scadenzaCertificato === dataIso && (!dataNascitaIso || atleta.dataNascita === dataNascitaIso)
       };
     });
 
@@ -3674,7 +3702,10 @@
         ${trovati.map(r => `
           <div class="risultato-row" style="margin-bottom:6px;">
             <span class="principale">${r.nomeSheet} <span style="color:var(--text-dim); font-weight:400;">(${r.gruppoNome})</span></span>
-            <span style="font-size:12.5px; color:var(--text-dim);">${r.dataAttuale ? new Date(r.dataAttuale+'T00:00:00').toLocaleDateString('it-IT') : '—'} → <strong style="color:var(--text);">${new Date(r.dataIso+'T00:00:00').toLocaleDateString('it-IT')}</strong></span>
+            <span style="font-size:12.5px; color:var(--text-dim);">
+              ${r.dataAttuale ? new Date(r.dataAttuale+'T00:00:00').toLocaleDateString('it-IT') : '—'} → <strong style="color:var(--text);">${new Date(r.dataIso+'T00:00:00').toLocaleDateString('it-IT')}</strong>
+              ${r.dataNascitaIso ? `<br>Nascita: ${r.dataNascitaAttuale ? new Date(r.dataNascitaAttuale+'T00:00:00').toLocaleDateString('it-IT') : '—'} → <strong style="color:var(--text);">${new Date(r.dataNascitaIso+'T00:00:00').toLocaleDateString('it-IT')}</strong>` : ''}
+            </span>
           </div>
         `).join('')}
       ` : ''}
@@ -3702,7 +3733,11 @@
     btn.disabled = true;
     feedback.textContent = 'Aggiornamento in corso…';
     try{
-      await Promise.all(daAggiornare.map(r => updateDoc(doc(db,'atleti', r.atletaId), { scadenzaCertificato: r.dataIso })));
+      await Promise.all(daAggiornare.map(r => {
+        const dati = { scadenzaCertificato: r.dataIso };
+        if(r.dataNascitaIso) dati.dataNascita = r.dataNascitaIso;
+        return updateDoc(doc(db,'atleti', r.atletaId), dati);
+      }));
       feedback.textContent = `✓ Aggiornati ${daAggiornare.length} certificati.`;
       btn.style.display = 'none';
     } catch(err){
@@ -4180,6 +4215,18 @@
     }
   }
 
+  // Se l'atleta non ha ancora una data di nascita sull'anagrafica ma la scheda (vecchio campo,
+  // di prima che la data di nascita diventasse gestita dalla società) sì, la copia lì una tantum.
+  async function tentaMigrazioneDataNascita(atletaId){
+    if(!schedaAtletaDataNascita && schedaDatiCorrenti && schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dataNascita){
+      try{
+        await updateDoc(doc(db,'atleti', atletaId), { dataNascita: schedaDatiCorrenti.fisico.dataNascita });
+      } catch(err){
+        console.error('Migrazione data di nascita non riuscita:', err);
+      }
+    }
+  }
+
   function apriSchedaAtleta(atletaId, nome){
     schedaAtletaId = atletaId;
     schedaAtletaNome = nome;
@@ -4194,6 +4241,14 @@
 
     if(schedaDocUnsub) schedaDocUnsub();
     if(schedaDisciplineUnsub) schedaDisciplineUnsub();
+    if(schedaAtletaAnagraficaUnsub) schedaAtletaAnagraficaUnsub();
+
+    schedaAtletaAnagraficaUnsub = onSnapshot(doc(db,'atleti', atletaId), snap => {
+      schedaAtletaDataNascita = (snap.exists() && snap.data().dataNascita) || '';
+      renderSchedaFisico();
+      renderSchedaRiepilogo();
+      tentaMigrazioneDataNascita(atletaId);
+    });
 
     schedaDisciplineUnsub = onSnapshot(collection(db,'discipline'), snap => {
       schedaDisciplineDocs = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b)=>a.nome.localeCompare(b.nome));
@@ -4245,6 +4300,7 @@
       renderSchedaNote();
       renderSchedaRiepilogo();
       renderReportStagioneSelect();
+      tentaMigrazioneDataNascita(atletaId);
     }, err => {
       console.error('Errore lettura scheda atleta:', err);
       document.getElementById('scheda-fisico-feedback').textContent =
@@ -4280,7 +4336,7 @@
     const righe = [];
 
     // Età
-    const eta = calcolaEta(schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dataNascita);
+    const eta = calcolaEta(schedaAtletaDataNascita);
     righe.push(`
       <div class="riepilogo-riga">
         <span class="riepilogo-etichetta">Età</span>
@@ -4363,7 +4419,8 @@
 
   function renderSchedaFisico(){
     const f = schedaDatiCorrenti.fisico || {};
-    document.getElementById('scheda-fisico-nascita').value = f.dataNascita || '';
+    document.getElementById('scheda-fisico-nascita').textContent =
+      schedaAtletaDataNascita ? new Date(schedaAtletaDataNascita + 'T00:00:00').toLocaleDateString('it-IT') : 'Non impostata (la aggiunge la società)';
     document.getElementById('scheda-fisico-dominante').value = f.dominante || '';
     document.getElementById('scheda-fisico-note').value = f.note || '';
 
@@ -4382,7 +4439,6 @@
     btn.disabled = true;
     try{
       schedaDatiCorrenti.fisico = {
-        dataNascita: document.getElementById('scheda-fisico-nascita').value,
         dominante: document.getElementById('scheda-fisico-dominante').value,
         note: document.getElementById('scheda-fisico-note').value
       };
@@ -4699,7 +4755,7 @@
 
     const f = schedaDatiCorrenti.fisico || {};
     const datiFisiciRighe = [];
-    if(f.dataNascita) datiFisiciRighe.push(`nato/a il ${new Date(f.dataNascita + 'T00:00:00').toLocaleDateString('it-IT')}`);
+    if(schedaAtletaDataNascita) datiFisiciRighe.push(`nato/a il ${new Date(schedaAtletaDataNascita + 'T00:00:00').toLocaleDateString('it-IT')}`);
     if(f.altezza) datiFisiciRighe.push(`${f.altezza} cm`);
     if(f.peso) datiFisiciRighe.push(`${f.peso} kg`);
     if(datiFisiciRighe.length > 0) testo += `\n🧍 ${datiFisiciRighe.join(' · ')}`;
@@ -4776,7 +4832,7 @@
     }
 
     // Dati fisici attuali (età, lato dominante, altezza/torace/peso con variazione nella stagione)
-    const eta = calcolaEta(schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dataNascita);
+    const eta = calcolaEta(schedaAtletaDataNascita);
     const fisiciRighe = [];
     fisiciRighe.push(`<div><span>Età</span>${eta !== null ? eta + ' anni' : '—'}</div>`);
     fisiciRighe.push(`<div><span>Lato dominante</span>${(schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dominante) || '—'}</div>`);
@@ -5446,10 +5502,14 @@
   document.getElementById('admin-add-atleta-form').addEventListener('submit', async function(e){
     e.preventDefault();
     const input = document.getElementById('admin-nuovo-atleta');
+    const inputNascita = document.getElementById('admin-nuovo-atleta-nascita');
     const nome = input.value.trim();
     if(!nome) return;
-    await addDoc(collection(db,'atleti'), { gruppoId: adminRosterGruppoId, nome });
+    const dati = { gruppoId: adminRosterGruppoId, nome };
+    if(inputNascita.value) dati.dataNascita = inputNascita.value;
+    await addDoc(collection(db,'atleti'), dati);
     input.value = "";
+    inputNascita.value = "";
   });
 
   document.getElementById('admin-bulk-add-btn').addEventListener('click', async function(){
