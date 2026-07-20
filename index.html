@@ -3329,9 +3329,15 @@
         return `
         <div class="roster-item">
           <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}</span>
-          <span style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <input type="date" class="nascita-input" data-id="${a.id}" value="${a.dataNascita || ''}" title="Data di nascita">
-            <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
+          <span style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
+            <span style="display:flex; flex-direction:column; gap:3px;">
+              <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Nascita</label>
+              <input type="date" class="nascita-input" data-id="${a.id}" value="${a.dataNascita || ''}" title="Data di nascita">
+            </span>
+            <span style="display:flex; flex-direction:column; gap:3px;">
+              <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Scadenza certificato</label>
+              <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
+            </span>
             <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
           </span>
         </div>
