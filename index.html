@@ -3309,7 +3309,7 @@
     if(adminRosterUnsub) adminRosterUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
     adminRosterUnsub = onSnapshot(q, snap => {
-      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', archiviato: !!d.data().archiviato })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', dataNascita: d.data().dataNascita || '', archiviato: !!d.data().archiviato })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderAdminRosterList();
     });
 
