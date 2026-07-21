@@ -39,6 +39,7 @@
     --c-lanci:#f5a623;
     --c-salti:#f472b6;
     --clay:#c0432f;
+    --info:#5b8def;
     --radius:14px;
     --btn-shadow:0 2px 5px rgba(26,31,41,.16), 0 1px 2px rgba(26,31,41,.08);
     --btn-shadow-active:0 1px 2px rgba(26,31,41,.14);
@@ -58,6 +59,7 @@
     --remove-text:#e0a39c;
     --cert-banner-text:#f7a8a0;
     --clay:#d9573f;
+    --info:#7ba3f0;
     --btn-shadow:0 2px 6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
     --btn-shadow-active:0 1px 2px rgba(0,0,0,.4);
   }
@@ -531,6 +533,27 @@
   .eventi-strip .eyebrow-lane{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-lane); margin:0 0 2px; font-family:'Oswald',sans-serif;}
   .eventi-strip .eventi-titolo{font-size:16px; font-weight:600;}
   .eventi-strip .empty-note{padding-top:4px;}
+
+  /* ---------- Bacheca messaggi società -> squadre ---------- */
+  .msg-strip{
+    margin-bottom:18px; border-radius:var(--radius); padding:16px 18px; cursor:pointer;
+    background:color-mix(in srgb, var(--info, #5b8def) 12%, var(--surface));
+    border:1px solid color-mix(in srgb, var(--info, #5b8def) 35%, var(--border));
+  }
+  .msg-strip .eyebrow-info{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--info, #5b8def); margin:0 0 2px; font-family:'Oswald',sans-serif; display:flex; align-items:center; gap:6px;}
+  .msg-strip-titolo{font-size:16px; font-weight:600;}
+  .msg-strip-anteprima{font-size:12.5px; color:var(--text-dim); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .puntino-rosso{width:9px; height:9px; border-radius:50%; background:var(--danger); display:inline-block;}
+
+  .msg-row{padding:12px 16px; border-bottom:1px solid var(--border); font-size:13.5px;}
+  .msg-row:last-child{border-bottom:none;}
+  .msg-row.non-letto{border-left:3px solid var(--info, #5b8def);}
+  .msg-row .meta{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px; flex-wrap:wrap;}
+  .msg-dest{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 8px; border-radius:10px; background:var(--surface-2); color:var(--text-dim); white-space:nowrap;}
+  .msg-dest.tutti{background:color-mix(in srgb, var(--info, #5b8def) 15%, var(--surface)); color:var(--info, #5b8def);}
+  .msg-data{font-size:11px; color:var(--text-dim); white-space:nowrap;}
+  .msg-testo{line-height:1.5; white-space:pre-wrap;}
+  .msg-elimina{font-size:11px; color:var(--danger); background:none; border:none; cursor:pointer; padding:0; margin-top:6px;}
 
   /* Tendine in stile "corsia", per Attività recente/Consultazione nella home Società */
   .corsia-details{border-bottom:1px solid var(--border);}
@@ -1496,6 +1519,13 @@
         <p class="sub" id="coach-group-sub">—</p>
       </div>
 
+      <div class="msg-strip" id="msg-strip-coach" style="display:none;">
+        <p class="eyebrow-info">📢 Messaggi dalla società <span class="puntino-rosso" id="msg-puntino-coach" style="display:none;"></span></p>
+        <div class="msg-strip-titolo" id="msg-strip-titolo">—</div>
+        <div class="msg-strip-anteprima" id="msg-strip-anteprima"></div>
+      </div>
+      <div class="foglio-batteria" id="msg-elenco-coach" style="display:none; margin-bottom:20px;"></div>
+
       <div class="foglio-batteria">
         <div class="corsia c-presenze" id="card-presenze">
           <div class="corsia-riga"></div>
@@ -1903,6 +1933,17 @@
       <p class="section-eyebrow" style="margin-top:26px;">Squadre</p>
       <select id="admin-squadre-select" class="scheda-search"></select>
       <div id="admin-gruppo-detail"></div>
+
+      <p class="section-eyebrow" style="margin-top:26px;">📢 Messaggi alle squadre</p>
+      <div class="foglio-batteria" id="msg-compose-box" style="padding:16px;">
+        <select id="msg-destinatario" class="scheda-search" style="margin-bottom:10px;"></select>
+        <textarea id="msg-testo" placeholder="Scrivi il messaggio..." style="width:100%; min-height:70px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical; margin-bottom:10px; box-sizing:border-box;"></textarea>
+        <div class="save-bar">
+          <button type="button" id="msg-invia-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Invia</button>
+          <span id="msg-feedback" class="save-feedback"></span>
+        </div>
+      </div>
+      <div class="foglio-batteria" id="msg-elenco-societa" style="margin-top:10px;"></div>
 
       <p class="section-eyebrow section-eyebrow-accent" style="margin-top:26px;">● Attività recente</p>
 
@@ -2395,6 +2436,141 @@
       renderEventiInline('coach-eventi-list', false);
     });
   }
+
+  // --- Bacheca messaggi società -> squadre ---
+  let messaggiListenerAvviato = false;
+  let messaggiDocs = []; // [{id, testo, gruppoId, creatoIl}]
+
+  function avviaListenerMessaggi(){
+    if(messaggiListenerAvviato) return;
+    messaggiListenerAvviato = true;
+    onSnapshot(collection(db,'messaggi'), snap => {
+      messaggiDocs = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+        .sort((a,b) => (b.creatoIl||'').localeCompare(a.creatoIl||''));
+      renderMessaggiSocieta();
+      renderMessaggiCoach();
+    });
+  }
+
+  function renderMessaggiSocieta(){
+    const selectDest = document.getElementById('msg-destinatario');
+    const cont = document.getElementById('msg-elenco-societa');
+    if(!selectDest || !cont) return;
+
+    const composeBox = document.getElementById('msg-compose-box');
+    if(composeBox) composeBox.style.display = isSocietaConScrittura() ? '' : 'none';
+
+    const gruppiOrdinati = Object.entries(GRUPPI).sort((a,b) => a[1].nome.localeCompare(b[1].nome));
+    const selezionatoPrima = selectDest.value;
+    selectDest.innerHTML = `<option value="">📢 Tutti i gruppi</option>` +
+      gruppiOrdinati.map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
+    selectDest.value = selezionatoPrima || '';
+
+    if(messaggiDocs.length === 0){
+      cont.innerHTML = '<p class="empty-note" style="padding:16px;">Nessun messaggio inviato ancora.</p>';
+      return;
+    }
+    cont.innerHTML = messaggiDocs.map(m => {
+      const gruppo = m.gruppoId ? GRUPPI[m.gruppoId] : null;
+      const dataFmt = m.creatoIl ? new Date(m.creatoIl).toLocaleDateString('it-IT') : '';
+      return `
+        <div class="msg-row">
+          <div class="meta">
+            <span class="msg-dest${!m.gruppoId ? ' tutti' : ''}">${gruppo ? gruppo.nome : 'Tutti i gruppi'}</span>
+            <span class="msg-data">${dataFmt}</span>
+          </div>
+          <div class="msg-testo">${m.testo}</div>
+          ${isSocietaConScrittura() ? `<button type="button" class="msg-elimina" data-id="${m.id}">Elimina</button>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    cont.querySelectorAll('.msg-elimina').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Eliminare questo messaggio?')) return;
+        await deleteDoc(doc(db,'messaggi', btn.dataset.id));
+      });
+    });
+  }
+
+  document.getElementById('msg-invia-btn').addEventListener('click', async function(){
+    const testoInput = document.getElementById('msg-testo');
+    const destInput = document.getElementById('msg-destinatario');
+    const feedback = document.getElementById('msg-feedback');
+    const testo = testoInput.value.trim();
+    if(!testo){
+      feedback.textContent = 'Scrivi un messaggio prima di inviare.';
+      return;
+    }
+    this.disabled = true;
+    try{
+      await addDoc(collection(db,'messaggi'), {
+        testo, gruppoId: destInput.value || '', creatoIl: new Date().toISOString()
+      });
+      testoInput.value = '';
+      feedback.textContent = '✓ Inviato';
+      setTimeout(() => { feedback.textContent = ''; }, 2000);
+    } catch(err){
+      console.error(err);
+      feedback.textContent = 'Errore durante l\'invio: ' + err.message;
+    } finally {
+      this.disabled = false;
+    }
+  });
+
+  // Lato allenatore: "letto" salvato solo su questo dispositivo (localStorage), non sull'account
+  function messaggiUltimaVisita(){
+    return localStorage.getItem('atleticaSilca_messaggiVisti') || '';
+  }
+  function segnaMessaggiVisti(){
+    localStorage.setItem('atleticaSilca_messaggiVisti', new Date().toISOString());
+  }
+
+  function renderMessaggiCoach(){
+    const strip = document.getElementById('msg-strip-coach');
+    const elenco = document.getElementById('msg-elenco-coach');
+    if(!strip || !elenco || !currentGruppoId) return;
+
+    const messaggiGruppo = messaggiDocs.filter(m => !m.gruppoId || m.gruppoId === currentGruppoId);
+    if(messaggiGruppo.length === 0){
+      strip.style.display = 'none';
+      elenco.style.display = 'none';
+      return;
+    }
+
+    const ultimaVisita = messaggiUltimaVisita();
+    const nonLetti = messaggiGruppo.filter(m => m.creatoIl && m.creatoIl > ultimaVisita);
+
+    strip.style.display = 'block';
+    document.getElementById('msg-puntino-coach').style.display = nonLetti.length > 0 ? 'inline-block' : 'none';
+    document.getElementById('msg-strip-titolo').textContent = nonLetti.length > 0 ? `${nonLetti.length} nuov${nonLetti.length===1?'o':'i'}` : `${messaggiGruppo.length} messagg${messaggiGruppo.length===1?'io':'i'}`;
+    document.getElementById('msg-strip-anteprima').textContent = messaggiGruppo[0].testo;
+
+    elenco.innerHTML = messaggiGruppo.map(m => {
+      const dataFmt = m.creatoIl ? new Date(m.creatoIl).toLocaleDateString('it-IT') : '';
+      const nonLetto = m.creatoIl && m.creatoIl > ultimaVisita;
+      return `
+        <div class="msg-row${nonLetto ? ' non-letto' : ''}">
+          <div class="meta">
+            <span class="msg-dest${!m.gruppoId ? ' tutti' : ''}">${!m.gruppoId ? 'Tutti i gruppi' : (GRUPPI[currentGruppoId] ? GRUPPI[currentGruppoId].nome : '')}</span>
+            <span class="msg-data">${dataFmt}</span>
+          </div>
+          <div class="msg-testo">${m.testo}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('msg-strip-coach').addEventListener('click', () => {
+    const elenco = document.getElementById('msg-elenco-coach');
+    const aperto = elenco.style.display === 'block';
+    elenco.style.display = aperto ? 'none' : 'block';
+    if(!aperto){
+      segnaMessaggiVisti();
+      document.getElementById('msg-puntino-coach').style.display = 'none';
+      renderMessaggiCoach();
+    }
+  });
 
   // --- Andamento società: la home Società (KPI, confronto gruppi, ultima giornata) si aggiorna da sola
   //     quando cambia qualsiasi presenza/gara/risultato/atleta, non solo quando la si riapre ---
@@ -5022,6 +5198,7 @@
     avviaListenerImpostazioni();
     avviaListenerEventi();
     avviaListenerAttivitaSocieta();
+    avviaListenerMessaggi();
     await gruppiPronti;
     try{
       const snap = await getDoc(doc(db, "utenti", user.uid));
@@ -5045,6 +5222,7 @@
         document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${conteggioAttivi} atleti` : "";
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
         document.getElementById('card-schede').style.display = (g && g.nome === 'Cadetti') ? '' : 'none';
+        renderMessaggiCoach();
         showView('view-coach');
       } else {
         showView('view-unconfigured');
