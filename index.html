@@ -2453,6 +2453,18 @@
     });
   }
 
+  // Popola il menù destinatario dai gruppi: indipendente dalla lettura dei messaggi,
+  // così anche se quella avesse un intoppo il menù squadre resta comunque utilizzabile.
+  function popolaSelectDestinatarioMessaggi(){
+    const selectDest = document.getElementById('msg-destinatario');
+    if(!selectDest) return;
+    const gruppiOrdinati = Object.entries(GRUPPI).sort((a,b) => a[1].nome.localeCompare(b[1].nome));
+    const selezionatoPrima = selectDest.value;
+    selectDest.innerHTML = `<option value="">📢 Tutti i gruppi</option>` +
+      gruppiOrdinati.map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
+    selectDest.value = selezionatoPrima || '';
+  }
+
   function renderMessaggiSocieta(){
     const selectDest = document.getElementById('msg-destinatario');
     const cont = document.getElementById('msg-elenco-societa');
@@ -2461,11 +2473,7 @@
     const composeBox = document.getElementById('msg-compose-box');
     if(composeBox) composeBox.style.display = isSocietaConScrittura() ? '' : 'none';
 
-    const gruppiOrdinati = Object.entries(GRUPPI).sort((a,b) => a[1].nome.localeCompare(b[1].nome));
-    const selezionatoPrima = selectDest.value;
-    selectDest.innerHTML = `<option value="">📢 Tutti i gruppi</option>` +
-      gruppiOrdinati.map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
-    selectDest.value = selezionatoPrima || '';
+    popolaSelectDestinatarioMessaggi();
 
     if(messaggiDocs.length === 0){
       cont.innerHTML = '<p class="empty-note" style="padding:16px;">Nessun messaggio inviato ancora.</p>';
@@ -2731,6 +2739,8 @@
       squadreGruppoSelezionato = e.target.value;
       if(typeof renderGroupsGrid === 'function') renderGroupsGrid();
     };
+
+    if(typeof popolaSelectDestinatarioMessaggi === 'function') popolaSelectDestinatarioMessaggi();
   }
 
   async function renderGroupsGrid(){
