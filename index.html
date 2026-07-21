@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -1934,17 +1934,6 @@
       <select id="admin-squadre-select" class="scheda-search"></select>
       <div id="admin-gruppo-detail"></div>
 
-      <p class="section-eyebrow" style="margin-top:26px;">📢 Messaggi alle squadre</p>
-      <div class="foglio-batteria" id="msg-compose-box" style="padding:16px;">
-        <select id="msg-destinatario" class="scheda-search" style="margin-bottom:10px;"></select>
-        <textarea id="msg-testo" placeholder="Scrivi il messaggio..." style="width:100%; min-height:70px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical; margin-bottom:10px; box-sizing:border-box;"></textarea>
-        <div class="save-bar">
-          <button type="button" id="msg-invia-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Invia</button>
-          <span id="msg-feedback" class="save-feedback"></span>
-        </div>
-      </div>
-      <div class="foglio-batteria" id="msg-elenco-societa" style="margin-top:10px;"></div>
-
       <p class="section-eyebrow section-eyebrow-accent" style="margin-top:26px;">● Attività recente</p>
 
       <div class="foglio-batteria">
@@ -1966,6 +1955,26 @@
             <span class="corsia-freccia-details">›</span>
           </summary>
           <div class="corsia-details-corpo" id="admin-eventi-list"></div>
+        </details>
+
+        <details class="corsia-details">
+          <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:var(--info);"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, var(--info) 14%, var(--surface));">📢</span>
+            <span class="corsia-testi"><span class="corsia-titolo">Messaggi alle squadre</span></span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo">
+            <div id="msg-compose-box" style="padding-bottom:14px;">
+              <select id="msg-destinatario" class="scheda-search" style="margin-bottom:10px;"></select>
+              <textarea id="msg-testo" placeholder="Scrivi il messaggio..." style="width:100%; min-height:70px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical; margin-bottom:10px; box-sizing:border-box;"></textarea>
+              <div class="save-bar">
+                <button type="button" id="msg-invia-btn" class="btn-primary" style="width:auto; padding:11px 22px;">Invia</button>
+                <span id="msg-feedback" class="save-feedback"></span>
+              </div>
+            </div>
+            <div id="msg-elenco-societa"></div>
+          </div>
         </details>
       </div>
 
