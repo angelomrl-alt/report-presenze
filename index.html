@@ -555,6 +555,9 @@
   .msg-data{font-size:11px; color:var(--text-dim); white-space:nowrap;}
   .msg-testo{line-height:1.5; white-space:pre-wrap;}
   .msg-elimina{font-size:11px; color:var(--danger); background:none; border:none; cursor:pointer; padding:0; margin-top:6px;}
+  .msg-lettura{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim); margin-top:6px;}
+  .puntino-letto{width:8px; height:8px; border-radius:50%; background:var(--danger); display:inline-block; flex-shrink:0;}
+  .puntino-letto.letto{background:var(--primary);}
 
   /* Tendine in stile "corsia", per Attività recente/Consultazione nella home Società */
   .corsia-details{border-bottom:1px solid var(--border);}
@@ -2461,6 +2464,8 @@
   // --- Bacheca messaggi società -> squadre ---
   let messaggiListenerAvviato = false;
   let messaggiDocs = []; // [{id, testo, gruppoId, creatoIl}]
+  let messaggiLetture = {}; // gruppoId -> ultimaLettura (ISO string), solo per società
+  let messaggiLettureUnsub = null;
 
   function avviaListenerMessaggi(){
     if(messaggiListenerAvviato) return;
@@ -2475,6 +2480,19 @@
     });
   }
 
+  // Solo la società può leggere l'intera collezione messaggiLetture (un allenatore vedrebbe
+  // negata l'intera richiesta, perché conterrebbe anche gruppi che non può leggere).
+  function avviaListenerMessaggiLetture(){
+    if(messaggiLettureUnsub) return;
+    messaggiLettureUnsub = onSnapshot(collection(db,'messaggiLetture'), snap => {
+      messaggiLetture = {};
+      snap.docs.forEach(d => { messaggiLetture[d.id] = d.data().ultimaLettura || ''; });
+      renderMessaggiSocieta();
+    }, err => {
+      console.error('Errore lettura messaggiLetture (verifica di aver aggiunto la regola Firestore):', err);
+    });
+  }
+
   // Popola il menù destinatario dai gruppi: indipendente dalla lettura dei messaggi,
   // così anche se quella avesse un intoppo il menù squadre resta comunque utilizzabile.
   function popolaSelectDestinatarioMessaggi(){
@@ -2485,6 +2503,26 @@
     selectDest.innerHTML = `<option value="">📢 Tutti i gruppi</option>` +
       gruppiOrdinati.map(([id,g]) => `<option value="${id}">${g.nome}</option>`).join('');
     selectDest.value = selezionatoPrima || '';
+  }
+
+  // Calcola lo stato di lettura di un messaggio per la vista società:
+  // per un gruppo specifico un puntino verde/rosso, per "tutti i gruppi" un conteggio.
+  function calcolaStatoLetturaMessaggio(m){
+    if(!m.creatoIl) return '';
+    if(m.gruppoId){
+      const ultimaLettura = messaggiLetture[m.gruppoId] || '';
+      const letto = ultimaLettura && ultimaLettura > m.creatoIl;
+      return letto
+        ? '<span class="puntino-letto letto"></span> Letto'
+        : '<span class="puntino-letto"></span> Non ancora letto';
+    }
+    const idGruppi = Object.keys(GRUPPI);
+    if(idGruppi.length === 0) return '';
+    const lettiDa = idGruppi.filter(gid => {
+      const ultimaLettura = messaggiLetture[gid] || '';
+      return ultimaLettura && ultimaLettura > m.creatoIl;
+    }).length;
+    return `<span class="puntino-letto${lettiDa === idGruppi.length ? ' letto' : ''}"></span> Letto da ${lettiDa}/${idGruppi.length} squadre`;
   }
 
   function renderMessaggiSocieta(){
@@ -2511,6 +2549,7 @@
     cont.innerHTML = messaggiDocs.map(m => {
       const gruppo = m.gruppoId ? GRUPPI[m.gruppoId] : null;
       const dataFmt = m.creatoIl ? new Date(m.creatoIl).toLocaleDateString('it-IT') : '';
+      const statoLettura = calcolaStatoLetturaMessaggio(m);
       return `
         <div class="msg-row">
           <div class="meta">
@@ -2518,6 +2557,7 @@
             <span class="msg-data">${dataFmt}</span>
           </div>
           <div class="msg-testo">${m.testo}</div>
+          <div class="msg-lettura">${statoLettura}</div>
           ${isSocietaConScrittura() ? `<button type="button" class="msg-elimina" data-id="${m.id}">Elimina</button>` : ''}
         </div>
       `;
@@ -2556,12 +2596,21 @@
     }
   });
 
-  // Lato allenatore: "letto" salvato solo su questo dispositivo (localStorage), non sull'account
+  // Lato allenatore: "letto" salvato sul dispositivo (per far sparire subito il puntino locale)
+  // e anche su Firestore (per far vedere alla società se e quando il gruppo ha controllato).
   function messaggiUltimaVisita(){
     return localStorage.getItem('atleticaSilca_messaggiVisti') || '';
   }
-  function segnaMessaggiVisti(){
-    localStorage.setItem('atleticaSilca_messaggiVisti', new Date().toISOString());
+  async function segnaMessaggiVisti(){
+    const adesso = new Date().toISOString();
+    localStorage.setItem('atleticaSilca_messaggiVisti', adesso);
+    if(currentGruppoId){
+      try{
+        await setDoc(doc(db,'messaggiLetture', currentGruppoId), { ultimaLettura: adesso }, { merge: true });
+      } catch(err){
+        console.error('Errore aggiornamento lettura messaggi su Firestore:', err);
+      }
+    }
   }
 
   function renderMessaggiCoach(){
@@ -5240,6 +5289,7 @@
         document.getElementById('admin-role-tag').textContent = dati.ruolo === "societa_lettura" ? "🔒 Sola lettura" : "Società";
         renderGroupsGrid();
         renderMessaggiSocieta();
+        avviaListenerMessaggiLetture();
         showView('view-admin');
       } else if(dati.ruolo === "allenatore"){
         currentGruppoId = dati.gruppoId;
@@ -5301,6 +5351,7 @@
         if(schedaDocUnsub) { schedaDocUnsub(); schedaDocUnsub = null; }
       if(schedaDisciplineUnsub) { schedaDisciplineUnsub(); schedaDisciplineUnsub = null; }
       if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
+      if(messaggiLettureUnsub) { messaggiLettureUnsub(); messaggiLettureUnsub = null; }
 
       // Reset stato globale
       currentGruppoId = null;
