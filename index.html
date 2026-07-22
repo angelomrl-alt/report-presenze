@@ -514,6 +514,7 @@
   .corsia-testi{flex:1; min-width:0;}
   .corsia-titolo{font-size:15.5px; font-weight:600; margin-bottom:2px;}
   .corsia-desc{font-size:12.5px; color:var(--text-dim); line-height:1.4;}
+  .corsia-anteprima{display:block; font-size:12px; color:var(--text-dim); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .corsia-freccia{color:var(--border-strong); font-size:18px; align-self:center; padding-right:14px; flex-shrink:0;}
 
   .c-presenze .corsia-riga{background:var(--primary);}
@@ -1936,14 +1937,17 @@
       <select id="admin-squadre-select" class="scheda-search"></select>
       <div id="admin-gruppo-detail"></div>
 
-      <p class="section-eyebrow section-eyebrow-accent" style="margin-top:26px;">● Attività recente</p>
+      <p class="section-eyebrow" style="margin-top:26px;">Attività e strumenti</p>
 
       <div class="foglio-batteria">
         <details class="corsia-details">
           <summary class="corsia-summary">
             <span class="corsia-riga" style="background:var(--clay);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--clay) 14%, var(--surface));">🏁</span>
-            <span class="corsia-testi"><span class="corsia-titolo">Ultima giornata di gare</span></span>
+            <span class="corsia-testi">
+              <span class="corsia-titolo">Ultima giornata di gare</span>
+              <span class="corsia-anteprima" id="anteprima-ultima-gara">—</span>
+            </span>
             <span class="corsia-freccia-details">›</span>
           </summary>
           <div class="corsia-details-corpo" id="ultima-giornata-gare"></div>
@@ -1953,7 +1957,10 @@
           <summary class="corsia-summary">
             <span class="corsia-riga" style="background:var(--accent-lane);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--accent-lane) 16%, var(--surface));">📅</span>
-            <span class="corsia-testi"><span class="corsia-titolo">Prossimi eventi</span></span>
+            <span class="corsia-testi">
+              <span class="corsia-titolo">Prossimi eventi</span>
+              <span class="corsia-anteprima" id="anteprima-eventi">—</span>
+            </span>
             <span class="corsia-freccia-details">›</span>
           </summary>
           <div class="corsia-details-corpo" id="admin-eventi-list"></div>
@@ -1963,7 +1970,10 @@
           <summary class="corsia-summary">
             <span class="corsia-riga" style="background:var(--info);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--info) 14%, var(--surface));">📢</span>
-            <span class="corsia-testi"><span class="corsia-titolo">Messaggi alle squadre</span></span>
+            <span class="corsia-testi">
+              <span class="corsia-titolo">Messaggi alle squadre</span>
+              <span class="corsia-anteprima" id="anteprima-messaggi">—</span>
+            </span>
             <span class="corsia-freccia-details">›</span>
           </summary>
           <div class="corsia-details-corpo">
@@ -1978,16 +1988,15 @@
             <div id="msg-elenco-societa"></div>
           </div>
         </details>
-      </div>
 
-      <p class="section-eyebrow" style="margin-top:26px;">Consultazione</p>
-
-      <div class="foglio-batteria">
         <details class="corsia-details">
           <summary class="corsia-summary">
             <span class="corsia-riga" style="background:var(--c-agnese);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--c-agnese) 14%, var(--surface));">📊</span>
-            <span class="corsia-testi"><span class="corsia-titolo">Confronto tra i gruppi</span></span>
+            <span class="corsia-testi">
+              <span class="corsia-titolo">Confronto tra i gruppi</span>
+              <span class="corsia-anteprima">Allenamenti e gare per squadra</span>
+            </span>
             <span class="corsia-freccia-details">›</span>
           </summary>
           <div class="corsia-details-corpo">
@@ -2435,6 +2444,17 @@
         .sort((a,b) => (a.data||'').localeCompare(b.data||''));
       renderEventiInline('admin-eventi-list', isSocietaConScrittura());
       renderEventiInline('coach-eventi-list', false);
+
+      const anteprimaEventiEl = document.getElementById('anteprima-eventi');
+      if(anteprimaEventiEl){
+        if(eventiDocs.length === 0){
+          anteprimaEventiEl.textContent = 'Nessun evento nei prossimi giorni';
+        } else {
+          const prossimo = eventiDocs[0];
+          const dataBreve = prossimo.data ? new Date(prossimo.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' }) : '';
+          anteprimaEventiEl.textContent = `${dataBreve} · ${prossimo.nome || 'Evento'}`;
+        }
+      }
     });
   }
 
@@ -2476,6 +2496,13 @@
     if(composeBox) composeBox.style.display = isSocietaConScrittura() ? '' : 'none';
 
     popolaSelectDestinatarioMessaggi();
+
+    const anteprimaMsgEl = document.getElementById('anteprima-messaggi');
+    if(anteprimaMsgEl){
+      const oraMese = new Date().toISOString().slice(0,7); // "aaaa-mm"
+      const delMese = messaggiDocs.filter(m => m.creatoIl && m.creatoIl.slice(0,7) === oraMese).length;
+      anteprimaMsgEl.textContent = delMese > 0 ? `${delMese} messagg${delMese===1?'io':'i'} questo mese` : 'Nessun messaggio ancora';
+    }
 
     if(messaggiDocs.length === 0){
       cont.innerHTML = '<p class="empty-note" style="padding:16px;">Nessun messaggio inviato ancora.</p>';
@@ -2911,6 +2938,17 @@
           }).join('')}
         </div>
       `;
+    }
+
+    const anteprimaGaraEl = document.getElementById('anteprima-ultima-gara');
+    if(anteprimaGaraEl){
+      if(!ultimaData){
+        anteprimaGaraEl.textContent = 'Nessun risultato registrato ancora';
+      } else {
+        const nomiGare = Array.from(new Set(risultatiConPosizione.filter(r => r.data === ultimaData).map(r => r.gara || '—')));
+        const dataBreve = new Date(ultimaData + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' });
+        anteprimaGaraEl.textContent = `${dataBreve} · ${nomiGare.join(', ')}`;
+      }
     }
 
     function top3(map){
