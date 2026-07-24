@@ -1525,6 +1525,8 @@
         <p class="sub" id="coach-group-sub">—</p>
       </div>
 
+      <div id="cert-avviso-banner-home" class="info-banner cert-banner" style="display:none; margin-bottom:18px;"></div>
+
       <div class="msg-strip" id="msg-strip-coach" style="display:none;">
         <p class="eyebrow-info">📢 Messaggi dalla società <span class="puntino-rosso" id="msg-puntino-coach" style="display:none;"></span></p>
         <div class="msg-strip-titolo" id="msg-strip-titolo">—</div>
@@ -1750,6 +1752,8 @@
       <div id="gara-esistente-banner" class="info-banner" style="display:none;">
         📋 Per questo giorno esiste già una gara registrata: la stai modificando, non duplicando.
       </div>
+
+      <div id="cert-avviso-banner-gara" class="info-banner cert-banner" style="display:none;"></div>
 
       <div id="gara-roster" class="gara-roster">
         <div class="roster-empty">Nessun atleta ancora.</div>
@@ -3224,25 +3228,29 @@
     renderSquadreFoglio();
   }
 
-  function renderRoster(){
-    const list = document.getElementById('roster-list');
-
-    const inAvviso = rosterDocs.filter(a => {
+  // Banner avviso certificati, riusabile in più schermate (presenze, gara, home allenatore)
+  function renderBannerCertificati(elementId, listaAtleti){
+    const banner = document.getElementById(elementId);
+    if(!banner) return;
+    const inAvviso = (listaAtleti || []).filter(a => {
       const s = statoCertificato(a.scadenzaCertificato).stato;
       return s === 'avviso' || s === 'scaduto';
     });
-    const bannerCert = document.getElementById('cert-avviso-banner');
-    if(bannerCert){
-      if(inAvviso.length === 0){
-        bannerCert.style.display = 'none';
-      } else {
-        bannerCert.style.display = 'block';
-        bannerCert.innerHTML = `⚕️ <strong>${inAvviso.length}</strong> certificato/i medico/i scaduto/i o in scadenza: ${inAvviso.map(a => {
-          const s = statoCertificato(a.scadenzaCertificato);
-          return `${a.nome} (${s.stato === 'scaduto' ? 'scaduto' : s.testo})`;
-        }).join(', ')}. Verifica con la società.`;
-      }
+    if(inAvviso.length === 0){
+      banner.style.display = 'none';
+    } else {
+      banner.style.display = 'block';
+      banner.innerHTML = `⚕️ <strong>${inAvviso.length}</strong> certificato/i medico/i scaduto/i o in scadenza: ${inAvviso.map(a => {
+        const s = statoCertificato(a.scadenzaCertificato);
+        return `${a.nome} (${s.stato === 'scaduto' ? 'scaduto' : s.testo})`;
+      }).join(', ')}. Verifica con la società.`;
     }
+  }
+
+  function renderRoster(){
+    const list = document.getElementById('roster-list');
+
+    renderBannerCertificati('cert-avviso-banner', rosterDocs);
 
     if(rosterDocs.length === 0){
       list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>';
@@ -4335,7 +4343,8 @@
 
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     risultatiAtletiUnsub = onSnapshot(qAtleti, snap => {
-      risultatiAtletiDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      risultatiAtletiDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      renderBannerCertificati('cert-avviso-banner-gara', risultatiAtletiDocs);
       controllaGaraEsistente();
     });
 
@@ -5297,8 +5306,9 @@
         document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
         const qConteggio = query(collection(db,'atleti'), where('gruppoId','==', dati.gruppoId));
         const snapConteggio = await getDocs(qConteggio);
-        const conteggioAttivi = snapConteggio.docs.filter(d => !d.data().archiviato).length;
-        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${conteggioAttivi} atleti` : "";
+        const atletiAttiviHome = snapConteggio.docs.filter(d => !d.data().archiviato).map(d => ({ nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' }));
+        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${atletiAttiviHome.length} atleti` : "";
+        renderBannerCertificati('cert-avviso-banner-home', atletiAttiviHome);
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
         document.getElementById('card-schede').style.display = (g && g.nome === 'Cadetti') ? '' : 'none';
         renderMessaggiCoach();
