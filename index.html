@@ -1584,10 +1584,19 @@
         </div>
       </div>
 
-      <div class="eventi-strip">
-        <p class="eyebrow-lane">📅 In programma</p>
-        <div class="eventi-titolo">Prossimi eventi</div>
-        <div id="coach-eventi-list"></div>
+      <div class="foglio-batteria" style="margin-top:20px;">
+        <details class="corsia-details">
+          <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:var(--accent-lane);"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, var(--accent-lane) 16%, var(--surface));">📅</span>
+            <span class="corsia-testi">
+              <span class="corsia-titolo">Prossimi eventi</span>
+              <span class="corsia-anteprima" id="anteprima-eventi-coach">—</span>
+            </span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo" id="coach-eventi-list"></div>
+        </details>
       </div>
     </main>
   </section>
@@ -2453,15 +2462,16 @@
       renderEventiInline('coach-eventi-list', false);
 
       const anteprimaEventiEl = document.getElementById('anteprima-eventi');
-      if(anteprimaEventiEl){
-        if(eventiDocs.length === 0){
-          anteprimaEventiEl.textContent = 'Nessun evento nei prossimi giorni';
-        } else {
-          const prossimo = eventiDocs[0];
-          const dataBreve = prossimo.data ? new Date(prossimo.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' }) : '';
-          anteprimaEventiEl.textContent = `${dataBreve} · ${prossimo.nome || 'Evento'}`;
-        }
-      }
+      const anteprimaEventiCoachEl = document.getElementById('anteprima-eventi-coach');
+      const testoAnteprimaEventi = eventiDocs.length === 0
+        ? 'Nessun evento nei prossimi giorni'
+        : (() => {
+            const prossimo = eventiDocs[0];
+            const dataBreve = prossimo.data ? new Date(prossimo.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' }) : '';
+            return `${dataBreve} · ${prossimo.nome || 'Evento'}`;
+          })();
+      if(anteprimaEventiEl) anteprimaEventiEl.textContent = testoAnteprimaEventi;
+      if(anteprimaEventiCoachEl) anteprimaEventiCoachEl.textContent = testoAnteprimaEventi;
     });
   }
 
