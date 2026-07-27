@@ -1780,6 +1780,10 @@
         <span id="elimina-gara-feedback" class="save-feedback"></span>
       </div>
       <input type="file" id="gara-foto-input" accept="image/*" multiple style="display:none;">
+      <div class="save-bar" id="conferma-foto-bar" style="display:none; margin-top:10px;">
+        <button type="button" id="conferma-condividi-foto-btn" class="btn-primary" style="width:auto; padding:11px 22px;">📤 Condividi ora</button>
+        <span id="conferma-foto-testo" class="save-feedback"></span>
+      </div>
 
       <details class="report-section" open style="margin-top:28px;">
         <summary>📋 Storico risultati</summary>
@@ -5778,6 +5782,14 @@
 
   // Scegli foto e condividi: apre la galleria del telefono, poi il foglio di condivisione nativo
   // con le foto scelte e una didascalia già pronta (nome gara, data, luogo, gruppo).
+  //
+  // In due passaggi separati: scegliere le foto nella galleria può richiedere qualche secondo,
+  // e in quel lasso di tempo il permesso del telefono per aprire la condivisione può "scadere"
+  // (errore NotAllowedError). Per questo la condivisione vera parte solo al tocco successivo
+  // e diretto su "Condividi ora", non subito dopo aver scelto le foto.
+  let fotoGaraScelte = [];
+  let didascaliaFotoGara = '';
+
   document.getElementById('condividi-foto-gara-btn').addEventListener('click', () => {
     const nomeGara = document.getElementById('gara-nome').value.trim();
     if(!nomeGara){
@@ -5787,8 +5799,9 @@
     document.getElementById('gara-foto-input').click();
   });
 
-  document.getElementById('gara-foto-input').addEventListener('change', async (e) => {
+  document.getElementById('gara-foto-input').addEventListener('change', (e) => {
     const files = Array.from(e.target.files || []);
+    e.target.value = ''; // permette di selezionare di nuovo le stesse foto in futuro
     if(files.length === 0) return;
 
     const data = document.getElementById('gara-data').value;
@@ -5802,15 +5815,26 @@
     if(luogo) didascalia += ` · ${luogo}`;
     if(g) didascalia += `\n${g.nome} — Atletica Silca`;
 
-    const datiCondivisione = { text: didascalia, files };
+    fotoGaraScelte = files;
+    didascaliaFotoGara = didascalia;
+
+    document.getElementById('conferma-foto-bar').style.display = 'flex';
+    document.getElementById('conferma-foto-testo').textContent = `${files.length} foto pronte`;
+  });
+
+  document.getElementById('conferma-condividi-foto-btn').addEventListener('click', async () => {
+    const files = fotoGaraScelte;
+    const didascalia = didascaliaFotoGara;
+    if(files.length === 0) return;
 
     if(navigator.canShare && navigator.canShare({ files })){
       try{
-        await navigator.share(datiCondivisione);
+        await navigator.share({ text: didascalia, files });
+        document.getElementById('conferma-foto-bar').style.display = 'none';
       } catch(err){
         if(err.name !== 'AbortError'){
           console.error('Errore condivisione foto:', err);
-          alert('Non è stato possibile aprire la condivisione delle foto (' + err.name + '). Controlla la console per i dettagli, oppure prova con meno foto alla volta.');
+          alert('Non è stato possibile aprire la condivisione delle foto (' + err.name + '). Prova con meno foto alla volta.');
         }
         // AbortError = l'utente ha semplicemente annullato: nessun avviso necessario
       }
@@ -5819,11 +5843,11 @@
       // avvisiamo chiaramente, invece di far sparire le foto senza spiegazione.
       alert('Il telefono non accetta la condivisione diretta di queste foto (magari troppo grandi o troppe insieme). Provo a condividere solo il testo; le foto vanno allegate a mano.');
       navigator.share({ text: didascalia }).catch(() => {});
+      document.getElementById('conferma-foto-bar').style.display = 'none';
     } else {
       alert('Questo browser non supporta la condivisione diretta delle foto. Salva le foto e condividile manualmente, usando come didascalia:\n\n' + didascalia);
+      document.getElementById('conferma-foto-bar').style.display = 'none';
     }
-
-    e.target.value = ''; // permette di selezionare di nuovo le stesse foto in futuro
   });
 
   document.getElementById('gara-data').addEventListener('change', controllaGaraEsistente);
