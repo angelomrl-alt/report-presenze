@@ -5808,10 +5808,16 @@
       try{
         await navigator.share(datiCondivisione);
       } catch(err){
-        // L'utente ha annullato la condivisione: nessun errore da mostrare
+        if(err.name !== 'AbortError'){
+          console.error('Errore condivisione foto:', err);
+          alert('Non è stato possibile aprire la condivisione delle foto (' + err.name + '). Controlla la console per i dettagli, oppure prova con meno foto alla volta.');
+        }
+        // AbortError = l'utente ha semplicemente annullato: nessun avviso necessario
       }
     } else if(navigator.share){
-      // Il telefono non supporta la condivisione di file: condivide almeno la didascalia già pronta
+      // Il telefono supporta la condivisione ma rifiuta questi file specifici (tipo o dimensione non accettati):
+      // avvisiamo chiaramente, invece di far sparire le foto senza spiegazione.
+      alert('Il telefono non accetta la condivisione diretta di queste foto (magari troppo grandi o troppe insieme). Provo a condividere solo il testo; le foto vanno allegate a mano.');
       navigator.share({ text: didascalia }).catch(() => {});
     } else {
       alert('Questo browser non supporta la condivisione diretta delle foto. Salva le foto e condividile manualmente, usando come didascalia:\n\n' + didascalia);
