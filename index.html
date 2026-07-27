@@ -1975,6 +1975,19 @@
 
         <details class="corsia-details">
           <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:#a78bfa;"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, #a78bfa 14%, var(--surface));">⚕️</span>
+            <span class="corsia-testi">
+              <span class="corsia-titolo">Certificati da controllare</span>
+              <span class="corsia-anteprima" id="anteprima-certificati">—</span>
+            </span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo" id="certificati-societa-list"></div>
+        </details>
+
+        <details class="corsia-details">
+          <summary class="corsia-summary">
             <span class="corsia-riga" style="background:var(--accent-lane);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--accent-lane) 16%, var(--surface));">📅</span>
             <span class="corsia-testi">
@@ -3240,6 +3253,42 @@
     }
     renderDettaglioGruppo();
     renderSquadreFoglio();
+    renderCertificatiSocieta(snapAtleti.docs);
+  }
+
+  // Certificati scaduti o in scadenza di tutti i gruppi insieme, senza dover aprire una squadra alla volta
+  function renderCertificatiSocieta(atletiDocs){
+    const anteprima = document.getElementById('anteprima-certificati');
+    const cont = document.getElementById('certificati-societa-list');
+    if(!anteprima || !cont) return;
+
+    const daControllare = atletiDocs
+      .map(d => ({ ...d.data() }))
+      .filter(a => !a.archiviato)
+      .map(a => ({ nome: a.nome, gruppoNome: (GRUPPI[a.gruppoId] && GRUPPI[a.gruppoId].nome) || '—', stato: statoCertificato(a.scadenzaCertificato) }))
+      .filter(a => a.stato.stato === 'scaduto' || a.stato.stato === 'avviso')
+      .sort((a,b) => (a.stato.giorni||0) - (b.stato.giorni||0)); // prima i più urgenti (scaduti da più tempo, poi in scadenza)
+
+    const scaduti = daControllare.filter(a => a.stato.stato === 'scaduto').length;
+    const inAvviso = daControllare.filter(a => a.stato.stato === 'avviso').length;
+
+    anteprima.textContent = daControllare.length === 0
+      ? 'Tutto in regola ✓'
+      : `${scaduti ? scaduti + ' scaduti' : ''}${scaduti && inAvviso ? ' · ' : ''}${inAvviso ? inAvviso + ' in scadenza' : ''}`;
+
+    cont.innerHTML = daControllare.length === 0
+      ? '<p class="empty-note">Nessun certificato scaduto o in scadenza in tutta la società.</p>'
+      : daControllare.map(a => `
+          <div class="msg-row">
+            <div class="meta">
+              <span class="msg-dest">${a.gruppoNome}</span>
+              <span class="msg-data" style="color:${a.stato.stato === 'scaduto' ? 'var(--danger)' : 'var(--accent-lane)'}; font-weight:600;">
+                ${a.stato.stato === 'scaduto' ? '⚠️ Scaduto' : '⏳ ' + a.stato.testo}
+              </span>
+            </div>
+            <div class="msg-testo">${a.nome}</div>
+          </div>
+        `).join('');
   }
 
   // Banner avviso certificati, riusabile in più schermate (presenze, gara, home allenatore)
@@ -5517,32 +5566,42 @@
       <div style="padding:18px 0;">
         <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Per gli allenamenti. Tutti gli atleti partono già segnati "Presente" — tocca solo chi <strong>non</strong> c'è oggi, poi clicca "Salva presenze". Se riapri lo stesso giorno, trovi quello che avevi già salvato e puoi correggerlo: non crea una copia doppia.
+          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">🏅 Gara</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Scrivi data, nome gara e luogo una volta sola. Gli atleti partono come "Non partecipa" — tocca chi ha gareggiato per farlo diventare "Partecipa", poi scegli la disciplina (solo quelle del tuo gruppo, se la società le ha limitate) e la posizione (1°, 2°...). Puoi aggiungere più prestazioni per lo stesso atleta se ha fatto più gare quel giorno.
-        </p>
-
-        <h3 style="margin:0 0 8px; font-size:15px;">📋 Storico risultati</h3>
-        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Dentro la schermata Gara, in basso: una tendina per ogni atleta che ha gareggiato, con dentro tutti i suoi risultati — apri solo quella che ti interessa, invece di scorrere un elenco lunghissimo.
+          Segna chi ha partecipato. Disciplina e posizione compaiono solo dopo aver scelto l'ordine di arrivo. Lo storico risultati per atleta è in fondo alla pagina.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📤 Condividi risultati</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Sotto al bottone "Salva gara", nella schermata Gara: prepara un messaggio con nome gara, data, luogo e tutti i risultati del giorno, pronto da inviare. Su telefono si apre il menu "Condividi" — scegli WhatsApp e poi il contatto o gruppo a cui inviarlo.
+          Prepara il messaggio con i risultati del giorno, pronto per WhatsApp. Puoi allegare anche delle foto (facoltativo) con il link sotto al bottone.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">📇 Schede atleti</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Un profilo per atleta: crescita, record personali con grafico, obiettivi stagionali e note. Puoi anche generare un report stagionale in PDF. Per ora attiva solo su alcuni gruppi.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Mostra i numeri del tuo gruppo: quanti allenamenti e gare, il podio di chi si allena/partecipa di più, e per ogni atleta una freccia che dice se le sue presenze sono in aumento (↑), in calo (↓) o stabili (→).
+          Numeri del gruppo, podio presenze/gare, e per ogni atleta se è in aumento (↑), calo (↓) o stabile (→).
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi dalla società</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          In home, se la società ha scritto qualcosa (a tutti o solo al tuo gruppo) lo trovi lì, con un puntino se non l'hai ancora letto.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti del gruppo</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Link in fondo a Registra presenze: qui puoi segnare come ritirato un atleta che non fa più parte del gruppo (i suoi dati restano salvati, recuperabili in ogni momento).
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificato medico</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
-          In "Registra presenze", se un atleta ha il certificato scaduto o in scadenza, vedrai il suo nome evidenziato in arancio o rosso, e un avviso in alto. Segnalalo alla società.
+          Se un atleta ha il certificato scaduto o in scadenza, lo vedi subito in home, in Registra presenze e in Gara — non serve controllare nulla a parte.
         </p>
       </div>
     </div>
@@ -5551,34 +5610,44 @@
   const guidaContenutoSocieta = `
     <div class="report-section" open>
       <div style="padding:18px 0;">
-        <h3 style="margin:0 0 8px; font-size:15px;">🏠 Home "Andamento società"</h3>
+        <h3 style="margin:0 0 8px; font-size:15px;">🏠 Home "Andamento"</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          I tre numeri in alto sono i totali di tutta la società. I due grafici confrontano i gruppi mese per mese (uno per gli allenamenti, uno per le gare) — scorri con il dito per vedere mesi più indietro. Il menu a tendina sotto serve per scegliere un gruppo e andare ai suoi atleti.
+          I 4 numeri in alto sono i totali di tutta la società (con i ritirati in stagione, se ce ne sono). "Squadre" apre il dettaglio di un gruppo; "Attività e strumenti" raccoglie gare, eventi, messaggi, certificati e confronto tra i gruppi.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificati da controllare</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          In "Attività e strumenti": tutti gli atleti scaduti o in scadenza, di tutti i gruppi insieme, senza dover aprire una squadra alla volta.
+        </p>
+
+        <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi alle squadre</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Scrivi un avviso a tutti i gruppi o a uno solo. Vedi anche se e quando ogni squadra l'ha letto.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">🗂️ Gestisci gruppi</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Modifica nome, categoria, allenatore e colore di ogni gruppo, o creane uno nuovo. Il bottone "ID: ..." serve solo per collegare un account allenatore al gruppo giusto da Firebase. Con "🎯 Discipline consentite" scegli quali discipline può scegliere ogni gruppo quando registra una gara — se non ne spunti nessuna, quel gruppo le vede tutte, e le scelte di un gruppo non toccano gli altri.
+          Nome, categoria, allenatore e colore di ogni gruppo, o creane uno nuovo. "Discipline consentite" limita cosa vede quel gruppo in Gara. Il bottone "ID gruppo" serve solo per collegare un account allenatore da Firebase.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Aggiungi atleti (uno alla volta o tanti insieme), rimuovili, correggi un nome scritto male con la matita ✏️ (la storia di presenze e risultati resta collegata), e imposta la scadenza del certificato medico di ciascuno.
+          Aggiungi, correggi, archivia atleti; data di nascita e certificato medico per ciascuno. "Importa certificati" li aggiorna in blocco incollando da Google Sheet; "Esporta atleti" scarica tutto in Excel.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">⚙️ Gestisci discipline gara</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          L'elenco di tutte le discipline esistenti (es. Giavellotto, 100m...). Aggiungine una o più insieme, oppure rimuovine una. Per decidere quali vede ogni gruppo, usa "Discipline consentite" dentro Gestisci gruppi.
+          L'elenco di tutte le discipline esistenti. Quali vede ogni gruppo si decide da "Discipline consentite" dentro Gestisci gruppi.
         </p>
 
-        <h3 style="margin:0 0 8px; font-size:15px;">📤 Condividi risultati (lato allenatori)</h3>
+        <h3 style="margin:0 0 8px; font-size:15px;">🔒 Accesso sola lettura</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Nella schermata Gara, gli allenatori hanno un bottone per preparare un messaggio con i risultati del giorno e inviarlo su WhatsApp (a un contatto o gruppo a loro scelta) — utile se vuoi che la segreteria o il direttivo li riceva subito dopo una gara.
+          Per dirigenti o revisori: vede tutto come la società, ma non può modificare nulla. Si crea da Firebase, ruolo "societa_lettura".
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">🔧 Impostazioni</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
-          Imposta da quanti giorni prima avvisare gli allenatori per un certificato medico in scadenza.
+          Imposta da quanti giorni prima avvisare per un certificato in scadenza.
         </p>
       </div>
     </div>
