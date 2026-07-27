@@ -1775,9 +1775,11 @@
       </div>
       <div class="save-bar" style="margin-top:10px; flex-wrap:wrap; gap:10px;">
         <button type="button" id="condividi-gara-btn" class="btn-secondary">📤 Condividi risultati</button>
+        <button type="button" id="condividi-foto-gara-btn" class="btn-secondary">📸 Scegli foto e condividi</button>
         <button type="button" id="elimina-gara-btn" class="btn-remove" style="padding:12px 18px;">🗑️ Elimina questa gara</button>
         <span id="elimina-gara-feedback" class="save-feedback"></span>
       </div>
+      <input type="file" id="gara-foto-input" accept="image/*" multiple style="display:none;">
 
       <details class="report-section" open style="margin-top:28px;">
         <summary>📋 Storico risultati</summary>
@@ -5772,6 +5774,50 @@
     } else {
       window.open('https://wa.me/?text=' + encodeURIComponent(testo), '_blank');
     }
+  });
+
+  // Scegli foto e condividi: apre la galleria del telefono, poi il foglio di condivisione nativo
+  // con le foto scelte e una didascalia già pronta (nome gara, data, luogo, gruppo).
+  document.getElementById('condividi-foto-gara-btn').addEventListener('click', () => {
+    const nomeGara = document.getElementById('gara-nome').value.trim();
+    if(!nomeGara){
+      alert('Scrivi prima il nome della gara.');
+      return;
+    }
+    document.getElementById('gara-foto-input').click();
+  });
+
+  document.getElementById('gara-foto-input').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    if(files.length === 0) return;
+
+    const data = document.getElementById('gara-data').value;
+    const nomeGara = document.getElementById('gara-nome').value.trim();
+    const luogo = document.getElementById('gara-luogo').value.trim();
+    const dataFormattata = data ? new Date(data + 'T00:00:00').toLocaleDateString('it-IT') : '';
+    const g = GRUPPI[currentGruppoId];
+
+    let didascalia = `📸 ${nomeGara}\n`;
+    if(dataFormattata) didascalia += `${dataFormattata}`;
+    if(luogo) didascalia += ` · ${luogo}`;
+    if(g) didascalia += `\n${g.nome} — Atletica Silca`;
+
+    const datiCondivisione = { text: didascalia, files };
+
+    if(navigator.canShare && navigator.canShare({ files })){
+      try{
+        await navigator.share(datiCondivisione);
+      } catch(err){
+        // L'utente ha annullato la condivisione: nessun errore da mostrare
+      }
+    } else if(navigator.share){
+      // Il telefono non supporta la condivisione di file: condivide almeno la didascalia già pronta
+      navigator.share({ text: didascalia }).catch(() => {});
+    } else {
+      alert('Questo browser non supporta la condivisione diretta delle foto. Salva le foto e condividile manualmente, usando come didascalia:\n\n' + didascalia);
+    }
+
+    e.target.value = ''; // permette di selezionare di nuovo le stesse foto in futuro
   });
 
   document.getElementById('gara-data').addEventListener('change', controllaGaraEsistente);
