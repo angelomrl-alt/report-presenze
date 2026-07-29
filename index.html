@@ -543,7 +543,6 @@
   }
   .msg-strip .eyebrow-info{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--info, #5b8def); margin:0 0 2px; font-family:'Oswald',sans-serif; display:flex; align-items:center; gap:6px;}
   .msg-strip-titolo{font-size:16px; font-weight:600;}
-  .msg-strip-anteprima{font-size:12.5px; color:var(--text-dim); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .puntino-rosso{width:9px; height:9px; border-radius:50%; background:var(--danger); display:inline-block;}
   .corsia-details.stato-vicino .corsia-summary{background:color-mix(in srgb, var(--accent-lane) 10%, var(--surface));}
   .corsia-details.stato-urgente .corsia-summary{background:color-mix(in srgb, var(--clay) 9%, var(--surface));}
@@ -1539,7 +1538,6 @@
       <div class="msg-strip" id="msg-strip-coach" style="display:none;">
         <p class="eyebrow-info">📢 Messaggi dalla società <span class="puntino-rosso" id="msg-puntino-coach" style="display:none;"></span></p>
         <div class="msg-strip-titolo" id="msg-strip-titolo">—</div>
-        <div class="msg-strip-anteprima" id="msg-strip-anteprima"></div>
       </div>
       <div class="foglio-batteria" id="msg-elenco-coach" style="display:none; margin-bottom:20px;"></div>
 
@@ -2702,7 +2700,6 @@
     strip.style.display = 'block';
     document.getElementById('msg-puntino-coach').style.display = nonLetti.length > 0 ? 'inline-block' : 'none';
     document.getElementById('msg-strip-titolo').textContent = nonLetti.length > 0 ? `${nonLetti.length} nuov${nonLetti.length===1?'o':'i'}` : `${messaggiGruppo.length} messagg${messaggiGruppo.length===1?'io':'i'}`;
-    document.getElementById('msg-strip-anteprima').textContent = messaggiGruppo[0].testo;
 
     elenco.innerHTML = messaggiGruppo.map(m => {
       const dataFmt = m.creatoIl ? new Date(m.creatoIl).toLocaleDateString('it-IT') : '';
