@@ -1271,6 +1271,11 @@
     margin-bottom:14px;
     box-shadow:var(--btn-shadow);
   }
+  .report-section.evento-evidenziato{background:color-mix(in srgb, var(--accent-lane) 10%, var(--surface)); border-color:color-mix(in srgb, var(--accent-lane) 40%, var(--border)); border-left:3px solid var(--accent-lane);}
+  .report-section.evento-urgente{background:color-mix(in srgb, var(--clay) 8%, var(--surface)); border-color:color-mix(in srgb, var(--clay) 40%, var(--border)); border-left:3px solid var(--clay);}
+  .badge-giorni-evento{display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; margin-top:6px;}
+  .badge-giorni-evento.vicino{background:#fdf1de; color:#b8791f;}
+  .badge-giorni-evento.urgente{background:#fdeaea; color:var(--clay);}
   .report-section summary{
     cursor:pointer;
     padding:14px 0;
@@ -2714,6 +2719,26 @@
     }
     cont.innerHTML = eventiDocs.map(ev => {
       const dataLabel = ev.data ? new Date(ev.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' }) : 'Data da definire';
+
+      // Evidenzia l'evento negli ultimi 7 giorni prima che si svolga (soglia fissa, uguale per tutti)
+      let classeEvidenza = '';
+      let badgeGiorni = '';
+      if(ev.data){
+        const giorniMancanti = Math.round((new Date(ev.data + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
+        if(giorniMancanti >= 0 && giorniMancanti <= 7){
+          if(giorniMancanti === 0){
+            classeEvidenza = ' evento-urgente';
+            badgeGiorni = '<span class="badge-giorni-evento urgente">🔴 Oggi</span>';
+          } else if(giorniMancanti === 1){
+            classeEvidenza = ' evento-urgente';
+            badgeGiorni = '<span class="badge-giorni-evento urgente">🔴 Domani</span>';
+          } else {
+            classeEvidenza = ' evento-evidenziato';
+            badgeGiorni = `<span class="badge-giorni-evento vicino">⏳ tra ${giorniMancanti} giorni</span>`;
+          }
+        }
+      }
+
       const programma = (ev.programma || []).slice().sort((a,b) => (a.orario||'').localeCompare(b.orario||''));
       const programmaHtml = programma.length === 0
         ? '<p class="empty-note">Nessuna voce nel programma ancora.</p>'
@@ -2727,12 +2752,13 @@
         <button type="button" class="btn-remove evento-elimina-btn" data-ev="${ev.id}" data-nome="${ev.nome || ''}" style="margin-top:10px;">🗑️ Elimina evento</button>
       ` : '';
       return `
-        <details class="report-section" style="margin-bottom:10px;">
+        <details class="report-section${classeEvidenza}" style="margin-bottom:10px;">
           <summary>
             ${ev.nome || 'Evento senza nome'}
             <span style="display:block; font-size:12px; color:var(--text-dim); font-weight:400; margin-top:2px;">
               ${dataLabel}${ev.luogo ? ' · 📍 ' + ev.luogo : ''}
             </span>
+            ${badgeGiorni}
           </summary>
           <div style="padding-bottom:10px;">
             ${programmaHtml}
