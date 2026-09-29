@@ -526,6 +526,28 @@
   .c-schede .corsia-riga{background:var(--c-agnese);}
   .c-schede .corsia-icona{background:color-mix(in srgb, var(--c-agnese) 14%, var(--surface));}
 
+  /* Home allenatore: griglia 2x2 compatta */
+  h3.azioni-rapide-titolo{margin:0 0 10px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim);}
+  .griglia-azioni{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    background:transparent; border:none; border-radius:0; overflow:visible;
+  }
+  .griglia-azioni .corsia,
+  .griglia-azioni .corsia:last-child{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  }
+  .griglia-azioni .corsia:hover, .griglia-azioni .corsia:active{background:var(--bg-track);}
+  .griglia-azioni .corsia-riga,
+  .griglia-azioni .corsia-freccia{display:none;}
+  .griglia-azioni .corsia-corpo{flex-direction:column; align-items:flex-start; gap:8px; padding:14px;}
+  .griglia-azioni .corsia-icona{width:auto; height:auto; background:none; font-size:20px;}
+  .griglia-azioni .corsia-titolo{font-size:14.5px; margin:0;}
+  .griglia-azioni .corsia-icona svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .griglia-azioni .c-presenze .corsia-icona{color:var(--primary);}
+  .griglia-azioni .c-gara .corsia-icona{color:var(--clay);}
+  .griglia-azioni .c-report .corsia-icona{color:var(--c-ragazzi);}
+  .griglia-azioni .c-schede .corsia-icona{color:var(--c-agnese);}
+
   .eventi-strip{
     margin-top:20px; border-radius:var(--radius); padding:16px 18px;
     background:color-mix(in srgb, var(--accent-lane) 12%, var(--surface));
@@ -1541,11 +1563,12 @@
       </div>
       <div class="foglio-batteria" id="msg-elenco-coach" style="display:none; margin-bottom:20px;"></div>
 
-      <div class="foglio-batteria">
+      <h3 class="section-title azioni-rapide-titolo">Azioni rapide</h3>
+      <div class="foglio-batteria griglia-azioni">
         <div class="corsia c-presenze" id="card-presenze">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
-            <div class="corsia-icona">🟢</div>
+            <div class="corsia-icona"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg></div>
             <div class="corsia-testi">
               <div class="corsia-titolo">Registra presenze</div>
               </div>
@@ -1556,7 +1579,7 @@
         <div class="corsia c-gara" id="card-risultati">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
-            <div class="corsia-icona">🏁</div>
+            <div class="corsia-icona"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2 4l2 4H5"/></svg></div>
             <div class="corsia-testi">
               <div class="corsia-titolo">Registra gara</div>
               </div>
@@ -1567,7 +1590,7 @@
         <div class="corsia c-report" id="card-report">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
-            <div class="corsia-icona">📊</div>
+            <div class="corsia-icona"><svg viewBox="0 0 24 24"><rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="16" y="9" width="4" height="11" rx="1"/></svg></div>
             <div class="corsia-testi">
               <div class="corsia-titolo">Report del gruppo</div>
               </div>
@@ -1578,7 +1601,7 @@
         <div class="corsia c-schede" id="card-schede">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
-            <div class="corsia-icona">📇</div>
+            <div class="corsia-icona"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M9 3v4h6V3"/><circle cx="9" cy="13" r="1.5"/><path d="M13 12h4M13 15h4"/></svg></div>
             <div class="corsia-testi">
               <div class="corsia-titolo">Schede atleti</div>
               </div>
@@ -5638,7 +5661,7 @@
           Un profilo per atleta: crescita, record personali con grafico, obiettivi stagionali e note. Puoi anche generare un report stagionale in PDF. Per ora attiva solo su alcuni gruppi.
         </p>
 
-        <h3 style="margin:0 0 8px; font-size:15px;">📊 Report</h3>
+        <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
           Numeri del gruppo, podio presenze/gare, e per ogni atleta se è in aumento (↑), calo (↓) o stabile (→).
         </p>
