@@ -548,6 +548,26 @@
   .griglia-azioni .c-report .corsia-icona{color:var(--c-ragazzi);}
   .griglia-azioni .c-schede .corsia-icona{color:var(--c-agnese);}
 
+  /* Test motori (scheda Cadetti) */
+  .test-tabella-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;}
+  .test-tabella{border-collapse:collapse; min-width:100%; font-size:13px;}
+  .test-tabella th, .test-tabella td{padding:8px 10px; text-align:left; white-space:nowrap; border-top:1px solid var(--border);}
+  .test-tabella thead th{border-top:none; background:var(--bg-track); font-weight:600; vertical-align:bottom; white-space:normal; min-width:96px;}
+  .test-tabella th:first-child, .test-tabella td:first-child{position:sticky; left:0; background:var(--surface); border-right:1px solid var(--border);}
+  .test-tabella thead th:first-child{background:var(--bg-track);}
+  .test-tabella tbody tr{cursor:pointer;}
+  .test-tabella tbody tr:hover td{background:var(--bg-track);}
+  .test-unita{display:block; font-size:11px; font-weight:400; color:var(--text-dim);}
+  .test-delta{font-size:11px; margin-left:5px; font-weight:600;}
+  .test-delta.meglio{color:var(--primary);}
+  .test-delta.peggio{color:var(--clay);}
+  .test-suggerimento{font-size:12px; color:var(--text-dim); margin:0 0 4px;}
+  .test-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin-top:8px;}
+  .test-azioni{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .test-colonna-riga{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;}
+  .test-colonna-riga input[type=text]{flex:1 1 120px; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:inherit;}
+  .test-meglio{font-size:12px; color:var(--text-dim); display:flex; gap:4px; align-items:center;}
+
   .eventi-strip{
     margin-top:20px; border-radius:var(--radius); padding:16px 18px;
     background:color-mix(in srgb, var(--accent-lane) 12%, var(--surface));
@@ -1919,12 +1939,19 @@
           <div class="progressione-svg-wrap" id="scheda-grafico-wrap"></div>
           <div class="storico-record" id="scheda-storico-record"></div>
           <div class="nuovo-record-form" id="scheda-nuovo-record-form" style="display:none;">
+            <input type="text" id="scheda-record-disciplina" placeholder="Disciplina (es. 80 m)" style="display:none;">
             <input type="date" id="scheda-record-data" title="Data">
             <input type="text" id="scheda-record-valore" placeholder="Valore (es. 14.82)">
             <input type="text" id="scheda-record-gara" placeholder="Gara (facoltativo)">
             <button type="button" id="scheda-record-salva-btn" class="btn-secondary">+ Aggiungi</button>
           </div>
         </div>
+      </details>
+
+      <!-- TEST MOTORI (solo Cadetti, colonne condivise dal gruppo) -->
+      <details class="report-section" id="scheda-test-section" style="display:none;">
+        <summary>🏃 Test motori</summary>
+        <div id="scheda-test-corpo"></div>
       </details>
 
       <!-- OBIETTIVI STAGIONALI -->
@@ -2438,7 +2465,7 @@
   let schedaCrescitaTipoSelezionato = 'altezza'; // 'altezza' | 'peso'
 
   function schedaDefault(){
-    return { fisico: { dataNascita:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [], crescita: [] };
+    return { fisico: { dataNascita:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [], crescita: [], testMotori: [] };
   }
 
   // Restituisce la stagione sportiva corrente nel formato "2025/26" (l'anno sportivo parte a settembre)
@@ -4639,6 +4666,7 @@
     schedaAtletaId = atletaId;
     schedaAtletaNome = nome;
     schedaDisciplinaSelezionata = null;
+    schedaTestRigaInModifica = null; schedaTestBozza = null; schedaTestColonneAperte = false;
     schedaDatiCorrenti = schedaDefault(); // mai null, evita crash se la lettura fallisce o è lenta
 
     document.getElementById('scheda-atleta-nome').textContent = nome;
@@ -4675,6 +4703,7 @@
       if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
       if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
       if(!schedaDatiCorrenti.crescita) schedaDatiCorrenti.crescita = [];
+      if(!schedaDatiCorrenti.testMotori) schedaDatiCorrenti.testMotori = [];
 
       // Migrazione una tantum: vecchi valori singoli altezza/peso -> prima riga dello storico crescita.
       // Importante: dopo la migrazione i vecchi campi legacy vengono rimossi definitivamente da fisico,
@@ -4702,7 +4731,9 @@
 
       document.getElementById('scheda-fisico-feedback').textContent = "";
       renderSchedaFisico();
+      renderSchedaDisciplineTabs();
       renderSchedaRecordArea();
+      renderSchedaTestMotori();
       renderSchedaCrescitaArea();
       renderSchedaObiettivi();
       renderSchedaNote();
@@ -4721,6 +4752,7 @@
     renderSchedaFisico();
     renderSchedaCrescitaTabs();
     renderSchedaCrescitaArea();
+    renderSchedaTestMotori();
     renderSchedaRiepilogo();
     renderReportStagioneSelect();
     showView('view-scheda-atleta');
@@ -4863,24 +4895,46 @@
     }
   });
 
+  function escHtml(v){
+    return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // Modello "Cadetti": discipline libere (nessuna precompilata) + tabella Test motori.
+  // Riconosciuto dal nome del gruppo.
+  function schedaModelloCadetti(){
+    const g = GRUPPI[currentGruppoId];
+    return !!(g && String(g.nome || '').trim().toLowerCase() === 'cadetti');
+  }
+
   function schedaDisciplineFiltrate(){
+    if(schedaModelloCadetti()){
+      const nomi = Array.from(new Set(((schedaDatiCorrenti && schedaDatiCorrenti.record) || []).map(r => r.disciplina).filter(Boolean)));
+      return nomi.sort((a,b) => a.localeCompare(b)).map(nome => ({ nome }));
+    }
     const consentite = (GRUPPI[currentGruppoId] && GRUPPI[currentGruppoId].disciplineConsentite) || [];
     return consentite.length === 0 ? schedaDisciplineDocs : schedaDisciplineDocs.filter(d => consentite.includes(d.nome));
   }
 
   function renderSchedaDisciplineTabs(){
     const cont = document.getElementById('scheda-discipline-tabs');
+    const cad = schedaModelloCadetti();
     const disciplineGruppo = schedaDisciplineFiltrate();
+    if(cad && !disciplineGruppo.some(d => d.nome === schedaDisciplinaSelezionata)){
+      schedaDisciplinaSelezionata = disciplineGruppo.length > 0 ? disciplineGruppo[0].nome : null;
+    }
     if(disciplineGruppo.length === 0){
-      cont.innerHTML = '<p class="empty-note">Nessuna disciplina consentita per questo gruppo (impostabile in Gestione gruppi).</p>';
+      cont.innerHTML = cad
+        ? '<p class="empty-note">Nessun record ancora. Scrivi la disciplina qui sotto e aggiungi il primo risultato.</p>'
+        : '<p class="empty-note">Nessuna disciplina consentita per questo gruppo (impostabile in Gestione gruppi).</p>';
       return;
     }
     cont.innerHTML = disciplineGruppo.map(d => `
-      <button type="button" class="discipline-tab${d.nome === schedaDisciplinaSelezionata ? ' attiva' : ''}" data-nome="${d.nome}">${d.nome}</button>
+      <button type="button" class="discipline-tab${d.nome === schedaDisciplinaSelezionata ? ' attiva' : ''}" data-nome="${escHtml(d.nome)}">${escHtml(d.nome)}</button>
     `).join('');
     cont.querySelectorAll('.discipline-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         schedaDisciplinaSelezionata = btn.dataset.nome;
+        if(cad) document.getElementById('scheda-record-disciplina').value = btn.dataset.nome;
         renderSchedaDisciplineTabs();
         renderSchedaRecordArea();
       });
@@ -4892,12 +4946,14 @@
     const graficoCont = document.getElementById('scheda-grafico-wrap');
     const storicoCont = document.getElementById('scheda-storico-record');
     const form = document.getElementById('scheda-nuovo-record-form');
+    const cad = schedaModelloCadetti();
+    document.getElementById('scheda-record-disciplina').style.display = cad ? '' : 'none';
 
     if(!schedaDatiCorrenti || !schedaDisciplinaSelezionata){
       pbCont.innerHTML = '';
       graficoCont.innerHTML = '';
       storicoCont.innerHTML = '';
-      form.style.display = 'none';
+      form.style.display = cad ? 'flex' : 'none';
       return;
     }
     form.style.display = 'flex';
@@ -4907,7 +4963,7 @@
       .sort((a,b) => (a.data||'').localeCompare(b.data||''));
 
     if(recordDisciplina.length === 0){
-      pbCont.innerHTML = `<p class="empty-note">Nessun risultato ancora per ${schedaDisciplinaSelezionata}.</p>`;
+      pbCont.innerHTML = `<p class="empty-note">Nessun risultato ancora per ${escHtml(schedaDisciplinaSelezionata)}.</p>`;
       graficoCont.innerHTML = '';
       storicoCont.innerHTML = '';
       return;
@@ -4916,8 +4972,8 @@
     const ultimo = recordDisciplina[recordDisciplina.length - 1];
     pbCont.innerHTML = `
       <div class="pb-attuale">
-        <span class="pb-valore">${ultimo.valore}</span>
-        <span class="pb-eti">più recente · ${schedaDisciplinaSelezionata}</span>
+        <span class="pb-valore">${escHtml(ultimo.valore)}</span>
+        <span class="pb-eti">più recente · ${escHtml(schedaDisciplinaSelezionata)}</span>
       </div>
     `;
 
@@ -4927,8 +4983,8 @@
     const storicoOrdinatoDesc = [...recordDisciplina].reverse();
     storicoCont.innerHTML = storicoOrdinatoDesc.map(r => `
       <div class="storico-record-row">
-        <span class="val">${r.valore}</span>
-        <span class="dt">${r.data ? new Date(r.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}${r.gara ? ' · ' + r.gara : ''}</span>
+        <span class="val">${escHtml(r.valore)}</span>
+        <span class="dt">${r.data ? new Date(r.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}${r.gara ? ' · ' + escHtml(r.gara) : ''}</span>
         <button type="button" class="btn-remove" data-id="${r.id}" style="flex-shrink:0;">Rimuovi</button>
       </div>
     `).join('');
@@ -4980,12 +5036,24 @@
     const valoreVal = document.getElementById('scheda-record-valore').value.trim();
     const garaVal = document.getElementById('scheda-record-gara').value.trim();
 
+    let disciplina = schedaDisciplinaSelezionata;
+    if(schedaModelloCadetti()){
+      const digitata = document.getElementById('scheda-record-disciplina').value.trim();
+      if(!digitata){
+        alert('Scrivi la disciplina.');
+        return;
+      }
+      const esistente = (schedaDatiCorrenti.record || []).map(r => r.disciplina).find(n => n && n.toLowerCase() === digitata.toLowerCase());
+      disciplina = esistente || digitata;
+    }
+
     if(!dataVal || !valoreVal){
       alert('Inserisci almeno data e valore.');
       return;
     }
+    schedaDisciplinaSelezionata = disciplina;
     if(!schedaDatiCorrenti.record) schedaDatiCorrenti.record = [];
-    schedaDatiCorrenti.record.push({ id: nuovoIdLocale(), disciplina: schedaDisciplinaSelezionata, valore: valoreVal, data: dataVal, gara: garaVal });
+    schedaDatiCorrenti.record.push({ id: nuovoIdLocale(), disciplina, valore: valoreVal, data: dataVal, gara: garaVal });
 
     await salvaScheda(schedaAtletaId);
 
@@ -4993,6 +5061,226 @@
     document.getElementById('scheda-record-valore').value = '';
     document.getElementById('scheda-record-gara').value = '';
   });
+
+  // ---------- Test motori (solo Cadetti, colonne condivise dal gruppo) ----------
+
+  const TEST_COLONNE_DEFAULT = [
+    { id:'lungo',   nome:'Salto in lungo da fermo', unita:'cm', minoreMeglio:false },
+    { id:'situps',  nome:'Sit-ups',                 unita:'n.', minoreMeglio:false },
+    { id:'navetta', nome:'10x5 m corsa a navetta',  unita:'s',  minoreMeglio:true  },
+    { id:'palla',   nome:'Lancio palla medica',     unita:'m',  minoreMeglio:false }
+  ];
+  let schedaTestRigaInModifica = null;   // null | 'nuova' | id riga
+  let schedaTestBozza = null;            // { periodo, valori } se il form è aperto
+  let schedaTestColonneAperte = false;
+  let schedaTestColonneBozza = [];
+
+  function testColonneGruppo(){
+    const g = GRUPPI[currentGruppoId];
+    const c = g && Array.isArray(g.testMotoriColonne) ? g.testMotoriColonne : [];
+    return c.length > 0 ? c : TEST_COLONNE_DEFAULT;
+  }
+  function testNum(v){
+    const n = parseFloat(String(v == null ? '' : v).replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
+  function testFmt(n){ return String(Math.round(n * 100) / 100).replace('.', ','); }
+
+  function testLeggiColonneDalDom(){
+    return Array.from(document.querySelectorAll('#scheda-test-corpo .test-colonna-riga')).map(riga => ({
+      id: riga.dataset.id,
+      nome: riga.querySelector('[data-f="nome"]').value.trim(),
+      unita: riga.querySelector('[data-f="unita"]').value.trim(),
+      minoreMeglio: riga.querySelector('[data-f="mm"]').checked
+    }));
+  }
+
+  function renderSchedaTestMotori(){
+    const sez = document.getElementById('scheda-test-section');
+    const corpo = document.getElementById('scheda-test-corpo');
+    if(!schedaModelloCadetti()){ sez.style.display = 'none'; return; }
+    sez.style.display = '';
+    if(!schedaDatiCorrenti){ corpo.innerHTML = ''; return; }
+
+    // Editor colonne
+    if(schedaTestColonneAperte){
+      corpo.innerHTML = `
+        <p class="sub" style="margin:0 0 10px;">Le colonne valgono per tutti i Cadetti.</p>
+        ${schedaTestColonneBozza.map(c => `
+          <div class="test-colonna-riga" data-id="${escHtml(c.id)}">
+            <input type="text" data-f="nome" value="${escHtml(c.nome)}" placeholder="Nome del test">
+            <input type="text" data-f="unita" value="${escHtml(c.unita || '')}" placeholder="Unità" style="max-width:80px; flex:0 1 80px;">
+            <label class="test-meglio"><input type="checkbox" data-f="mm" ${c.minoreMeglio ? 'checked' : ''}> meno è meglio</label>
+            <button type="button" class="btn-remove" data-rimuovi="${escHtml(c.id)}">Rimuovi</button>
+          </div>`).join('')}
+        <div class="test-azioni">
+          <button type="button" class="btn-secondary" id="test-col-aggiungi">+ Colonna</button>
+          <button type="button" class="btn-secondary" id="test-col-salva">Salva colonne</button>
+          <button type="button" class="btn-secondary" id="test-col-annulla">Annulla</button>
+        </div>
+        <p id="test-col-feedback" class="save-feedback"></p>`;
+      document.getElementById('test-col-aggiungi').addEventListener('click', () => {
+        schedaTestColonneBozza = testLeggiColonneDalDom();
+        schedaTestColonneBozza.push({ id: nuovoIdLocale(), nome:'', unita:'', minoreMeglio:false });
+        renderSchedaTestMotori();
+      });
+      corpo.querySelectorAll('[data-rimuovi]').forEach(b => b.addEventListener('click', () => {
+        if(!confirm('Togliere questa colonna? Le misure già inserite restano salvate ma non si vedranno più.')) return;
+        schedaTestColonneBozza = testLeggiColonneDalDom().filter(c => c.id !== b.dataset.rimuovi);
+        renderSchedaTestMotori();
+      }));
+      document.getElementById('test-col-annulla').addEventListener('click', () => {
+        schedaTestColonneAperte = false;
+        renderSchedaTestMotori();
+      });
+      document.getElementById('test-col-salva').addEventListener('click', async () => {
+        const cols = testLeggiColonneDalDom().filter(c => c.nome);
+        const fb = document.getElementById('test-col-feedback');
+        if(cols.length === 0){ fb.textContent = 'Serve almeno una colonna con un nome.'; return; }
+        try{
+          await updateDoc(doc(db,'gruppi', currentGruppoId), { testMotoriColonne: cols });
+          if(GRUPPI[currentGruppoId]) GRUPPI[currentGruppoId].testMotoriColonne = cols;
+          schedaTestColonneAperte = false;
+          renderSchedaTestMotori();
+        } catch(err){
+          console.error('Salvataggio colonne test non riuscito:', err);
+          fb.textContent = err.code === 'permission-denied'
+            ? '⚠️ Permessi mancanti: le colonne del gruppo le può modificare la società (oppure vanno abilitate nelle regole Firestore).'
+            : '⚠️ Errore nel salvataggio delle colonne.';
+        }
+      });
+      return;
+    }
+
+    // Se il form è aperto, conserva quanto già scritto prima di ridisegnare
+    const formAperto = document.getElementById('scheda-test-form');
+    if(formAperto){
+      const valoriTmp = {};
+      formAperto.querySelectorAll('[data-col]').forEach(inp => { valoriTmp[inp.dataset.col] = inp.value; });
+      schedaTestBozza = { periodo: document.getElementById('test-periodo').value, valori: valoriTmp };
+    }
+
+    const colonne = testColonneGruppo();
+    const righe = schedaDatiCorrenti.testMotori || [];
+    let html = '';
+
+    if(righe.length === 0){
+      html += '<p class="empty-note">Nessuna rilevazione ancora. Tocca "+ Nuova rilevazione" per inserire la prima.</p>';
+    } else {
+      const intest = colonne.map(c => `<th>${escHtml(c.nome)}${c.unita ? `<span class="test-unita">${escHtml(c.unita)}</span>` : ''}</th>`).join('');
+      const corpoRighe = righe.map((r, i) => {
+        const celle = colonne.map(c => {
+          const v = (r.valori && r.valori[c.id]) || '';
+          if(v === '') return '<td>—</td>';
+          let delta = '';
+          const n = testNum(v);
+          if(n !== null){
+            for(let j = i - 1; j >= 0; j--){
+              const pn = testNum(righe[j].valori && righe[j].valori[c.id]);
+              if(pn !== null){
+                const d = n - pn;
+                if(Math.abs(d) > 0.0001){
+                  const meglio = c.minoreMeglio ? d < 0 : d > 0;
+                  delta = `<span class="test-delta ${meglio ? 'meglio' : 'peggio'}">${d > 0 ? '+' : '−'}${testFmt(Math.abs(d))}</span>`;
+                }
+                break;
+              }
+            }
+          }
+          return `<td>${escHtml(v)}${delta}</td>`;
+        }).join('');
+        return `<tr data-id="${r.id}"><td>${escHtml(r.periodo)}</td>${celle}</tr>`;
+      }).join('');
+      html += `<div class="test-tabella-wrap"><table class="test-tabella"><thead><tr><th>Data / periodo</th>${intest}</tr></thead><tbody>${corpoRighe}</tbody></table></div>`;
+      html += '<p class="test-suggerimento">Scorri di lato per vedere tutte le colonne. Tocca una riga per modificarla.</p>';
+    }
+
+    if(schedaTestRigaInModifica !== null){
+      const esistente = righe.find(r => r.id === schedaTestRigaInModifica);
+      const base = schedaTestBozza || (esistente ? { periodo: esistente.periodo, valori: esistente.valori || {} } : { periodo:'', valori:{} });
+      html += `
+        <div class="test-form" id="scheda-test-form">
+          <div class="fisico-campo" style="grid-column:1/-1;">
+            <label for="test-periodo">Data / periodo</label>
+            <input type="text" id="test-periodo" placeholder="es. Set 2026" value="${escHtml(base.periodo)}">
+          </div>
+          ${colonne.map(c => `
+            <div class="fisico-campo">
+              <label>${escHtml(c.nome)}${c.unita ? ' (' + escHtml(c.unita) + ')' : ''}</label>
+              <input type="text" inputmode="decimal" data-col="${escHtml(c.id)}" value="${escHtml((base.valori || {})[c.id] || '')}">
+            </div>`).join('')}
+          <div class="test-azioni" style="grid-column:1/-1;">
+            <button type="button" class="btn-secondary" id="test-salva-btn">Salva rilevazione</button>
+            <button type="button" class="btn-secondary" id="test-annulla-btn">Annulla</button>
+            ${esistente ? '<button type="button" class="btn-remove" id="test-elimina-btn">Elimina</button>' : ''}
+          </div>
+        </div>`;
+    } else {
+      html += `
+        <div class="test-azioni">
+          <button type="button" class="btn-secondary" id="test-nuova-btn">+ Nuova rilevazione</button>
+          <button type="button" class="btn-secondary" id="test-colonne-btn">Modifica colonne</button>
+        </div>`;
+    }
+    corpo.innerHTML = html;
+
+    corpo.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => {
+      schedaTestRigaInModifica = tr.dataset.id;
+      schedaTestBozza = null;
+      renderSchedaTestMotori();
+    }));
+
+    const nuova = document.getElementById('test-nuova-btn');
+    if(nuova) nuova.addEventListener('click', () => {
+      schedaTestRigaInModifica = 'nuova';
+      schedaTestBozza = null;
+      renderSchedaTestMotori();
+    });
+    const colBtn = document.getElementById('test-colonne-btn');
+    if(colBtn) colBtn.addEventListener('click', () => {
+      schedaTestColonneBozza = testColonneGruppo().map(c => ({ ...c }));
+      schedaTestColonneAperte = true;
+      renderSchedaTestMotori();
+    });
+    const annulla = document.getElementById('test-annulla-btn');
+    if(annulla) annulla.addEventListener('click', () => {
+      schedaTestRigaInModifica = null;
+      schedaTestBozza = null;
+      renderSchedaTestMotori();
+    });
+    const elimina = document.getElementById('test-elimina-btn');
+    if(elimina) elimina.addEventListener('click', async () => {
+      if(!confirm('Eliminare questa rilevazione?')) return;
+      schedaDatiCorrenti.testMotori = (schedaDatiCorrenti.testMotori || []).filter(r => r.id !== schedaTestRigaInModifica);
+      schedaTestRigaInModifica = null;
+      schedaTestBozza = null;
+      await salvaScheda(schedaAtletaId);
+      renderSchedaTestMotori();
+    });
+    const salva = document.getElementById('test-salva-btn');
+    if(salva) salva.addEventListener('click', async () => {
+      const periodo = document.getElementById('test-periodo').value.trim();
+      if(!periodo){ alert('Scrivi la data o il periodo.'); return; }
+      const valori = {};
+      document.querySelectorAll('#scheda-test-form [data-col]').forEach(inp => {
+        const v = inp.value.trim();
+        if(v !== '') valori[inp.dataset.col] = v;
+      });
+      if(Object.keys(valori).length === 0){ alert('Inserisci almeno un valore.'); return; }
+      if(!Array.isArray(schedaDatiCorrenti.testMotori)) schedaDatiCorrenti.testMotori = [];
+      const esistente = schedaDatiCorrenti.testMotori.find(r => r.id === schedaTestRigaInModifica);
+      if(esistente){
+        esistente.periodo = periodo;
+        esistente.valori = valori;
+      } else {
+        schedaDatiCorrenti.testMotori.push({ id: nuovoIdLocale(), periodo, valori });
+      }
+      schedaTestRigaInModifica = null;
+      schedaTestBozza = null;
+      await salvaScheda(schedaAtletaId);
+      renderSchedaTestMotori();
+    });
+  }
 
   // ---------- Storico crescita (altezza/peso) ----------
 
@@ -5178,6 +5466,18 @@
       Array.from(perDisciplina.entries()).forEach(([disciplina, r]) => {
         testo += `\n${disciplina}: ${r.valore}`;
       });
+    }
+
+    if(schedaModelloCadetti()){
+      const colonneTest = testColonneGruppo();
+      const righeTest = schedaDatiCorrenti.testMotori || [];
+      if(righeTest.length > 0){
+        testo += `\n\n🏃 Test motori:`;
+        righeTest.forEach(r => {
+          const parti = colonneTest.filter(c => r.valori && r.valori[c.id]).map(c => `${c.nome} ${r.valori[c.id]}${c.unita ? ' ' + c.unita : ''}`);
+          testo += `\n${r.periodo}: ${parti.join(' · ')}`;
+        });
+      }
     }
 
     const obiettivi = schedaDatiCorrenti.obiettivi || [];
