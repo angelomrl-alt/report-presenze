@@ -1037,9 +1037,8 @@
     font-size:13.5px;
     font-family:'Inter',sans-serif;
   }
+  .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
-  .gr-copia{background:none; border:1px solid var(--border-strong); color:var(--text-dim); border-radius:8px; padding:6px 8px; cursor:pointer; display:inline-flex; align-items:center;}
-  .gr-copia svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
   .gr-prestazione{flex:1 1 130px; min-width:120px;}
   .gr-remove{
@@ -1833,11 +1832,6 @@
         <div class="kpi-card"><span class="kpi-value" id="kpi-atleti">0</span><span class="kpi-label">Atleti</span><span class="kpi-ritirati" id="kpi-atleti-ritirati" style="display:none;"></span></div>
         <div class="kpi-card"><span class="kpi-value" id="kpi-media">0</span><span class="kpi-label">Media/sessione</span></div>
       </div>
-
-      <details class="report-section">
-        <summary>🏆 Podio</summary>
-        <div class="podio-grid" id="podio-grid"></div>
-      </details>
 
       <details class="report-section">
         <summary>⭐ Presenze allenamenti</summary>
@@ -3859,11 +3853,15 @@
     // Partecipazione gare per atleta: presenze "gara" + risultati inseriti, giorni unici
     const listaGare = reportAtletiDocs.map(a => {
       const set = raceDatesByAthlete.get(a.nome);
-      return { nome:a.nome, totale: set ? set.size : 0 };
+      // Podi: piazzamenti 1°, 2° e 3° nei risultati dell'atleta
+      let oro = 0, argento = 0, bronzo = 0;
+      risultati.forEach(r => {
+        if(r.atleta !== a.nome) return;
+        const pos = parseInt(r.piazzamento, 10);
+        if(pos === 1) oro++; else if(pos === 2) argento++; else if(pos === 3) bronzo++;
+      });
+      return { nome:a.nome, totale: set ? set.size : 0, oro, argento, bronzo };
     }).sort((a,b) => b.totale - a.totale || a.nome.localeCompare(b.nome));
-
-    const podioAllenamenti = listaAllenamenti.filter(a => a.totale > 0).slice(0,3);
-    const podioGare = listaGare.filter(a => a.totale > 0).slice(0,3);
 
     // Atleti = solo attivi; separatamente, quanti ritirati nella stagione corrente
     const rangeStagioneReport = rangeStagione(stagioneCorrente());
@@ -3874,7 +3872,7 @@
 
     return {
       kpi: { allenamenti:nAllenamenti, gare:nGare, atleti:atletiAttiviReport, ritiratiStagione:ritiratiStagioneReport, media:media.toFixed(1) },
-      mensile, listaAllenamenti, listaGare, podioAllenamenti, podioGare
+      mensile, listaAllenamenti, listaGare
     };
   }
 
@@ -4556,8 +4554,7 @@
                 const haPiazzamento = r.piazzamento !== '' && r.piazzamento !== undefined && r.piazzamento !== null;
                 const disciplinaLibera = schedaModelloCadetti() || disciplineGruppo.length === 0;
                 const campoDisciplina = disciplinaLibera
-                  ? `<input type="text" class="gr-disciplina gr-disciplina-libera" list="gara-discipline-suggerite" placeholder="Specialità (es. 80 m)" autocomplete="off" value="${escHtml(r.disciplina || '')}" style="${haPiazzamento ? '' : 'display:none;'}">
-                     <button type="button" class="gr-copia" title="Copia questa specialità agli altri partecipanti" aria-label="Copia questa specialità agli altri partecipanti" style="${haPiazzamento ? '' : 'display:none;'}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>`
+                  ? `<input type="text" class="gr-disciplina gr-disciplina-libera" list="gara-discipline-suggerite" placeholder="Specialità (es. 80 m)" autocomplete="off" value="${escHtml(r.disciplina || '')}" style="${haPiazzamento ? '' : 'display:none;'}">`
                   : `<select class="gr-disciplina" style="${haPiazzamento ? '' : 'display:none;'}">
                     <option value="">Disciplina…</option>
                     ${disciplineGruppo.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
@@ -4615,7 +4612,6 @@
       const rec = garaPartecipanti.get(row.dataset.id)[parseInt(row.dataset.idx,10)];
       const selectDisciplina = row.querySelector('.gr-disciplina');
       const inputPrestazione = row.querySelector('.gr-prestazione');
-      const btnCopia = row.querySelector('.gr-copia');
       const libera = selectDisciplina.classList.contains('gr-disciplina-libera');
       const aggiornaDisciplina = e => {
         rec.disciplina = e.target.value;
@@ -4629,23 +4625,11 @@
         const mostra = !!e.target.value;
         selectDisciplina.style.display = mostra ? '' : 'none';
         inputPrestazione.style.display = mostra ? '' : 'none';
-        if(btnCopia) btnCopia.style.display = mostra ? '' : 'none';
         // Copia automatica: la riga nuova parte con l'ultima specialità scritta (modificabile)
         if(libera && mostra && !String(rec.disciplina || '').trim() && ultimaDisciplinaGara){
           rec.disciplina = ultimaDisciplinaGara;
           selectDisciplina.value = ultimaDisciplinaGara;
         }
-      });
-      if(btnCopia) btnCopia.addEventListener('click', () => {
-        const valore = String(rec.disciplina || '').trim();
-        if(!valore){ selectDisciplina.focus(); return; }
-        ultimaDisciplinaGara = valore;
-        // Copia agli altri partecipanti che hanno già un piazzamento ma nessuna specialità
-        garaPartecipanti.forEach(righe => righe.forEach(r => {
-          const haPiaz = r.piazzamento !== '' && r.piazzamento !== undefined && r.piazzamento !== null;
-          if(haPiaz && !String(r.disciplina || '').trim()) r.disciplina = valore;
-        }));
-        renderGaraRoster();
       });
     });
   }
@@ -6025,23 +6009,6 @@
       ritiratiEl.style.display = 'none';
     }
 
-    // Podio
-    const podioHtml = (titolo, lista) => `
-      <div class="podio-col">
-        <h4>${titolo}</h4>
-        ${lista.length === 0 ? '<p class="empty-note">Nessun dato ancora.</p>' :
-          lista.map((a,i) => `
-            <div class="podio-row">
-              <span><span class="medaglia">${['🥇','🥈','🥉'][i]}</span>${a.nome}</span>
-              <span class="conteggio">${a.totale}</span>
-            </div>
-          `).join('')
-        }
-      </div>
-    `;
-    document.getElementById('podio-grid').innerHTML =
-      podioHtml('Allenamenti', d.podioAllenamenti) + podioHtml('Gare', d.podioGare);
-
     // Lista presenze allenamenti (con trend)
     const listaAll = document.getElementById('lista-allenamenti');
     if(d.listaAllenamenti.length === 0){
@@ -6067,12 +6034,15 @@
     if(d.listaGare.length === 0){
       listaGareEl.innerHTML = '<p class="empty-note">Nessun atleta nel gruppo ancora.</p>';
     } else {
-      listaGareEl.innerHTML = d.listaGare.map(a => `
+      listaGareEl.innerHTML = d.listaGare.map(a => {
+        const podi = [a.oro ? `🥇${a.oro}` : '', a.argento ? `🥈${a.argento}` : '', a.bronzo ? `🥉${a.bronzo}` : ''].filter(Boolean).join(' ');
+        return `
         <div class="atleta-row">
           <span>${a.nome}</span>
-          <span class="conteggio-wrap"><span>${a.totale}</span></span>
+          <span class="conteggio-wrap"><span>${a.totale}</span>${podi ? `<span class="podi-atleta">${podi}</span>` : ''}</span>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
   }
 
@@ -6332,7 +6302,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Numeri del gruppo, podio presenze/gare, e per ogni atleta se è in aumento (↑), calo (↓) o stabile (→).
+          Numeri del gruppo, presenze di ogni atleta (con ↑ ↓ → se sono in aumento, calo o stabili) e partecipazione gare con i podi 🥇🥈🥉 di ciascuno.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi dalla società</h3>
