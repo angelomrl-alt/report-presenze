@@ -561,7 +561,7 @@
   .test-modifica{display:inline-flex; vertical-align:middle; margin-left:6px; padding:4px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text-dim); cursor:pointer;}
   .test-modifica svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
   .test-tabella tbody tr.in-modifica td{background:var(--bg-track);}
-  .scheda-azioni-riga{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; align-items:stretch; margin-top:4px;}
+  .scheda-azioni-riga{display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; align-items:stretch; margin-top:4px;}
   .scheda-azione{
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
     min-height:64px; padding:8px 6px; margin:0; width:100%; box-sizing:border-box;
@@ -1489,6 +1489,21 @@
   .sposta-riepilogo .sposta-riep-titolo{font-weight:600; color:var(--text); margin-bottom:6px;}
   .sposta-riepilogo .ok{color:var(--primary); font-weight:700; margin-right:6px;}
   .sposta-riepilogo .info{display:inline-block; width:14px; text-align:center; color:var(--clay); font-weight:700; margin-right:6px;}
+  .andamento-chips{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
+  .andamento-chip{font-size:12.5px; padding:5px 11px; border-radius:16px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text-dim); cursor:pointer; font-family:inherit;}
+  .andamento-chip.attivo{background:color-mix(in srgb, var(--primary) 14%, var(--surface)); color:var(--primary); border-color:var(--primary); font-weight:600;}
+  .andamento-svg{display:block; width:100%; height:auto;}
+  .andamento-svg .griglia{stroke:var(--border); stroke-width:.6;}
+  .andamento-svg .linea{fill:none; stroke:var(--primary); stroke-width:2; stroke-linejoin:round; stroke-linecap:round;}
+  .andamento-svg .area{fill:var(--primary); opacity:.10;}
+  .andamento-svg .punto{fill:var(--surface); stroke:var(--primary); stroke-width:2;}
+  .andamento-svg .punto-ultimo{fill:var(--primary); stroke:var(--primary); stroke-width:2;}
+  .andamento-svg text{font-family:inherit; font-size:10px; fill:var(--text-dim);}
+  .andamento-svg text.valore{font-size:11px; fill:var(--text);}
+  .andamento-sintesi{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .andamento-sintesi div{background:var(--bg-track); border-radius:10px; padding:8px 10px;}
+  .andamento-sintesi small{display:block; font-size:11px; color:var(--text-dim);}
+  .andamento-sintesi strong{font-size:15px;}
   .sposta-azioni{display:flex; gap:8px; justify-content:flex-end;}
   .btn-ripristina{background:none; border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:12px; font-weight:600; padding:5px 10px; cursor:pointer;}
 
@@ -2044,10 +2059,6 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>
           <span>Condividi scheda</span>
         </button>
-        <div class="scheda-azione scheda-azione-stagione">
-          <label for="report-stagione-select">Stagione</label>
-          <select id="report-stagione-select"></select>
-        </div>
         <button type="button" id="report-stagione-btn" class="btn-secondary scheda-azione">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="5" y="9" width="14" height="8" rx="2"/><path d="M7 14h10v6H7z"/></svg>
           <span>Report stagione PDF</span>
@@ -5395,6 +5406,7 @@
       html += `
         <div class="test-azioni">
           <button type="button" class="btn-secondary" id="test-nuova-btn">+ Nuova rilevazione</button>
+          <button type="button" class="btn-secondary" id="test-andamento-btn"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg> Andamento</button>
           <button type="button" class="btn-secondary" id="test-colonne-btn">Modifica colonne</button>
         </div>`;
     }
@@ -5419,6 +5431,8 @@
 
     const nuova = document.getElementById('test-nuova-btn');
     if(nuova) nuova.addEventListener('click', () => apriFormTest('nuova'));
+    const andBtn = document.getElementById('test-andamento-btn');
+    if(andBtn) andBtn.addEventListener('click', apriAndamentoTest);
     const colBtn = document.getElementById('test-colonne-btn');
     if(colBtn) colBtn.addEventListener('click', () => {
       schedaTestColonneBozza = testColonneGruppo().map(c => ({ ...c }));
@@ -5470,6 +5484,88 @@
       renderSchedaTestMotori();
     });
   }
+
+  // ---------- Andamento test motori (grafico a linea, un test alla volta) ----------
+  let andamentoColonnaId = null;
+
+  function apriAndamentoTest(){
+    const colonne = testColonneGruppo();
+    const righe = (schedaDatiCorrenti && schedaDatiCorrenti.testMotori) || [];
+    const conDati = c => righe.filter(r => testNum(r.valori && r.valori[c.id]) !== null).length >= 2;
+    const scelta = colonne.find(c => c.id === andamentoColonnaId) || colonne.find(conDati) || colonne[0];
+    andamentoColonnaId = scelta ? scelta.id : null;
+    renderAndamentoTest();
+    document.getElementById('andamento-overlay').style.display = 'flex';
+  }
+
+  function chiudiAndamentoTest(){
+    document.getElementById('andamento-overlay').style.display = 'none';
+  }
+
+  function renderAndamentoTest(){
+    const colonne = testColonneGruppo();
+    const righe = (schedaDatiCorrenti && schedaDatiCorrenti.testMotori) || [];
+    const chips = document.getElementById('andamento-chips');
+    chips.innerHTML = colonne.map(c => `<button type="button" class="andamento-chip${c.id === andamentoColonnaId ? ' attivo' : ''}" data-id="${escHtml(c.id)}">${escHtml(c.nome)}</button>`).join('');
+    chips.querySelectorAll('.andamento-chip').forEach(b => b.addEventListener('click', () => {
+      andamentoColonnaId = b.dataset.id;
+      renderAndamentoTest();
+    }));
+
+    const corpo = document.getElementById('andamento-corpo');
+    const col = colonne.find(c => c.id === andamentoColonnaId);
+    if(!col){ corpo.innerHTML = '<p class="empty-note">Nessun test configurato.</p>'; return; }
+
+    const punti = righe.map(r => ({ periodo: r.periodo || '', v: testNum(r.valori && r.valori[col.id]) })).filter(p => p.v !== null);
+    if(punti.length < 2){
+      corpo.innerHTML = '<p class="empty-note">Servono almeno due rilevazioni con un valore per questo test.</p>';
+      return;
+    }
+
+    const n = punti.length;
+    const vals = punti.map(p => p.v);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const pad = (max - min) * 0.2 || Math.max(Math.abs(max) * 0.05, 1);
+    const lo = min - pad, hi = max + pad;
+    const x0 = 52, x1 = 268, yTop = 26, yBot = 150;
+    const X = i => x0 + (x1 - x0) * i / (n - 1);
+    const Y = v => yBot - (v - lo) / (hi - lo) * (yBot - yTop);
+    const fmtTick = v => testFmt(Math.round(v * 10) / 10);
+    const passo = n > 6 ? Math.ceil(n / 6) : 1;
+    const tronca = t => t.length > 9 ? t.slice(0, 8) + '…' : t;
+
+    const ticks = [lo, (lo + hi) / 2, hi];
+    const griglia = ticks.map(t => `<line class="griglia" x1="36" y1="${Y(t).toFixed(1)}" x2="290" y2="${Y(t).toFixed(1)}"/><text x="30" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end">${fmtTick(t)}</text>`).join('');
+    const linea = punti.map((p, i) => `${X(i).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' ');
+    const area = `${linea} ${X(n - 1).toFixed(1)},${yBot} ${X(0).toFixed(1)},${yBot}`;
+    const cerchi = punti.map((p, i) => `<circle class="${i === n - 1 ? 'punto-ultimo' : 'punto'}" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="${i === n - 1 ? 5 : 4}"/>`).join('');
+    const valoriTxt = punti.map((p, i) => `<text class="valore" x="${X(i).toFixed(1)}" y="${(Y(p.v) - 9).toFixed(1)}" text-anchor="middle">${testFmt(p.v)}</text>`).join('');
+    const etichette = punti.map((p, i) => (i % passo === 0) ? `<text x="${X(i).toFixed(1)}" y="168" text-anchor="middle">${escHtml(tronca(p.periodo))}</text>` : '').join('');
+
+    const unita = col.unita ? ' ' + col.unita : '';
+    const d = vals[n - 1] - vals[0];
+    const meglio = col.minoreMeglio ? d < 0 : d > 0;
+    const colDelta = Math.abs(d) < 0.0001 ? 'var(--text-dim)' : (meglio ? 'var(--primary)' : 'var(--clay)');
+    const segno = d > 0.0001 ? '+' : (d < -0.0001 ? '−' : '');
+    const migliore = col.minoreMeglio ? min : max;
+
+    corpo.innerHTML = `
+      <svg class="andamento-svg" viewBox="0 0 300 180" role="img" aria-label="Andamento ${escHtml(col.nome)}">
+        <line class="griglia" x1="36" y1="${yBot}" x2="290" y2="${yBot}"/>
+        ${griglia}
+        <polygon class="area" points="${area}"/>
+        <polyline class="linea" points="${linea}"/>
+        ${cerchi}${valoriTxt}${etichette}
+      </svg>
+      <div class="andamento-sintesi">
+        <div><small>Dalla prima rilevazione</small><strong style="color:${colDelta};">${segno}${testFmt(Math.abs(d))}${escHtml(unita)}</strong></div>
+        <div><small>Migliore</small><strong>${testFmt(migliore)}${escHtml(unita)}</strong></div>
+      </div>
+      ${col.minoreMeglio ? '<p class="test-suggerimento" style="margin-top:8px;">Per questo test un valore più basso è un miglioramento.</p>' : ''}`;
+  }
+
+  document.getElementById('andamento-chiudi').addEventListener('click', chiudiAndamentoTest);
+  document.getElementById('andamento-overlay').addEventListener('click', e => { if(e.target.id === 'andamento-overlay') chiudiAndamentoTest(); });
 
   // ---------- Storico crescita (altezza/peso) ----------
 
@@ -5694,7 +5790,7 @@
 
   function renderReportStagioneSelect(){
     const select = document.getElementById('report-stagione-select');
-    if(!schedaDatiCorrenti) return;
+    if(!select || !schedaDatiCorrenti) return;
     const stagioni = new Set([stagioneCorrente()]);
     (schedaDatiCorrenti.obiettivi || []).forEach(o => { if(o.stagione) stagioni.add(o.stagione); });
     const elenco = Array.from(stagioni).sort().reverse();
@@ -5705,7 +5801,7 @@
 
   function generaReportStagione(){
     if(!schedaDatiCorrenti) return;
-    const stagioneScelta = document.getElementById('report-stagione-select').value;
+    const stagioneScelta = stagioneCorrente();
     const { inizio, fine } = rangeStagione(stagioneScelta);
     const dentroStagione = data => data && data >= inizio && data <= fine;
 
@@ -6881,6 +6977,18 @@
       <button type="button" class="btn-secondary" id="sposta-annulla">Annulla</button>
       <button type="button" class="btn-primary" id="sposta-conferma" style="width:auto; padding:11px 22px;">Sposta atleta</button>
     </div>
+  </div>
+</div>
+
+<!-- FINESTRA: andamento test motori -->
+<div id="andamento-overlay" class="sposta-overlay" style="display:none;">
+  <div class="sposta-sheet" role="dialog" aria-modal="true" aria-labelledby="andamento-titolo">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 id="andamento-titolo" style="margin:0; font-size:16px;">Andamento test</h3>
+      <button type="button" id="andamento-chiudi" class="btn-secondary" aria-label="Chiudi" style="width:auto; padding:4px 12px;">✕</button>
+    </div>
+    <div id="andamento-chips" class="andamento-chips"></div>
+    <div id="andamento-corpo"></div>
   </div>
 </div>
 
