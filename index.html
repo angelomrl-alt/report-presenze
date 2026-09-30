@@ -1038,6 +1038,8 @@
     font-family:'Inter',sans-serif;
   }
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
+  .gr-copia{background:none; border:1px solid var(--border-strong); color:var(--text-dim); border-radius:8px; padding:6px 8px; cursor:pointer; display:inline-flex; align-items:center;}
+  .gr-copia svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
   .gr-prestazione{flex:1 1 130px; min-width:120px;}
   .gr-remove{
@@ -2573,6 +2575,7 @@
   // Stato per la schermata Gara (presenze + risultati combinati)
   let garaDocIdAttuale = null;
   let garaPartecipanti = new Map(); // atletaId -> [{disciplina, prestazione, piazzamento, docId?}]
+  let ultimaDisciplinaGara = '';    // ultima specialità scritta: precompila le righe successive
 
   // Stato per Gestione discipline (Società)
   let adminDisciplineUnsub = null;
@@ -4551,16 +4554,21 @@
                 const consentite = (GRUPPI[currentGruppoId] && GRUPPI[currentGruppoId].disciplineConsentite) || [];
                 const disciplineGruppo = consentite.length === 0 ? risultatiDisciplineDocs : risultatiDisciplineDocs.filter(d => consentite.includes(d.nome));
                 const haPiazzamento = r.piazzamento !== '' && r.piazzamento !== undefined && r.piazzamento !== null;
+                const disciplinaLibera = schedaModelloCadetti() || disciplineGruppo.length === 0;
+                const campoDisciplina = disciplinaLibera
+                  ? `<input type="text" class="gr-disciplina gr-disciplina-libera" list="gara-discipline-suggerite" placeholder="Specialità (es. 80 m)" autocomplete="off" value="${escHtml(r.disciplina || '')}" style="${haPiazzamento ? '' : 'display:none;'}">
+                     <button type="button" class="gr-copia" title="Copia questa specialità agli altri partecipanti" aria-label="Copia questa specialità agli altri partecipanti" style="${haPiazzamento ? '' : 'display:none;'}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>`
+                  : `<select class="gr-disciplina" style="${haPiazzamento ? '' : 'display:none;'}">
+                    <option value="">Disciplina…</option>
+                    ${disciplineGruppo.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
+                  </select>`;
                 return `
                 <div class="gara-risultato-row" data-id="${a.id}" data-idx="${i}">
                   <select class="gr-piazzamento">
                     <option value="">Podio o arrivo…</option>
                     ${Array.from({length:20}, (_,n) => n+1).map(n => `<option value="${n}" ${String(r.piazzamento)===String(n)?'selected':''}>${n}°</option>`).join('')}
                   </select>
-                  <select class="gr-disciplina" style="${haPiazzamento ? '' : 'display:none;'}">
-                    <option value="">Disciplina…</option>
-                    ${disciplineGruppo.map(d => `<option value="${d.nome}" ${d.nome===r.disciplina?'selected':''}>${d.nome}</option>`).join('')}
-                  </select>
+                  ${campoDisciplina}
                   <input type="text" class="gr-prestazione" style="${haPiazzamento ? '' : 'display:none;'}" placeholder="Prestazione (es. 14.82)" value="${r.prestazione||''}">
                   <button type="button" class="gr-remove" data-id="${a.id}" data-idx="${i}">✕</button>
                 </div>
@@ -4571,6 +4579,12 @@
         </div>
       `;
     }).join('');
+
+    // Suggerimenti per il campo specialità: quelle già usate dal gruppo + quelle scritte in questa gara
+    const suggerite = new Set();
+    risultatiDocs.forEach(r => { if(r.disciplina) suggerite.add(String(r.disciplina).trim()); });
+    garaPartecipanti.forEach(righe => righe.forEach(r => { if(r.disciplina) suggerite.add(String(r.disciplina).trim()); }));
+    cont.insertAdjacentHTML('beforeend', `<datalist id="gara-discipline-suggerite">${Array.from(suggerite).filter(Boolean).sort((a,b) => a.localeCompare(b)).map(n => `<option value="${escHtml(n)}"></option>`).join('')}</datalist>`);
 
     cont.querySelectorAll('.partecipa-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -4601,12 +4615,37 @@
       const rec = garaPartecipanti.get(row.dataset.id)[parseInt(row.dataset.idx,10)];
       const selectDisciplina = row.querySelector('.gr-disciplina');
       const inputPrestazione = row.querySelector('.gr-prestazione');
-      selectDisciplina.addEventListener('change', e => { rec.disciplina = e.target.value; });
+      const btnCopia = row.querySelector('.gr-copia');
+      const libera = selectDisciplina.classList.contains('gr-disciplina-libera');
+      const aggiornaDisciplina = e => {
+        rec.disciplina = e.target.value;
+        if(libera && e.target.value.trim()) ultimaDisciplinaGara = e.target.value.trim();
+      };
+      selectDisciplina.addEventListener('input', aggiornaDisciplina);
+      selectDisciplina.addEventListener('change', aggiornaDisciplina);
       inputPrestazione.addEventListener('input', e => { rec.prestazione = e.target.value; });
       row.querySelector('.gr-piazzamento').addEventListener('change', e => {
         rec.piazzamento = e.target.value;
-        selectDisciplina.style.display = e.target.value ? '' : 'none';
-        inputPrestazione.style.display = e.target.value ? '' : 'none';
+        const mostra = !!e.target.value;
+        selectDisciplina.style.display = mostra ? '' : 'none';
+        inputPrestazione.style.display = mostra ? '' : 'none';
+        if(btnCopia) btnCopia.style.display = mostra ? '' : 'none';
+        // Copia automatica: la riga nuova parte con l'ultima specialità scritta (modificabile)
+        if(libera && mostra && !String(rec.disciplina || '').trim() && ultimaDisciplinaGara){
+          rec.disciplina = ultimaDisciplinaGara;
+          selectDisciplina.value = ultimaDisciplinaGara;
+        }
+      });
+      if(btnCopia) btnCopia.addEventListener('click', () => {
+        const valore = String(rec.disciplina || '').trim();
+        if(!valore){ selectDisciplina.focus(); return; }
+        ultimaDisciplinaGara = valore;
+        // Copia agli altri partecipanti che hanno già un piazzamento ma nessuna specialità
+        garaPartecipanti.forEach(righe => righe.forEach(r => {
+          const haPiaz = r.piazzamento !== '' && r.piazzamento !== undefined && r.piazzamento !== null;
+          if(haPiaz && !String(r.disciplina || '').trim()) r.disciplina = valore;
+        }));
+        renderGaraRoster();
       });
     });
   }
@@ -4618,6 +4657,7 @@
 
     garaDocIdAttuale = null;
     garaPartecipanti.clear();
+    ultimaDisciplinaGara = '';
     document.getElementById('gara-nome').value = '';
     document.getElementById('gara-luogo').value = '';
     banner.style.display = 'none';
@@ -6406,6 +6446,19 @@
       feedback.textContent = "Segna almeno un atleta come partecipante.";
       return;
     }
+    if(schedaModelloCadetti()){
+      const senzaSpecialita = [];
+      garaPartecipanti.forEach((righe, atletaId) => {
+        const atleta = risultatiAtletiDocs.find(a => a.id === atletaId);
+        if(atleta && righe.some(r => r.piazzamento !== '' && r.piazzamento !== undefined && r.piazzamento !== null && !String(r.disciplina || '').trim())){
+          senzaSpecialita.push(atleta.nome);
+        }
+      });
+      if(senzaSpecialita.length > 0){
+        feedback.textContent = `Manca la specialità per: ${senzaSpecialita.join(', ')}.`;
+        return;
+      }
+    }
 
     const btn = this;
     btn.disabled = true;
@@ -6431,10 +6484,10 @@
         const atleta = risultatiAtletiDocs.find(a => a.id === atletaId);
         if(!atleta) return;
         righe.forEach(r => {
-          if(!r.disciplina) return;
+          if(!r.disciplina || !String(r.disciplina).trim()) return;
           const datiRisultato = {
             gruppoId: currentGruppoId, data, atleta: atleta.nome,
-            disciplina: r.disciplina, piazzamento: r.piazzamento || null,
+            disciplina: String(r.disciplina).trim(), piazzamento: r.piazzamento || null,
             prestazione: r.prestazione || null,
             gara: nome, luogo
           };
