@@ -1847,7 +1847,7 @@
     <main>
       <span class="categoria-badge" id="report-categoria">—</span>
       <h2 id="report-group-name" style="margin-top:10px;">—</h2>
-      <p class="sub">Dati calcolati dalle presenze registrate nell'app.</p>
+      <p class="sub" id="report-sub">Dati calcolati dalle presenze registrate nell'app.</p>
 
       <div class="report-atleti-riga">
         <div class="report-atleti-num"><span class="kpi-value" id="kpi-atleti">0</span><span class="kpi-label">atleti</span></div>
@@ -2575,6 +2575,18 @@
     return `${inizio}/${String(inizio+1).slice(-2)}`;
   }
 
+  // Conteggi (presenze, gare, podi): contano solo l'anno in corso, dal 1° gennaio al 31 dicembre.
+  // I dati degli anni precedenti restano salvati, semplicemente non entrano nei totali.
+  function annoConteggio(){
+    const a = new Date().getFullYear();
+    return { anno: String(a), inizio: `${a}-01-01`, fine: `${a}-12-31` };
+  }
+  function inAnnoCorrente(data){
+    if(!data) return false;
+    const r = annoConteggio();
+    return data >= r.inizio && data <= r.fine;
+  }
+
   function nuovoIdLocale(){
     return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
   }
@@ -3135,6 +3147,10 @@
       getDocs(collection(db,'gare')),
       getDocs(collection(db,'risultati'))
     ]);
+    // Solo l'anno in corso per conteggi e grafici mensili
+    const docsPresenze = snapPresenze.docs.filter(d => inAnnoCorrente(d.data().data));
+    const docsGare = snapGare.docs.filter(d => inAnnoCorrente(d.data().data));
+    const docsRisultati = snapRisultati.docs.filter(d => inAnnoCorrente(d.data().data));
 
     const conteggiAtleti = {};
     const atletiPerGruppo = {}; // gruppoId -> [atleta, ...] con tutti i dati (nome, scadenzaCertificato)
@@ -3148,7 +3164,7 @@
 
     const conteggiAllenamenti = {};
     const contiAllenamentiAtleta = {}; // gruppoId -> Map(nome -> conteggio)
-    snapPresenze.docs.forEach(d => {
+    docsPresenze.forEach(d => {
       const p = d.data();
       if(p.tipo !== 'allenamento') return;
       conteggiAllenamenti[p.gruppoId] = (conteggiAllenamenti[p.gruppoId] || 0) + 1;
@@ -3172,18 +3188,18 @@
         m.get(nome).add(data);
       }
     }
-    snapPresenze.docs.forEach(d => {
+    docsPresenze.forEach(d => {
       const p = d.data();
       if(p.tipo !== 'gara') return;
       aggiungiGaraData(p.gruppoId, p.data, null);
       (p.presenti || []).forEach(nome => aggiungiGaraData(p.gruppoId, p.data, nome));
     });
-    snapGare.docs.forEach(d => {
+    docsGare.forEach(d => {
       const g = d.data();
       aggiungiGaraData(g.gruppoId, g.data, null);
       (g.partecipanti || []).forEach(nome => aggiungiGaraData(g.gruppoId, g.data, nome));
     });
-    snapRisultati.docs.forEach(d => { const r = d.data(); aggiungiGaraData(r.gruppoId, r.data, r.atleta); });
+    docsRisultati.forEach(d => { const r = d.data(); aggiungiGaraData(r.gruppoId, r.data, r.atleta); });
     const conteggiGare = {};
     Object.keys(garaDatePerGruppo).forEach(gid => { conteggiGare[gid] = garaDatePerGruppo[gid].size; });
 
@@ -3194,7 +3210,7 @@
 
     let oro = 0, argento = 0, bronzo = 0;
     const medagliePerGruppoAtleta = {}; // gruppoId -> Map(nome -> {oro,argento,bronzo})
-    snapRisultati.docs.forEach(d => {
+    docsRisultati.forEach(d => {
       const r = d.data();
       const p = parseInt(r.piazzamento, 10);
       if(p === 1) oro++;
@@ -3244,6 +3260,9 @@
       </div>
       <div class="kpi-card"><span class="kpi-value">${totaleGiorniAllenamento}</span><span class="kpi-label">Giorni di allenamento totali</span></div>
     `;
+
+    document.getElementById('admin-kpi-grid').insertAdjacentHTML('beforeend',
+      `<p style="grid-column:1 / -1; margin:0; font-size:11.5px; color:var(--text-dim);">Conteggi dal 1° gennaio ${annoConteggio().anno}.</p>`);
 
     // Riepilogo ultima giornata di gare
 
@@ -3329,7 +3348,7 @@
     // --- Dati mensili per gruppo, per i grafici di confronto ---
     const mensileAllenamentiPerGruppo = {}; // gruppoId -> Map(mese -> count)
     const mensileGarePerGruppo = {};        // gruppoId -> Map(mese -> Set(data))
-    snapPresenze.docs.forEach(d => {
+    docsPresenze.forEach(d => {
       const p = d.data();
       if(!p.data || !p.gruppoId) return;
       const mese = p.data.slice(0,7);
@@ -3344,7 +3363,7 @@
         m.get(mese).add(p.data);
       }
     });
-    snapGare.docs.forEach(d => {
+    docsGare.forEach(d => {
       const g = d.data();
       if(!g.data || !g.gruppoId) return;
       const mese = g.data.slice(0,7);
@@ -3353,7 +3372,7 @@
       if(!m.has(mese)) m.set(mese, new Set());
       m.get(mese).add(g.data);
     });
-    snapRisultati.docs.forEach(d => {
+    docsRisultati.forEach(d => {
       const r = d.data();
       if(!r.data || !r.gruppoId) return;
       const mese = r.data.slice(0,7);
@@ -3794,8 +3813,8 @@
   }
 
   function calcolaReport(){
-    const sessioni = reportSessioni;
-    const risultati = reportRisultatiDocs;
+    const sessioni = reportSessioni.filter(x => inAnnoCorrente(x.data));
+    const risultati = reportRisultatiDocs.filter(x => inAnnoCorrente(x.data));
 
     // Giorni di gara "veri": da presenze (tipo=gara) E da risultati inseriti, uniti senza doppi conteggi
     const raceDatesByAthlete = new Map(); // nome -> Set(data)
@@ -3814,7 +3833,7 @@
       aggiungiGiornoGara(s.data, null);
       (s.presenti || []).forEach(nome => aggiungiGiornoGara(s.data, nome));
     });
-    reportGareDocs.forEach(g => {
+    reportGareDocs.filter(g => inAnnoCorrente(g.data)).forEach(g => {
       aggiungiGiornoGara(g.data, null);
       (g.partecipanti || []).forEach(nome => aggiungiGiornoGara(g.data, nome));
     });
@@ -6237,6 +6256,7 @@
 
   function renderReport(){
     const d = calcolaReport();
+    document.getElementById('report-sub').textContent = `Dati del ${annoConteggio().anno} (dal 1° gennaio), calcolati dalle presenze registrate nell'app.`;
 
     document.getElementById('kpi-allenamenti').textContent = d.kpi.allenamenti;
     document.getElementById('kpi-gare').textContent = d.kpi.gare;
@@ -6564,7 +6584,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Numero di atleti; nel menu Allenamenti media, sessioni per mese e % di presenza di ogni atleta (con ↑ ↓ → se in aumento, calo o stabile); nel menu Gare le medaglie del gruppo e i podi 🥇🥈🥉 di ciascuno.
+          Numero di atleti; i conteggi ripartono da zero ogni 1° gennaio (i dati vecchi restano salvati); nel menu Allenamenti media, sessioni per mese e % di presenza di ogni atleta (con ↑ ↓ → se in aumento, calo o stabile); nel menu Gare le medaglie del gruppo e i podi 🥇🥈🥉 di ciascuno.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi dalla società</h3>
