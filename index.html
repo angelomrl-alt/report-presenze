@@ -1479,6 +1479,17 @@
   .sezione-archiviati h3{font-size:12.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin:0 0 10px; font-family:'Oswald',sans-serif;}
   .archiviato-row{display:flex; justify-content:space-between; align-items:center; padding:9px 2px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text-dim);}
   .archiviato-row:last-child{border-bottom:none;}
+  .btn-sposta{display:inline-flex; align-items:center; gap:4px; background:none; border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:12px; font-weight:600; padding:5px 10px; cursor:pointer;}
+  .btn-sposta svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .sposta-nota{display:block; font-size:11px; color:var(--text-dim); font-weight:400; margin-top:2px;}
+  .sposta-overlay{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1200; display:flex; align-items:flex-end; justify-content:center;}
+  .sposta-sheet{background:var(--surface); width:100%; max-width:520px; border-radius:16px 16px 0 0; padding:18px 18px 22px; box-sizing:border-box; max-height:92vh; overflow:auto;}
+  .sposta-riepilogo{background:var(--bg-track); border-radius:10px; padding:10px 12px; margin-bottom:10px;}
+  .sposta-riepilogo p{margin:0 0 4px; font-size:12.5px; color:var(--text-dim);}
+  .sposta-riepilogo .sposta-riep-titolo{font-weight:600; color:var(--text); margin-bottom:6px;}
+  .sposta-riepilogo .ok{color:var(--primary); font-weight:700; margin-right:6px;}
+  .sposta-riepilogo .info{display:inline-block; width:14px; text-align:center; color:var(--clay); font-weight:700; margin-right:6px;}
+  .sposta-azioni{display:flex; gap:8px; justify-content:flex-end;}
   .btn-ripristina{background:none; border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:12px; font-weight:600; padding:5px 10px; cursor:pointer;}
 
   /* ---------- Vista di stampa: report stagionale ---------- */
@@ -2967,26 +2978,99 @@
   }
 
   // Corregge il nome di un atleta e allinea anche presenze e risultati già registrati con il nome vecchio
-  async function rinominaAtleta(atletaId, gruppoId, vecchioNome, nuovoNome){
+  async function rinominaAtleta(atletaId, gruppoId, vecchioNome, nuovoNome, altriGruppi = []){
     nuovoNome = nuovoNome.trim();
     if(!nuovoNome || nuovoNome === vecchioNome) return;
 
     await updateDoc(doc(db,'atleti', atletaId), { nome: nuovoNome });
 
-    const qP = query(collection(db,'presenze'), where('gruppoId','==', gruppoId));
-    const snapP = await getDocs(qP);
-    await Promise.all(snapP.docs.map(async (d) => {
-      const dati = d.data();
-      let cambiato = false;
-      const presenti = (dati.presenti || []).map(n => { if(n === vecchioNome){ cambiato = true; return nuovoNome; } return n; });
-      const assenti = (dati.assenti || []).map(n => { if(n === vecchioNome){ cambiato = true; return nuovoNome; } return n; });
-      if(cambiato) await updateDoc(doc(db,'presenze', d.id), { presenti, assenti });
-    }));
+    // Presenze e risultati sono legati al nome: si aggiornano nel gruppo attuale
+    // e in quelli dove l'atleta è stato in passato (storico spostamenti).
+    const gruppiDaAggiornare = Array.from(new Set([gruppoId, ...altriGruppi].filter(Boolean)));
+    for(const gid of gruppiDaAggiornare){
+      const qP = query(collection(db,'presenze'), where('gruppoId','==', gid));
+      const snapP = await getDocs(qP);
+      await Promise.all(snapP.docs.map(async (d) => {
+        const dati = d.data();
+        let cambiato = false;
+        const presenti = (dati.presenti || []).map(n => { if(n === vecchioNome){ cambiato = true; return nuovoNome; } return n; });
+        const assenti = (dati.assenti || []).map(n => { if(n === vecchioNome){ cambiato = true; return nuovoNome; } return n; });
+        if(cambiato) await updateDoc(doc(db,'presenze', d.id), { presenti, assenti });
+      }));
 
-    const qR = query(collection(db,'risultati'), where('gruppoId','==', gruppoId), where('atleta','==', vecchioNome));
-    const snapR = await getDocs(qR);
-    await Promise.all(snapR.docs.map(d => updateDoc(doc(db,'risultati', d.id), { atleta: nuovoNome })));
+      const qR = query(collection(db,'risultati'), where('gruppoId','==', gid), where('atleta','==', vecchioNome));
+      const snapR = await getDocs(qR);
+      await Promise.all(snapR.docs.map(d => updateDoc(doc(db,'risultati', d.id), { atleta: nuovoNome })));
+    }
   }
+
+  // ---------- Sposta atleta in un altro gruppo (società) ----------
+  // Cambia solo gruppoId sul documento atleta (la scheda è legata all'id e lo segue) e annota
+  // il passaggio in storicoGruppi. Presenze e risultati passati restano nel gruppo di allora.
+  let spostaAtletaId = null;
+
+  function apriSpostaAtleta(atletaId){
+    const a = adminRosterDocs.find(x => x.id === atletaId);
+    if(!a) return;
+    spostaAtletaId = atletaId;
+    const corrente = GRUPPI[adminRosterGruppoId];
+    document.getElementById('sposta-titolo').textContent = `Sposta ${a.nome}`;
+    document.getElementById('sposta-sub').textContent = `Da ${corrente ? corrente.nome : 'gruppo attuale'} a un altro gruppo`;
+    const opzioni = Object.entries(GRUPPI).filter(([id]) => id !== adminRosterGruppoId)
+      .sort((x,y) => x[1].nome.localeCompare(y[1].nome));
+    const sel = document.getElementById('sposta-gruppo');
+    sel.innerHTML = opzioni.length > 0
+      ? opzioni.map(([id,g]) => `<option value="${id}">${escHtml(g.nome)}</option>`).join('')
+      : '<option value="">Nessun altro gruppo disponibile</option>';
+    document.getElementById('sposta-data').value = new Date().toISOString().slice(0,10);
+    document.getElementById('sposta-feedback').textContent = '';
+    document.getElementById('sposta-conferma').disabled = opzioni.length === 0;
+    document.getElementById('sposta-overlay').style.display = 'flex';
+  }
+
+  function chiudiSpostaAtleta(){
+    document.getElementById('sposta-overlay').style.display = 'none';
+    spostaAtletaId = null;
+  }
+
+  async function confermaSpostaAtleta(){
+    const a = adminRosterDocs.find(x => x.id === spostaAtletaId);
+    const nuovoId = document.getElementById('sposta-gruppo').value;
+    const data = document.getElementById('sposta-data').value || new Date().toISOString().slice(0,10);
+    const fb = document.getElementById('sposta-feedback');
+    const btn = document.getElementById('sposta-conferma');
+    if(!a || !nuovoId || !GRUPPI[nuovoId]){ fb.textContent = 'Scegli il nuovo gruppo.'; return; }
+
+    btn.disabled = true;
+    fb.textContent = 'Sposto...';
+    try{
+      // Presenze e risultati sono legati al nome: due atleti con lo stesso nome nello stesso gruppo si confonderebbero.
+      const snapDest = await getDocs(query(collection(db,'atleti'), where('gruppoId','==', nuovoId)));
+      const omonimo = snapDest.docs.some(d => String(d.data().nome || '').trim().toLowerCase() === a.nome.trim().toLowerCase());
+      if(omonimo){
+        fb.textContent = `In ${GRUPPI[nuovoId].nome} c'è già un atleta con questo nome. Correggi prima uno dei due nomi.`;
+        return;
+      }
+      const vecchio = GRUPPI[adminRosterGruppoId];
+      const voce = { da: adminRosterGruppoId, daNome: vecchio ? vecchio.nome : '', a: nuovoId, aNome: GRUPPI[nuovoId].nome, data };
+      await updateDoc(doc(db,'atleti', a.id), { gruppoId: nuovoId, storicoGruppi: [...(a.storicoGruppi || []), voce] });
+      const nomeSpostato = a.nome;
+      chiudiSpostaAtleta();
+      const fbLista = document.getElementById('admin-bulk-feedback');
+      if(fbLista) fbLista.textContent = `${nomeSpostato} spostato in ${GRUPPI[nuovoId].nome} ✓`;
+    } catch(err){
+      console.error('Spostamento atleta non riuscito:', err);
+      fb.textContent = err.code === 'permission-denied'
+        ? '⚠️ Permessi Firestore mancanti per modificare il gruppo dell\'atleta.'
+        : '⚠️ Errore durante lo spostamento, riprova.';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('sposta-annulla').addEventListener('click', chiudiSpostaAtleta);
+  document.getElementById('sposta-conferma').addEventListener('click', confermaSpostaAtleta);
+  document.getElementById('sposta-overlay').addEventListener('click', e => { if(e.target.id === 'sposta-overlay') chiudiSpostaAtleta(); });
 
   // Menù a tendina "Squadre" nella home Società: alla scelta mostra il dettaglio
   // del gruppo scelto, riusando lo stesso pannello già esistente (renderDettaglioGruppo).
@@ -3791,7 +3875,7 @@
     if(adminRosterUnsub) adminRosterUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
     adminRosterUnsub = onSnapshot(q, snap => {
-      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', dataNascita: d.data().dataNascita || '', archiviato: !!d.data().archiviato })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', dataNascita: d.data().dataNascita || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderAdminRosterList();
     });
 
@@ -3810,7 +3894,7 @@
         const cert = statoCertificato(a.scadenzaCertificato);
         return `
         <div class="roster-item">
-          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}</span>
+          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}${(a.storicoGruppi || []).length > 0 ? (() => { const sp = a.storicoGruppi[a.storicoGruppi.length - 1]; return `<span class="sposta-nota">Da ${escHtml(sp.daNome || '—')} · ${sp.data ? new Date(sp.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}</span>`; })() : ''}</span>
           <span style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
             <span style="display:flex; flex-direction:column; gap:3px;">
               <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Nascita</label>
@@ -3820,6 +3904,7 @@
               <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Scadenza certificato</label>
               <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
             </span>
+            <button type="button" class="btn-sposta" data-id="${a.id}" title="Sposta in un altro gruppo" aria-label="Sposta ${escHtml(a.nome)} in un altro gruppo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10h13l-3-3"/><path d="M17 14H4l3 3"/></svg> Sposta</button>
             <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
           </span>
         </div>
@@ -3842,8 +3927,17 @@
     list.querySelectorAll('.btn-edit-icon').forEach(btn => {
       btn.addEventListener('click', async () => {
         const nuovo = prompt('Correggi il nome (aggiorna anche presenze e risultati già salvati):', btn.dataset.nome);
-        if(nuovo) await rinominaAtleta(btn.dataset.id, adminRosterGruppoId, btn.dataset.nome, nuovo);
+        if(nuovo){
+          const at = adminRosterDocs.find(x => x.id === btn.dataset.id);
+          const altriGruppi = [];
+          ((at && at.storicoGruppi) || []).forEach(e => { if(e.da) altriGruppi.push(e.da); if(e.a) altriGruppi.push(e.a); });
+          await rinominaAtleta(btn.dataset.id, adminRosterGruppoId, btn.dataset.nome, nuovo, altriGruppi);
+        }
       });
+    });
+
+    list.querySelectorAll('.btn-sposta').forEach(btn => {
+      btn.addEventListener('click', () => apriSpostaAtleta(btn.dataset.id));
     });
 
     list.querySelectorAll('.btn-remove').forEach(btn => {
@@ -6762,6 +6856,33 @@
     controllaRegistrazioneEsistente();
   });
 </script>
+
+<!-- FINESTRA: sposta atleta in un altro gruppo (società) -->
+<div id="sposta-overlay" class="sposta-overlay" style="display:none;">
+  <div class="sposta-sheet" role="dialog" aria-modal="true" aria-labelledby="sposta-titolo">
+    <h3 id="sposta-titolo" style="margin:0 0 2px; font-size:16px;">Sposta atleta</h3>
+    <p id="sposta-sub" style="margin:0 0 14px; font-size:12.5px; color:var(--text-dim);"></p>
+    <div class="fisico-campo" style="margin-bottom:10px;">
+      <label for="sposta-gruppo">Nuovo gruppo</label>
+      <select id="sposta-gruppo"></select>
+    </div>
+    <div class="fisico-campo" style="margin-bottom:14px;">
+      <label for="sposta-data">Dal</label>
+      <input type="date" id="sposta-data">
+    </div>
+    <div class="sposta-riepilogo">
+      <p class="sposta-riep-titolo">Cosa succede</p>
+      <p><span class="ok">✓</span> La scheda segue l'atleta</p>
+      <p><span class="ok">✓</span> Il passaggio resta annotato nello storico</p>
+      <p><span class="info">i</span> Le presenze e i risultati passati restano nel gruppo di prima</p>
+    </div>
+    <p id="sposta-feedback" class="save-feedback" style="min-height:18px;"></p>
+    <div class="sposta-azioni">
+      <button type="button" class="btn-secondary" id="sposta-annulla">Annulla</button>
+      <button type="button" class="btn-primary" id="sposta-conferma" style="width:auto; padding:11px 22px;">Sposta atleta</button>
+    </div>
+  </div>
+</div>
 
 <div id="menu-overlay"></div>
 <div id="side-panel">
