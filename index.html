@@ -1037,6 +1037,29 @@
     font-size:13.5px;
     font-family:'Inter',sans-serif;
   }
+  .report-atleti-riga{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 18px; margin-bottom:14px; box-shadow:var(--btn-shadow);}
+  .report-atleti-num{display:flex; align-items:baseline; gap:8px;}
+  .report-atleti-num .kpi-value{font-size:26px;}
+  .report-atleti-num .kpi-label{font-size:13px;}
+  .report-atleti-riga .kpi-ritirati{margin:0; font-size:12px; padding:3px 10px; border-radius:12px; background:color-mix(in srgb, var(--clay) 12%, var(--surface));}
+  .report-summary-flex{display:flex; align-items:center; justify-content:space-between;}
+  .report-summary-num{display:flex; align-items:center; gap:8px; font-size:15px;}
+  .report-summary-num .chev{width:16px; height:16px; fill:none; stroke:var(--text-dim); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s;}
+  details[open] > .report-summary-flex .chev{transform:rotate(180deg);}
+  .report-mini-grid{display:flex; gap:8px; margin-bottom:12px; align-items:stretch;}
+  .report-mini{background:var(--bg-track); border-radius:10px; padding:8px 10px;}
+  .report-mini small{display:block; font-size:11px; color:var(--text-dim); margin-bottom:2px;}
+  .report-mini strong{font-size:17px;}
+  .report-mini-largo{flex:1; min-width:0;}
+  .report-barre{display:flex; align-items:flex-end; gap:5px; height:62px;}
+  .report-barra{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px;}
+  .report-barra .n{font-size:10px; color:var(--text-dim);}
+  .report-barra .b{width:100%; max-width:22px; background:var(--primary); opacity:.75; border-radius:3px 3px 0 0;}
+  .report-barra .m{font-size:9.5px; color:var(--text-dim);}
+  .atleta-row.atleta-row-perc{display:grid; grid-template-columns:1fr 56px auto; gap:10px; align-items:center;}
+  .perc-bar{height:5px; border-radius:3px; background:var(--bg-track); overflow:hidden;}
+  .perc-bar span{display:block; height:100%; background:var(--primary);}
+  .perc-bar.bassa span{background:var(--danger);}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -1826,21 +1849,28 @@
       <h2 id="report-group-name" style="margin-top:10px;">—</h2>
       <p class="sub">Dati calcolati dalle presenze registrate nell'app.</p>
 
-      <div class="kpi-grid">
-        <div class="kpi-card"><span class="kpi-value" id="kpi-allenamenti">0</span><span class="kpi-label">Allenamenti</span></div>
-        <div class="kpi-card"><span class="kpi-value" id="kpi-gare">0</span><span class="kpi-label">Gare</span></div>
-        <div class="kpi-card"><span class="kpi-value" id="kpi-atleti">0</span><span class="kpi-label">Atleti</span><span class="kpi-ritirati" id="kpi-atleti-ritirati" style="display:none;"></span></div>
-        <div class="kpi-card"><span class="kpi-value" id="kpi-media">0</span><span class="kpi-label">Media/sessione</span></div>
+      <div class="report-atleti-riga">
+        <div class="report-atleti-num"><span class="kpi-value" id="kpi-atleti">0</span><span class="kpi-label">atleti</span></div>
+        <span class="kpi-ritirati" id="kpi-atleti-ritirati" style="display:none;"></span>
       </div>
 
       <details class="report-section">
-        <summary>⭐ Presenze allenamenti</summary>
-        <div class="atleti-list" id="lista-allenamenti"></div>
+        <summary class="report-summary-flex"><span>⭐ Allenamenti</span><span class="report-summary-num"><span id="kpi-allenamenti">0</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
+        <div>
+          <div class="report-mini-grid">
+            <div class="report-mini"><small>Media per sessione</small><strong id="kpi-media">0</strong></div>
+            <div class="report-mini report-mini-largo"><small>Sessioni per mese</small><div class="report-barre" id="report-mensile-allenamenti"></div></div>
+          </div>
+          <div class="atleti-list" id="lista-allenamenti"></div>
+        </div>
       </details>
 
       <details class="report-section">
-        <summary>🏅 Partecipazione gare</summary>
-        <div class="atleti-list" id="lista-gare"></div>
+        <summary class="report-summary-flex"><span>🏅 Gare</span><span class="report-summary-num"><span id="kpi-gare">0</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
+        <div>
+          <div class="report-mini" style="margin-bottom:12px;"><small>Medaglie del gruppo</small><strong id="report-medaglie-gruppo">—</strong></div>
+          <div class="atleti-list" id="lista-gare"></div>
+        </div>
       </details>
     </main>
   </section>
@@ -6000,7 +6030,7 @@
     document.getElementById('kpi-allenamenti').textContent = d.kpi.allenamenti;
     document.getElementById('kpi-gare').textContent = d.kpi.gare;
     document.getElementById('kpi-atleti').textContent = d.kpi.atleti;
-    document.getElementById('kpi-media').textContent = d.kpi.media;
+    document.getElementById('kpi-media').textContent = String(d.kpi.media).replace('.', ',');
     const ritiratiEl = document.getElementById('kpi-atleti-ritirati');
     if(d.kpi.ritiratiStagione > 0){
       ritiratiEl.textContent = `${d.kpi.ritiratiStagione} ritirat${d.kpi.ritiratiStagione===1?'o':'i'} in stagione`;
@@ -6017,17 +6047,38 @@
       const frecce = { up:['↑','trend-up'], down:['↓','trend-down'], stable:['→','trend-stable'] };
       listaAll.innerHTML = d.listaAllenamenti.map(a => {
         const f = a.trend ? frecce[a.trend] : null;
+        const perc = d.kpi.allenamenti > 0 ? Math.min(100, Math.round(a.totale / d.kpi.allenamenti * 100)) : 0;
         return `
-          <div class="atleta-row">
-            <span>${a.nome}</span>
+          <div class="atleta-row atleta-row-perc">
+            <span>${escHtml(a.nome)}</span>
+            <span class="perc-bar${perc < 50 ? ' bassa' : ''}"><span style="width:${perc}%"></span></span>
             <span class="conteggio-wrap">
-              <span>${a.totale}</span>
+              <span>${a.totale} · ${perc}%</span>
               ${f ? `<span class="trend-arrow ${f[1]}">${f[0]}</span>` : ''}
             </span>
           </div>
         `;
       }).join('');
     }
+
+    // Sessioni per mese (barre)
+    const barreEl = document.getElementById('report-mensile-allenamenti');
+    const maxMese = Math.max(0, ...d.mensile.map(m => m.allenamenti));
+    barreEl.innerHTML = maxMese === 0
+      ? '<span class="empty-note" style="font-size:12px;">Nessun dato ancora.</span>'
+      : d.mensile.map(m => `
+          <div class="report-barra">
+            <span class="n">${m.allenamenti}</span>
+            <div class="b" style="height:${Math.max(3, Math.round(m.allenamenti / maxMese * 38))}px;"></div>
+            <span class="m">${escHtml(String(m.label).split(' ')[0].slice(0, 3))}</span>
+          </div>`).join('');
+
+    // Medaglie totali del gruppo
+    const totOro = d.listaGare.reduce((t, a) => t + (a.oro || 0), 0);
+    const totArg = d.listaGare.reduce((t, a) => t + (a.argento || 0), 0);
+    const totBro = d.listaGare.reduce((t, a) => t + (a.bronzo || 0), 0);
+    document.getElementById('report-medaglie-gruppo').textContent =
+      (totOro + totArg + totBro) === 0 ? 'Nessun podio ancora' : `🥇${totOro}  🥈${totArg}  🥉${totBro}`;
 
     // Lista partecipazione gare
     const listaGareEl = document.getElementById('lista-gare');
@@ -6302,7 +6353,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Numeri del gruppo, presenze di ogni atleta (con ↑ ↓ → se sono in aumento, calo o stabili) e partecipazione gare con i podi 🥇🥈🥉 di ciascuno.
+          Numero di atleti; nel menu Allenamenti media, sessioni per mese e % di presenza di ogni atleta (con ↑ ↓ → se in aumento, calo o stabile); nel menu Gare le medaglie del gruppo e i podi 🥇🥈🥉 di ciascuno.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi dalla società</h3>
