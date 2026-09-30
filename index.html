@@ -558,6 +558,19 @@
   .test-tabella thead th:first-child{background:var(--bg-track);}
   .test-tabella tbody tr{cursor:pointer;}
   .test-tabella tbody tr:hover td{background:var(--bg-track);}
+  .test-modifica{display:inline-flex; vertical-align:middle; margin-left:6px; padding:4px; border:1px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text-dim); cursor:pointer;}
+  .test-modifica svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .test-tabella tbody tr.in-modifica td{background:var(--bg-track);}
+  .scheda-azioni-riga{display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; align-items:stretch; margin-top:4px;}
+  .scheda-azione{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    min-height:64px; padding:8px 6px; margin:0; width:100%; box-sizing:border-box;
+    font-size:12.5px; line-height:1.25; text-align:center; border-radius:12px;
+  }
+  .scheda-azione svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .scheda-azione-stagione{border:1.5px solid var(--border-strong); background:var(--surface-2);}
+  .scheda-azione-stagione label{font-size:11.5px; color:var(--text-dim);}
+  .scheda-azione-stagione select{width:100%; padding:6px 4px; font-size:13.5px; border-radius:8px;}
   .test-unita{display:block; font-size:11px; font-weight:400; color:var(--text-dim);}
   .test-delta{font-size:11px; margin-left:5px; font-weight:600;}
   .test-delta.meglio{color:var(--primary);}
@@ -1917,7 +1930,7 @@
 
       <!-- PANNELLO DI RIEPILOGO: sempre aperto, sola lettura, si aggiorna da solo -->
       <div class="riepilogo">
-        <p class="riepilogo-titolo">🔎 Riepilogo — colpo d'occhio</p>
+        <p class="riepilogo-titolo">🔎 Riepilogo</p>
         <div id="scheda-riepilogo-corpo"></div>
       </div>
 
@@ -2015,15 +2028,19 @@
       </details>
       </div>
 
-      <div class="save-bar">
-        <button type="button" id="condividi-scheda-btn" class="btn-secondary">📤 Condividi scheda</button>
-      </div>
-      <div class="save-bar" style="margin-top:10px; flex-wrap:wrap;">
-        <div class="stagione-select-wrap">
-          <label for="report-stagione-select" style="font-size:12.5px; color:var(--text-dim);">Stagione:</label>
+      <div class="scheda-azioni-riga">
+        <button type="button" id="condividi-scheda-btn" class="btn-secondary scheda-azione">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>
+          <span>Condividi scheda</span>
+        </button>
+        <div class="scheda-azione scheda-azione-stagione">
+          <label for="report-stagione-select">Stagione</label>
           <select id="report-stagione-select"></select>
         </div>
-        <button type="button" id="report-stagione-btn" class="btn-secondary">🖨️ Report stagione (PDF)</button>
+        <button type="button" id="report-stagione-btn" class="btn-secondary scheda-azione">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="5" y="9" width="14" height="8" rx="2"/><path d="M7 14h10v6H7z"/></svg>
+          <span>Report stagione PDF</span>
+        </button>
       </div>
     </main>
   </section>
@@ -5219,7 +5236,7 @@
 
     // Se il form è aperto, conserva quanto già scritto prima di ridisegnare
     const formAperto = document.getElementById('scheda-test-form');
-    if(formAperto){
+    if(formAperto && formAperto.dataset.riga === String(schedaTestRigaInModifica)){
       const valoriTmp = {};
       formAperto.querySelectorAll('[data-col]').forEach(inp => { valoriTmp[inp.dataset.col] = inp.value; });
       schedaTestBozza = { periodo: document.getElementById('test-periodo').value, valori: valoriTmp };
@@ -5254,17 +5271,17 @@
           }
           return `<td>${escHtml(v)}${delta}</td>`;
         }).join('');
-        return `<tr data-id="${r.id}"><td>${escHtml(r.periodo)}</td>${celle}</tr>`;
+        return `<tr data-id="${r.id}"${r.id === schedaTestRigaInModifica ? ' class="in-modifica"' : ''}><td>${escHtml(r.periodo)} <button type="button" class="test-modifica" data-id="${r.id}" aria-label="Modifica rilevazione ${escHtml(r.periodo)}"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 7l3 3"/></svg></button></td>${celle}</tr>`;
       }).join('');
       html += `<div class="test-tabella-wrap"><table class="test-tabella"><thead><tr><th>Data / periodo</th>${intest}</tr></thead><tbody>${corpoRighe}</tbody></table></div>`;
-      html += '<p class="test-suggerimento">Scorri di lato per vedere tutte le colonne. Tocca una riga per modificarla.</p>';
+      html += '<p class="test-suggerimento">Scorri di lato per vedere tutte le colonne. Tocca la matita (o la riga) per correggere una rilevazione.</p>';
     }
 
     if(schedaTestRigaInModifica !== null){
       const esistente = righe.find(r => r.id === schedaTestRigaInModifica);
       const base = schedaTestBozza || (esistente ? { periodo: esistente.periodo, valori: esistente.valori || {} } : { periodo:'', valori:{} });
       html += `
-        <div class="test-form" id="scheda-test-form">
+        <div class="test-form" id="scheda-test-form" data-riga="${schedaTestRigaInModifica}">
           <div class="fisico-campo" style="grid-column:1/-1;">
             <label for="test-periodo">Data / periodo</label>
             <input type="text" id="test-periodo" placeholder="es. Set 2026" value="${escHtml(base.periodo)}">
@@ -5289,18 +5306,25 @@
     }
     corpo.innerHTML = html;
 
-    corpo.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => {
-      schedaTestRigaInModifica = tr.dataset.id;
+    const apriFormTest = id => {
+      schedaTestRigaInModifica = id;
       schedaTestBozza = null;
       renderSchedaTestMotori();
+      const f = document.getElementById('scheda-test-form');
+      if(f){
+        f.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        const primo = document.getElementById('test-periodo');
+        if(primo) primo.focus({ preventScroll:true });
+      }
+    };
+    corpo.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => apriFormTest(tr.dataset.id)));
+    corpo.querySelectorAll('.test-modifica').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      apriFormTest(b.dataset.id);
     }));
 
     const nuova = document.getElementById('test-nuova-btn');
-    if(nuova) nuova.addEventListener('click', () => {
-      schedaTestRigaInModifica = 'nuova';
-      schedaTestBozza = null;
-      renderSchedaTestMotori();
-    });
+    if(nuova) nuova.addEventListener('click', () => apriFormTest('nuova'));
     const colBtn = document.getElementById('test-colonne-btn');
     if(colBtn) colBtn.addEventListener('click', () => {
       schedaTestColonneBozza = testColonneGruppo().map(c => ({ ...c }));
@@ -5340,9 +5364,15 @@
       } else {
         schedaDatiCorrenti.testMotori.push({ id: nuovoIdLocale(), periodo, valori });
       }
+      try{
+        await salvaScheda(schedaAtletaId);
+      } catch(err){
+        console.error('Salvataggio test motori non riuscito:', err);
+        alert('Non sono riuscito a salvare la rilevazione. Riprova.');
+        return;
+      }
       schedaTestRigaInModifica = null;
       schedaTestBozza = null;
-      await salvaScheda(schedaAtletaId);
       renderSchedaTestMotori();
     });
   }
