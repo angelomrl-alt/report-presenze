@@ -537,6 +537,7 @@
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
   }
   .griglia-azioni .corsia:hover, .griglia-azioni .corsia:active{background:var(--bg-track);}
+  .griglia-azioni.tre-card .c-report{grid-column:1 / -1;}
   .griglia-azioni .corsia-riga,
   .griglia-azioni .corsia-freccia{display:none;}
   .griglia-azioni .corsia-corpo{flex-direction:column; align-items:flex-start; gap:8px; padding:14px;}
@@ -567,6 +568,34 @@
   .test-colonna-riga{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;}
   .test-colonna-riga input[type=text]{flex:1 1 120px; padding:9px 10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:inherit;}
   .test-meglio{font-size:12px; color:var(--text-dim); display:flex; gap:4px; align-items:center;}
+
+  /* Scheda atleta: icone sezione + layout compatto Cadetti */
+  .sez-icona{display:inline-flex; vertical-align:-4px; margin-right:8px;}
+  .sez-icona svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .sez-test .sez-icona{color:var(--primary);}
+  .sez-obiettivi .sez-icona{color:var(--clay);}
+  .sez-note .sez-icona{color:var(--c-agnese);}
+
+  .riepilogo-chips{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .riepilogo-chip{background:var(--bg-track); border-radius:10px; padding:9px 12px; min-width:0;}
+  .riepilogo-chip .k{display:block; font-size:11px; color:var(--text-dim);}
+  .riepilogo-chip .v{display:block; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .riepilogo-chip.largo{grid-column:1 / -1;}
+
+  #view-scheda-atleta.scheda-compatta .riepilogo{padding:12px; border-width:1px; margin-bottom:12px;}
+  #view-scheda-atleta.scheda-compatta .riepilogo-titolo{margin-bottom:10px;}
+  #view-scheda-atleta.scheda-compatta .medico-badge{padding:9px 12px; margin-bottom:12px;}
+  #scheda-sezioni.scheda-griglia{display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start; margin-bottom:12px;}
+  #scheda-sezioni.scheda-griglia .report-section{margin:0; padding:0 14px; border-radius:12px;}
+  #scheda-sezioni.scheda-griglia .report-section[open]{grid-column:1 / -1;}
+  #scheda-sezioni.scheda-griglia .report-section summary{
+    display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:14px 0; font-size:14.5px;
+  }
+  #scheda-sezioni.scheda-griglia .report-section[open] summary{flex-direction:row; align-items:center; gap:0;}
+  #scheda-sezioni.scheda-griglia .sez-icona{margin-right:0; vertical-align:0;}
+  #scheda-sezioni.scheda-griglia .report-section[open] .sez-icona{margin-right:8px;}
+  #scheda-sezioni.scheda-griglia .report-section > div{padding:12px 0;}
+  #view-scheda-atleta.scheda-compatta .save-bar .btn-secondary{padding:9px 14px; font-size:13px;}
 
   .eventi-strip{
     margin-top:20px; border-radius:var(--radius); padding:16px 18px;
@@ -1461,6 +1490,12 @@
   .disciplina-blocco-report{margin-bottom:20px;}
   .disciplina-blocco-report .titolo-disciplina-report{font-size:13px; font-weight:700; margin-bottom:6px; display:flex; justify-content:space-between;}
   .disciplina-blocco-report .valore-attuale-report{color:#2f9e6e;}
+  table.test-report{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.test-report th{text-align:left; padding:7px 6px; border-bottom:2px solid #dcd8cc; font-weight:600; vertical-align:bottom;}
+  table.test-report td{padding:7px 6px; border-bottom:1px solid #dcd8cc;}
+  table.test-report .unita-report{display:block; font-size:10.5px; font-weight:400; color:#5c584c;}
+  table.test-report .delta-su{color:#2f9e6e; font-size:10.5px; font-weight:600; margin-left:4px;}
+  table.test-report .delta-giu{color:#b5482f; font-size:10.5px; font-weight:600; margin-left:4px;}
   table.obiettivi-report{width:100%; border-collapse:collapse; font-size:13px;}
   table.obiettivi-report td{padding:7px 4px; border-bottom:1px solid #dcd8cc;}
   table.obiettivi-report td:first-child{width:24px; text-align:center;}
@@ -1886,8 +1921,9 @@
         <div id="scheda-riepilogo-corpo"></div>
       </div>
 
+      <div id="scheda-sezioni">
       <!-- DATI FISICI + STORICO CRESCITA (unica finestra) -->
-      <details class="report-section">
+      <details class="report-section" id="scheda-fisico-section">
         <summary>🧍 Dati fisici e crescita</summary>
         <div>
           <div class="fisico-grid">
@@ -1931,7 +1967,7 @@
       </details>
 
       <!-- RECORD PERSONALI -->
-      <details class="report-section">
+      <details class="report-section" id="scheda-record-section">
         <summary>🏅 Record personali</summary>
         <div>
           <div id="scheda-discipline-tabs" class="discipline-tabs"></div>
@@ -1949,14 +1985,14 @@
       </details>
 
       <!-- TEST MOTORI (solo Cadetti, colonne condivise dal gruppo) -->
-      <details class="report-section" id="scheda-test-section" style="display:none;">
-        <summary>🏃 Test motori</summary>
+      <details class="report-section sez-test" id="scheda-test-section" style="display:none;">
+        <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 13V9"/><path d="M10 3h4"/></svg></span>Test motori</summary>
         <div id="scheda-test-corpo"></div>
       </details>
 
       <!-- OBIETTIVI STAGIONALI -->
-      <details class="report-section">
-        <summary>🎯 Obiettivi stagionali</summary>
+      <details class="report-section sez-obiettivi">
+        <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg></span>Obiettivi stagionali</summary>
         <div>
           <div id="scheda-obiettivi-list"></div>
           <div class="nuovo-obiettivo">
@@ -1967,8 +2003,8 @@
       </details>
 
       <!-- NOTE LIBERE -->
-      <details class="report-section">
-        <summary>📝 Note dell'allenatore</summary>
+      <details class="report-section sez-note">
+        <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h6"/></svg></span>Note dell'allenatore</summary>
         <div>
           <div id="scheda-note-list"></div>
           <div class="nuova-nota">
@@ -1977,6 +2013,7 @@
           </div>
         </div>
       </details>
+      </div>
 
       <div class="save-bar">
         <button type="button" id="condividi-scheda-btn" class="btn-secondary">📤 Condividi scheda</button>
@@ -4773,6 +4810,25 @@
     const cont = document.getElementById('scheda-riepilogo-corpo');
     if(!schedaDatiCorrenti){ cont.innerHTML = ''; return; }
 
+    if(schedaModelloCadetti()){
+      const etaC = calcolaEta(schedaAtletaDataNascita);
+      const stagioneC = stagioneCorrente();
+      const obC = (schedaDatiCorrenti.obiettivi || []).filter(o => o.stagione === stagioneC);
+      const fattiC = obC.filter(o => o.fatto).length;
+      const testC = schedaDatiCorrenti.testMotori || [];
+      const ultimoTest = testC.length > 0 ? testC[testC.length - 1].periodo : '—';
+      const notaC = (schedaDatiCorrenti.note || []).slice().sort((a,b) => (b.data||'').localeCompare(a.data||''))[0];
+      cont.innerHTML = `
+        <div class="riepilogo-chips">
+          <div class="riepilogo-chip"><span class="k">Età</span><span class="v">${etaC !== null ? etaC + ' anni' : '—'}</span></div>
+          <div class="riepilogo-chip"><span class="k">Obiettivi ${stagioneC}</span><span class="v">${obC.length > 0 ? fattiC + '/' + obC.length : '—'}</span></div>
+          <div class="riepilogo-chip"><span class="k">Ultimo test</span><span class="v">${escHtml(ultimoTest)}</span></div>
+          <div class="riepilogo-chip"><span class="k">Rilevazioni</span><span class="v">${testC.length}</span></div>
+          <div class="riepilogo-chip largo"><span class="k">Ultima nota</span><span class="v">${notaC ? escHtml(notaC.testo) : '—'}</span></div>
+        </div>`;
+      return;
+    }
+
     const righe = [];
 
     // Età
@@ -5095,7 +5151,16 @@
     }));
   }
 
+  function applicaLayoutScheda(){
+    const cad = schedaModelloCadetti();
+    document.getElementById('view-scheda-atleta').classList.toggle('scheda-compatta', cad);
+    document.getElementById('scheda-sezioni').classList.toggle('scheda-griglia', cad);
+    document.getElementById('scheda-fisico-section').style.display = cad ? 'none' : '';
+    document.getElementById('scheda-record-section').style.display = cad ? 'none' : '';
+  }
+
   function renderSchedaTestMotori(){
+    applicaLayoutScheda();
     const sez = document.getElementById('scheda-test-section');
     const corpo = document.getElementById('scheda-test-corpo');
     if(!schedaModelloCadetti()){ sez.style.display = 'none'; return; }
@@ -5461,7 +5526,7 @@
       const attuale = perDisciplina.get(r.disciplina);
       if(!attuale || (r.data||'') > (attuale.data||'')) perDisciplina.set(r.disciplina, r);
     });
-    if(perDisciplina.size > 0){
+    if(perDisciplina.size > 0 && !schedaModelloCadetti()){
       testo += `\n\n🏅 Record personali:`;
       Array.from(perDisciplina.entries()).forEach(([disciplina, r]) => {
         testo += `\n${disciplina}: ${r.valore}`;
@@ -5625,6 +5690,43 @@
         `).join('')
       : '<p class="empty-note-report">Nessuna nota registrata in questa stagione.</p>';
 
+    // Cadetti: niente dati fisici/crescita/record, al loro posto la tabella Test motori
+    const cadReport = schedaModelloCadetti();
+    ['stampa-sez-fisici','stampa-sez-crescita','stampa-sez-record'].forEach(id => {
+      document.getElementById(id).style.display = cadReport ? 'none' : '';
+    });
+    const sezTest = document.getElementById('stampa-sez-test');
+    sezTest.style.display = cadReport ? '' : 'none';
+    if(cadReport){
+      const colTest = testColonneGruppo();
+      const righeTest = schedaDatiCorrenti.testMotori || [];
+      document.getElementById('stampa-test-motori').innerHTML = righeTest.length === 0
+        ? '<p class="empty-note-report">Nessuna rilevazione registrata.</p>'
+        : `<table class="test-report">
+            <thead><tr><th>Data / periodo</th>${colTest.map(c => `<th>${escHtml(c.nome)}${c.unita ? `<span class="unita-report">${escHtml(c.unita)}</span>` : ''}</th>`).join('')}</tr></thead>
+            <tbody>${righeTest.map((r, i) => `<tr><td>${escHtml(r.periodo)}</td>${colTest.map(c => {
+              const v = (r.valori && r.valori[c.id]) || '';
+              if(v === '') return '<td>—</td>';
+              let delta = '';
+              const n = testNum(v);
+              if(n !== null){
+                for(let j = i - 1; j >= 0; j--){
+                  const pn = testNum(righeTest[j].valori && righeTest[j].valori[c.id]);
+                  if(pn !== null){
+                    const d = n - pn;
+                    if(Math.abs(d) > 0.0001){
+                      const meglio = c.minoreMeglio ? d < 0 : d > 0;
+                      delta = `<span class="${meglio ? 'delta-su' : 'delta-giu'}">${d > 0 ? '+' : '−'}${testFmt(Math.abs(d))}</span>`;
+                    }
+                    break;
+                  }
+                }
+              }
+              return `<td>${escHtml(v)}${delta}</td>`;
+            }).join('')}</tr>`).join('')}</tbody>
+          </table>`;
+    }
+
     // Attiva la vista di stampa e stampa
     document.body.classList.add('stampa-attiva');
     window.print();
@@ -5750,7 +5852,9 @@
         document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${atletiAttiviHome.length} atleti` : "";
         renderBannerCertificati('cert-avviso-banner-home', atletiAttiviHome);
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
-        document.getElementById('card-schede').style.display = (g && g.nome === 'Cadetti') ? '' : 'none';
+        const schedeAttive = !!(g && g.nome === 'Cadetti');
+        document.getElementById('card-schede').style.display = schedeAttive ? '' : 'none';
+        document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
         renderMessaggiCoach();
         showView('view-coach');
       } else {
@@ -5889,6 +5993,9 @@
     document.getElementById('sp-guida')?.addEventListener('click', () => {
       chiudiPannello();
       document.getElementById('guida-content').innerHTML = isRuoloSocieta() ? guidaContenutoSocieta : guidaContenutoAllenatore;
+      if(!isRuoloSocieta() && !schedaModelloCadetti()){
+        document.querySelectorAll('#guida-content .guida-schede').forEach(el => el.remove());
+      }
       vistaPrimaGuida = document.querySelector('.view.active')?.id || 'view-coach';
       showView('view-guida');
     });
@@ -5956,10 +6063,12 @@
           Prepara il messaggio con i risultati del giorno, pronto per WhatsApp. Puoi allegare anche delle foto (facoltativo) con il link sotto al bottone.
         </p>
 
+        <div class="guida-schede">
         <h3 style="margin:0 0 8px; font-size:15px;">📇 Schede atleti</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Un profilo per atleta: crescita, record personali con grafico, obiettivi stagionali e note. Puoi anche generare un report stagionale in PDF. Per ora attiva solo su alcuni gruppi.
+          Un profilo per atleta: test motori (tabella con le rilevazioni nel tempo), obiettivi stagionali e note. Puoi anche generare un report stagionale in PDF.
         </p>
+        </div>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
@@ -6649,19 +6758,24 @@
       <span id="stampa-badge-medica-testo"></span>
     </div>
 
-    <div class="sezione-report">
+    <div class="sezione-report" id="stampa-sez-fisici">
       <h2>Dati fisici</h2>
       <div class="griglia-fisici-report" id="stampa-dati-fisici"></div>
     </div>
 
-    <div class="sezione-report">
+    <div class="sezione-report" id="stampa-sez-crescita">
       <h2>Andamento crescita nella stagione</h2>
       <div class="grafici-crescita-report" id="stampa-grafici-crescita"></div>
     </div>
 
-    <div class="sezione-report">
+    <div class="sezione-report" id="stampa-sez-record">
       <h2>Record personali — progressione nella stagione</h2>
       <div id="stampa-record-personali"></div>
+    </div>
+
+    <div class="sezione-report" id="stampa-sez-test" style="display:none;">
+      <h2>Test motori</h2>
+      <div id="stampa-test-motori"></div>
     </div>
 
     <div class="sezione-report">
