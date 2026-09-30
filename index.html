@@ -2055,15 +2055,11 @@
         <div id="scheda-test-corpo"></div>
       </details>
 
-      <!-- OBIETTIVI STAGIONALI -->
-      <details class="report-section sez-obiettivi">
-        <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg></span>Obiettivi stagionali</summary>
+      <!-- PRESTAZIONI (data, specialità, dato rilevato + andamento) -->
+      <details class="report-section sez-obiettivi" id="scheda-prestazioni-section">
+        <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg></span>Prestazioni</summary>
         <div>
-          <div id="scheda-obiettivi-list"></div>
-          <div class="nuovo-obiettivo">
-            <input type="text" id="scheda-nuovo-obiettivo-input" placeholder="Nuovo obiettivo...">
-            <button type="button" id="scheda-nuovo-obiettivo-btn" class="btn-secondary" style="padding:9px 16px;">+</button>
-          </div>
+          <div id="scheda-prestazioni-corpo"></div>
         </div>
       </details>
 
@@ -2567,7 +2563,7 @@
   let schedaCrescitaTipoSelezionato = 'altezza'; // 'altezza' | 'peso'
 
   function schedaDefault(){
-    return { fisico: { dataNascita:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [], crescita: [], testMotori: [] };
+    return { fisico: { dataNascita:'', dominante:'', note:'' }, record: [], obiettivi: [], note: [], crescita: [], testMotori: [], prestazioni: [] };
   }
 
   // Restituisce la stagione sportiva corrente nel formato "2025/26" (l'anno sportivo parte a settembre)
@@ -4847,6 +4843,7 @@
       (s.record && s.record.length > 0) ||
       (s.crescita && s.crescita.length > 0) ||
       (s.obiettivi && s.obiettivi.length > 0) ||
+      (s.prestazioni && s.prestazioni.length > 0) ||
       (s.note && s.note.length > 0)
     );
   }
@@ -4880,6 +4877,7 @@
     schedaAtletaNome = nome;
     schedaDisciplinaSelezionata = null;
     schedaTestRigaInModifica = null; schedaTestBozza = null; schedaTestColonneAperte = false;
+    prestazioneInModifica = null; prestazioneBozza = null;
     schedaDatiCorrenti = schedaDefault(); // mai null, evita crash se la lettura fallisce o è lenta
 
     document.getElementById('scheda-atleta-nome').textContent = nome;
@@ -4917,6 +4915,7 @@
       if(!schedaDatiCorrenti.note) schedaDatiCorrenti.note = [];
       if(!schedaDatiCorrenti.crescita) schedaDatiCorrenti.crescita = [];
       if(!schedaDatiCorrenti.testMotori) schedaDatiCorrenti.testMotori = [];
+      if(!schedaDatiCorrenti.prestazioni) schedaDatiCorrenti.prestazioni = [];
 
       // Migrazione una tantum: vecchi valori singoli altezza/peso -> prima riga dello storico crescita.
       // Importante: dopo la migrazione i vecchi campi legacy vengono rimossi definitivamente da fisico,
@@ -4948,7 +4947,7 @@
       renderSchedaRecordArea();
       renderSchedaTestMotori();
       renderSchedaCrescitaArea();
-      renderSchedaObiettivi();
+      renderSchedaPrestazioni();
       renderSchedaNote();
       renderSchedaRiepilogo();
       renderReportStagioneSelect();
@@ -4989,15 +4988,15 @@
     if(schedaModelloCadetti()){
       const etaC = calcolaEta(schedaAtletaDataNascita);
       const stagioneC = stagioneCorrente();
-      const obC = (schedaDatiCorrenti.obiettivi || []).filter(o => o.stagione === stagioneC);
-      const fattiC = obC.filter(o => o.fatto).length;
+      const prestC = schedaDatiCorrenti.prestazioni || [];
+      const ultimaPrest = prestC.length > 0 ? prestC[prestC.length - 1] : null;
       const testC = schedaDatiCorrenti.testMotori || [];
       const ultimoTest = testC.length > 0 ? testC[testC.length - 1].periodo : '—';
       const notaC = (schedaDatiCorrenti.note || []).slice().sort((a,b) => (b.data||'').localeCompare(a.data||''))[0];
       cont.innerHTML = `
         <div class="riepilogo-chips">
           <div class="riepilogo-chip"><span class="k">Età</span><span class="v">${etaC !== null ? etaC + ' anni' : '—'}</span></div>
-          <div class="riepilogo-chip"><span class="k">Obiettivi ${stagioneC}</span><span class="v">${obC.length > 0 ? fattiC + '/' + obC.length : '—'}</span></div>
+          <div class="riepilogo-chip"><span class="k">Ultima prestazione</span><span class="v">${ultimaPrest ? escHtml(ultimaPrest.specialita + ' · ' + ultimaPrest.valore) : '—'}</span></div>
           <div class="riepilogo-chip"><span class="k">Ultimo test</span><span class="v">${escHtml(ultimoTest)}</span></div>
           <div class="riepilogo-chip"><span class="k">Rilevazioni</span><span class="v">${testC.length}</span></div>
           <div class="riepilogo-chip largo"><span class="k">Ultima nota</span><span class="v">${notaC ? escHtml(notaC.testo) : '—'}</span></div>
@@ -5706,47 +5705,261 @@
     document.getElementById('scheda-crescita-nota').value = '';
   });
 
-  function renderSchedaObiettivi(){
-    const cont = document.getElementById('scheda-obiettivi-list');
-    const obiettivi = (schedaDatiCorrenti.obiettivi || []).slice().sort((a,b) => (b.stagione||'').localeCompare(a.stagione||''));
-    if(obiettivi.length === 0){
-      cont.innerHTML = '<p class="empty-note">Nessun obiettivo ancora.</p>';
-      return;
-    }
-    cont.innerHTML = obiettivi.map(o => `
-      <div class="obiettivo-row">
-        <div class="obiettivo-check${o.fatto ? ' fatto' : ''}" data-id="${o.id}">${o.fatto ? '✓' : ''}</div>
-        <span class="obiettivo-testo${o.fatto ? ' fatto' : ''}">${o.testo}</span>
-        <span class="obiettivo-anno">${o.stagione || ''}</span>
-        <button type="button" class="btn-remove" data-remove-id="${o.id}" style="flex-shrink:0;">✕</button>
-      </div>
-    `).join('');
+  // ---------- Prestazioni: data, specialità, dato rilevato (+ grafico andamento) ----------
+  let prestazioneInModifica = null;   // null | 'nuova' | id riga
+  let prestazioneBozza = null;
+  let andamentoPrestSpecialita = null;
 
-    cont.querySelectorAll('.obiettivo-check').forEach(chk => {
-      chk.addEventListener('click', async () => {
-        const ob = schedaDatiCorrenti.obiettivi.find(o => o.id === chk.dataset.id);
-        if(ob) ob.fatto = !ob.fatto;
+  // Legge un dato tipo "4 min", "4:05", "4'05''", "12,5 s", "5,20 m" e lo porta a numero.
+  // tempo = true per durate (valori più bassi = meglio), false per misure (più alti = meglio).
+  function leggiDatoPrestazione(testo){
+    const t = String(testo == null ? '' : testo).trim().toLowerCase().replace(',', '.');
+    if(!t) return null;
+    let m;
+    if((m = t.match(/^(\d+):(\d{1,2})(?:\.(\d+))?/))) return { n: +m[1] * 60 + +m[2] + (m[3] ? parseFloat('0.' + m[3]) : 0), tempo: true };
+    if((m = t.match(/^(\d+)\s*['’′]\s*(\d{1,2})(?:\.(\d+))?/))) return { n: +m[1] * 60 + +m[2] + (m[3] ? parseFloat('0.' + m[3]) : 0), tempo: true };
+    if((m = t.match(/^(\d+)\s*min\w*\s*(\d{1,2})(?:\.(\d+))?/))) return { n: +m[1] * 60 + +m[2] + (m[3] ? parseFloat('0.' + m[3]) : 0), tempo: true };
+    if((m = t.match(/^(\d+(?:\.\d+)?)\s*min/))) return { n: parseFloat(m[1]) * 60, tempo: true };
+    if((m = t.match(/^(\d+(?:\.\d+)?)\s*(?:s|sec|secondi|")\s*$/))) return { n: parseFloat(m[1]), tempo: true };
+    if((m = t.match(/^(\d+(?:\.\d+)?)/))) return { n: parseFloat(m[1]), tempo: false };
+    return null;
+  }
+
+  function fmtTempo(sec){
+    const dec = Math.round(sec * 10) / 10;
+    if(dec < 60) return testFmt(dec) + ' s';
+    const m = Math.floor(dec / 60);
+    const r = Math.round((dec - m * 60) * 10) / 10;
+    return m + ':' + (r < 10 ? '0' : '') + String(r).replace('.', ',');
+  }
+
+  function specialitaPrestazioni(righe){
+    const visti = [];
+    righe.forEach(r => { if(r.specialita && !visti.includes(r.specialita)) visti.push(r.specialita); });
+    return visti;
+  }
+
+  function renderSchedaPrestazioni(){
+    const corpo = document.getElementById('scheda-prestazioni-corpo');
+    if(!schedaDatiCorrenti){ corpo.innerHTML = ''; return; }
+    const righe = schedaDatiCorrenti.prestazioni || [];
+
+    // Se il modulo è aperto per la stessa riga, conserva quanto già scritto
+    const formAperto = document.getElementById('scheda-prestazioni-form');
+    if(formAperto && formAperto.dataset.riga === String(prestazioneInModifica)){
+      prestazioneBozza = {
+        data: document.getElementById('prest-data').value,
+        specialita: document.getElementById('prest-specialita').value,
+        valore: document.getElementById('prest-valore').value
+      };
+    }
+
+    let html = '';
+    if(righe.length === 0){
+      html += '<p class="empty-note">Nessuna prestazione ancora. Tocca "+ Nuova prestazione" per inserire la prima.</p>';
+    } else {
+      html += `<div class="test-tabella-wrap"><table class="test-tabella"><thead><tr><th>Data</th><th>Specialità</th><th>Dato</th></tr></thead><tbody>
+        ${righe.slice().reverse().map(r => `
+          <tr data-id="${r.id}"${r.id === prestazioneInModifica ? ' class="in-modifica"' : ''}>
+            <td>${escHtml(r.data || '—')}</td>
+            <td>${escHtml(r.specialita)}</td>
+            <td>${escHtml(r.valore)} <button type="button" class="test-modifica" data-id="${r.id}" aria-label="Modifica prestazione ${escHtml(r.specialita)}"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 7l3 3"/></svg></button></td>
+          </tr>`).join('')}
+      </tbody></table></div>
+      <p class="test-suggerimento">Dalla più recente. Tocca la matita (o la riga) per correggere.</p>`;
+    }
+
+    // Suggerimenti specialità: quelle già scritte + quelle delle gare del gruppo
+    const suggerite = new Set(specialitaPrestazioni(righe));
+    risultatiDocs.forEach(r => { if(r.disciplina) suggerite.add(String(r.disciplina).trim()); });
+    html += `<datalist id="prestazioni-specialita">${Array.from(suggerite).filter(Boolean).sort((a,b) => a.localeCompare(b)).map(n => `<option value="${escHtml(n)}"></option>`).join('')}</datalist>`;
+
+    if(prestazioneInModifica !== null){
+      const esistente = righe.find(r => r.id === prestazioneInModifica);
+      const base = prestazioneBozza || (esistente ? { data: esistente.data || '', specialita: esistente.specialita, valore: esistente.valore } : { data:'', specialita:'', valore:'' });
+      html += `
+        <div class="test-form" id="scheda-prestazioni-form" data-riga="${prestazioneInModifica}">
+          <div class="fisico-campo">
+            <label for="prest-data">Data</label>
+            <input type="text" id="prest-data" placeholder="es. settembre" value="${escHtml(base.data)}">
+          </div>
+          <div class="fisico-campo">
+            <label for="prest-specialita">Specialità</label>
+            <input type="text" id="prest-specialita" list="prestazioni-specialita" placeholder="es. 1000 m" autocomplete="off" value="${escHtml(base.specialita)}">
+          </div>
+          <div class="fisico-campo">
+            <label for="prest-valore">Dato rilevato</label>
+            <input type="text" id="prest-valore" placeholder="es. 4 min" value="${escHtml(base.valore)}">
+          </div>
+          <div class="test-azioni" style="grid-column:1/-1;">
+            <button type="button" class="btn-secondary" id="prest-salva-btn">Salva</button>
+            <button type="button" class="btn-secondary" id="prest-annulla-btn">Annulla</button>
+            ${esistente ? '<button type="button" class="btn-remove" id="prest-elimina-btn">Elimina</button>' : ''}
+          </div>
+        </div>`;
+    } else {
+      html += `
+        <div class="test-azioni">
+          <button type="button" class="btn-secondary" id="prest-nuova-btn">+ Nuova prestazione</button>
+          <button type="button" class="btn-secondary" id="prest-andamento-btn"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg> Andamento</button>
+        </div>`;
+    }
+    corpo.innerHTML = html;
+
+    const apriForm = id => {
+      prestazioneInModifica = id;
+      prestazioneBozza = null;
+      renderSchedaPrestazioni();
+      const f = document.getElementById('scheda-prestazioni-form');
+      if(f){
+        f.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        const primo = document.getElementById('prest-data');
+        if(primo) primo.focus({ preventScroll:true });
+      }
+    };
+    corpo.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => apriForm(tr.dataset.id)));
+    corpo.querySelectorAll('.test-modifica').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); apriForm(b.dataset.id); }));
+
+    const nuova = document.getElementById('prest-nuova-btn');
+    if(nuova) nuova.addEventListener('click', () => apriForm('nuova'));
+    const andBtn = document.getElementById('prest-andamento-btn');
+    if(andBtn) andBtn.addEventListener('click', apriAndamentoPrestazioni);
+    const annulla = document.getElementById('prest-annulla-btn');
+    if(annulla) annulla.addEventListener('click', () => { prestazioneInModifica = null; prestazioneBozza = null; renderSchedaPrestazioni(); });
+
+    const elimina = document.getElementById('prest-elimina-btn');
+    if(elimina) elimina.addEventListener('click', async () => {
+      if(!confirm('Eliminare questa prestazione?')) return;
+      schedaDatiCorrenti.prestazioni = (schedaDatiCorrenti.prestazioni || []).filter(r => r.id !== prestazioneInModifica);
+      try{
         await salvaScheda(schedaAtletaId);
-      });
+      } catch(err){
+        console.error('Eliminazione prestazione non riuscita:', err);
+        alert('Non sono riuscito a eliminare la prestazione. Riprova.');
+        return;
+      }
+      prestazioneInModifica = null;
+      prestazioneBozza = null;
+      renderSchedaPrestazioni();
     });
-    cont.querySelectorAll('[data-remove-id]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if(!confirm('Rimuovere questo obiettivo?')) return;
-        schedaDatiCorrenti.obiettivi = schedaDatiCorrenti.obiettivi.filter(o => o.id !== btn.dataset.removeId);
+
+    const salva = document.getElementById('prest-salva-btn');
+    if(salva) salva.addEventListener('click', async () => {
+      const data = document.getElementById('prest-data').value.trim();
+      const spec = document.getElementById('prest-specialita').value.trim();
+      const valore = document.getElementById('prest-valore').value.trim();
+      if(!spec || !valore){ alert('Scrivi almeno la specialità e il dato rilevato.'); return; }
+      if(!Array.isArray(schedaDatiCorrenti.prestazioni)) schedaDatiCorrenti.prestazioni = [];
+      // Stessa specialità scritta con maiuscole diverse: riuso quella già presente
+      const gia = schedaDatiCorrenti.prestazioni.map(r => r.specialita).find(n => n && n.toLowerCase() === spec.toLowerCase());
+      const specialita = gia || spec;
+      const esistente = schedaDatiCorrenti.prestazioni.find(r => r.id === prestazioneInModifica);
+      if(esistente){
+        esistente.data = data; esistente.specialita = specialita; esistente.valore = valore;
+      } else {
+        schedaDatiCorrenti.prestazioni.push({ id: nuovoIdLocale(), data, specialita, valore });
+      }
+      try{
         await salvaScheda(schedaAtletaId);
-      });
+      } catch(err){
+        console.error('Salvataggio prestazione non riuscito:', err);
+        alert('Non sono riuscito a salvare la prestazione. Riprova.');
+        return;
+      }
+      prestazioneInModifica = null;
+      prestazioneBozza = null;
+      renderSchedaPrestazioni();
     });
   }
 
-  document.getElementById('scheda-nuovo-obiettivo-btn').addEventListener('click', async function(){
-    const input = document.getElementById('scheda-nuovo-obiettivo-input');
-    const testo = input.value.trim();
-    if(!testo) return;
-    if(!schedaDatiCorrenti.obiettivi) schedaDatiCorrenti.obiettivi = [];
-    schedaDatiCorrenti.obiettivi.push({ id: nuovoIdLocale(), testo, fatto: false, stagione: stagioneCorrente() });
-    await salvaScheda(schedaAtletaId);
-    input.value = '';
-  });
+  function apriAndamentoPrestazioni(){
+    const righe = (schedaDatiCorrenti && schedaDatiCorrenti.prestazioni) || [];
+    const nomi = specialitaPrestazioni(righe);
+    const conDati = n => righe.filter(r => r.specialita === n && leggiDatoPrestazione(r.valore)).length >= 2;
+    andamentoPrestSpecialita = nomi.includes(andamentoPrestSpecialita) ? andamentoPrestSpecialita : (nomi.find(conDati) || nomi[0] || null);
+    renderAndamentoPrestazioni();
+    document.getElementById('prestazioni-overlay').style.display = 'flex';
+  }
+
+  function chiudiAndamentoPrestazioni(){
+    document.getElementById('prestazioni-overlay').style.display = 'none';
+  }
+
+  function graficoPrestazioni(punti, tempo){
+    const n = punti.length;
+    const vals = punti.map(p => p.n);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const pad = (max - min) * 0.2 || Math.max(Math.abs(max) * 0.05, 1);
+    const lo = min - pad, hi = max + pad;
+    const x0 = 52, x1 = 268, yTop = 26, yBot = 150;
+    const X = i => x0 + (x1 - x0) * i / (n - 1);
+    const Y = v => yBot - (v - lo) / (hi - lo) * (yBot - yTop);
+    const fmt = v => tempo ? fmtTempo(v) : testFmt(Math.round(v * 100) / 100);
+    const fmtTick = v => tempo ? fmtTempo((hi - lo) >= 5 ? Math.round(v) : v) : testFmt(Math.round(v * 10) / 10);
+    const passo = n > 6 ? Math.ceil(n / 6) : 1;
+    const tronca = t => t.length > 9 ? t.slice(0, 8) + '…' : t;
+
+    const ticks = [lo, (lo + hi) / 2, hi];
+    const griglia = ticks.map(t => `<line class="griglia" x1="36" y1="${Y(t).toFixed(1)}" x2="290" y2="${Y(t).toFixed(1)}"/><text x="30" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end">${escHtml(fmtTick(t))}</text>`).join('');
+    const linea = punti.map((p, i) => `${X(i).toFixed(1)},${Y(p.n).toFixed(1)}`).join(' ');
+    const area = `${linea} ${X(n - 1).toFixed(1)},${yBot} ${X(0).toFixed(1)},${yBot}`;
+    const cerchi = punti.map((p, i) => `<circle class="${i === n - 1 ? 'punto-ultimo' : 'punto'}" cx="${X(i).toFixed(1)}" cy="${Y(p.n).toFixed(1)}" r="${i === n - 1 ? 5 : 4}"/>`).join('');
+    const valoriTxt = punti.map((p, i) => `<text class="valore" x="${X(i).toFixed(1)}" y="${(Y(p.n) - 9).toFixed(1)}" text-anchor="middle">${escHtml(fmt(p.n))}</text>`).join('');
+    const etichette = punti.map((p, i) => (i % passo === 0) ? `<text x="${X(i).toFixed(1)}" y="168" text-anchor="middle">${escHtml(tronca(p.etichetta || ('#' + (i + 1))))}</text>` : '').join('');
+
+    const d = vals[n - 1] - vals[0];
+    const meglio = tempo ? d < 0 : d > 0;
+    const colDelta = Math.abs(d) < 0.0001 ? 'var(--text-dim)' : (meglio ? 'var(--primary)' : 'var(--clay)');
+    const segno = d > 0.0001 ? '+' : (d < -0.0001 ? '−' : '');
+    const deltaTxt = tempo ? fmtTempo(Math.abs(d)) : testFmt(Math.abs(d));
+    const best = punti.reduce((b, p) => (tempo ? p.n < b.n : p.n > b.n) ? p : b, punti[0]);
+
+    return `
+      <svg class="andamento-svg" viewBox="0 0 300 180" role="img" aria-label="Andamento prestazioni">
+        <line class="griglia" x1="36" y1="${yBot}" x2="290" y2="${yBot}"/>
+        ${griglia}
+        <polygon class="area" points="${area}"/>
+        <polyline class="linea" points="${linea}"/>
+        ${cerchi}${valoriTxt}${etichette}
+      </svg>
+      <div class="andamento-sintesi">
+        <div><small>Dalla prima rilevazione</small><strong style="color:${colDelta};">${segno}${escHtml(deltaTxt)}</strong></div>
+        <div><small>Migliore</small><strong>${escHtml(best.raw)}</strong></div>
+      </div>
+      ${tempo ? '<p class="test-suggerimento" style="margin-top:8px;">Per i tempi, un valore più basso è un miglioramento.</p>' : ''}`;
+  }
+
+  function renderAndamentoPrestazioni(){
+    const righe = (schedaDatiCorrenti && schedaDatiCorrenti.prestazioni) || [];
+    const nomi = specialitaPrestazioni(righe);
+    const chips = document.getElementById('prestazioni-chips');
+    chips.innerHTML = nomi.map(n => `<button type="button" class="andamento-chip${n === andamentoPrestSpecialita ? ' attivo' : ''}" data-nome="${escHtml(n)}">${escHtml(n)}</button>`).join('');
+    chips.querySelectorAll('.andamento-chip').forEach(b => b.addEventListener('click', () => {
+      andamentoPrestSpecialita = b.dataset.nome;
+      renderAndamentoPrestazioni();
+    }));
+
+    const corpo = document.getElementById('prestazioni-corpo');
+    if(!andamentoPrestSpecialita){ corpo.innerHTML = '<p class="empty-note">Nessuna prestazione ancora.</p>'; return; }
+
+    const punti = righe
+      .filter(r => r.specialita === andamentoPrestSpecialita)
+      .map(r => ({ p: leggiDatoPrestazione(r.valore), etichetta: r.data || '', raw: r.valore }))
+      .filter(x => x.p);
+    const nTempo = punti.filter(x => x.p.tempo).length;
+    const tempo = nTempo * 2 >= punti.length;
+    const usati = punti.filter(x => x.p.tempo === tempo).map(x => ({ n: x.p.n, etichetta: x.etichetta, raw: x.raw }));
+    if(usati.length < 2){
+      corpo.innerHTML = '<p class="empty-note">Servono almeno due prestazioni leggibili per questa specialità (per esempio "4 min", "4:05" o "5,20 m").</p>';
+      return;
+    }
+    corpo.innerHTML = graficoPrestazioni(usati, tempo) +
+      (usati.length < punti.length ? '<p class="test-suggerimento" style="margin-top:8px;">Alcuni dati con unità diversa non sono stati inclusi nel grafico.</p>' : '') +
+      '<p class="test-suggerimento" style="margin-top:8px;">I punti seguono l\'ordine di inserimento.</p>';
+  }
+
+  document.getElementById('prestazioni-chiudi').addEventListener('click', chiudiAndamentoPrestazioni);
+  document.getElementById('prestazioni-overlay').addEventListener('click', e => { if(e.target.id === 'prestazioni-overlay') chiudiAndamentoPrestazioni(); });
 
   function renderSchedaNote(){
     const cont = document.getElementById('scheda-note-list');
@@ -5819,11 +6032,11 @@
       }
     }
 
-    const obiettivi = schedaDatiCorrenti.obiettivi || [];
-    if(obiettivi.length > 0){
-      testo += `\n\n🎯 Obiettivi ${stagioneCorrente()}:`;
-      obiettivi.filter(o => o.stagione === stagioneCorrente()).forEach(o => {
-        testo += `\n${o.fatto ? '✓' : '○'} ${o.testo}`;
+    const prestazioniSh = schedaDatiCorrenti.prestazioni || [];
+    if(prestazioniSh.length > 0){
+      testo += `\n\n📈 Prestazioni:`;
+      prestazioniSh.forEach(pr => {
+        testo += `\n${pr.data ? pr.data + ' · ' : ''}${pr.specialita}: ${pr.valore}`;
       });
     }
 
@@ -5942,14 +6155,12 @@
       }).join('');
     }
 
-    // Obiettivi della stagione
-    document.getElementById('stampa-obiettivi-titolo').textContent = `Obiettivi stagione ${stagioneScelta}`;
-    const obiettiviStagione = (schedaDatiCorrenti.obiettivi || []).filter(o => o.stagione === stagioneScelta);
-    document.getElementById('stampa-obiettivi').innerHTML = obiettiviStagione.length > 0
-      ? obiettiviStagione.map(o => `
-          <tr><td class="${o.fatto ? 'fatto-si-report' : 'fatto-no-report'}">${o.fatto ? '✓' : '○'}</td><td>${o.testo}</td></tr>
-        `).join('')
-      : '<tr><td colspan="2" class="empty-note-report">Nessun obiettivo per questa stagione.</td></tr>';
+    // Prestazioni (data, specialità, dato rilevato)
+    const prestazioniPdf = schedaDatiCorrenti.prestazioni || [];
+    document.getElementById('stampa-obiettivi-titolo').textContent = 'Prestazioni';
+    document.getElementById('stampa-obiettivi').innerHTML = prestazioniPdf.length > 0
+      ? `<thead><tr><th>Data</th><th>Specialità</th><th>Dato rilevato</th></tr></thead><tbody>${prestazioniPdf.map(pr => `<tr><td>${escHtml(pr.data || '—')}</td><td>${escHtml(pr.specialita)}</td><td>${escHtml(pr.valore)}</td></tr>`).join('')}</tbody>`
+      : '<tbody><tr><td class="empty-note-report">Nessuna prestazione registrata.</td></tr></tbody>';
 
     // Note dell'allenatore nella stagione
     const noteStagione = (schedaDatiCorrenti.note || [])
@@ -6347,7 +6558,7 @@
         <div class="guida-schede">
         <h3 style="margin:0 0 8px; font-size:15px;">📇 Schede atleti</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Un profilo per atleta: test motori (tabella con le rilevazioni nel tempo), obiettivi stagionali e note. Puoi anche generare un report stagionale in PDF.
+          Un profilo per atleta: test motori (tabella con le rilevazioni nel tempo), prestazioni per specialità (con grafico dell'andamento) e note. Puoi anche generare un report stagionale in PDF.
         </p>
         </div>
 
@@ -7066,6 +7277,18 @@
   </div>
 </div>
 
+<!-- FINESTRA: andamento prestazioni per specialità -->
+<div id="prestazioni-overlay" class="sposta-overlay" style="display:none;">
+  <div class="sposta-sheet" role="dialog" aria-modal="true" aria-labelledby="prestazioni-titolo">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 id="prestazioni-titolo" style="margin:0; font-size:16px;">Andamento prestazioni</h3>
+      <button type="button" id="prestazioni-chiudi" class="btn-secondary" aria-label="Chiudi" style="width:auto; padding:4px 12px;">✕</button>
+    </div>
+    <div id="prestazioni-chips" class="andamento-chips"></div>
+    <div id="prestazioni-corpo"></div>
+  </div>
+</div>
+
 <div id="menu-overlay"></div>
 <div id="side-panel">
   <div id="side-panel-content"></div>
@@ -7112,8 +7335,8 @@
     </div>
 
     <div class="sezione-report">
-      <h2 id="stampa-obiettivi-titolo">Obiettivi stagione</h2>
-      <table class="obiettivi-report" id="stampa-obiettivi"></table>
+      <h2 id="stampa-obiettivi-titolo">Prestazioni</h2>
+      <table class="test-report" id="stampa-obiettivi"></table>
     </div>
 
     <div class="sezione-report">
