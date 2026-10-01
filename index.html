@@ -3231,8 +3231,7 @@
 
     // Atleti totali = solo attivi (chi si è ritirato non deve gonfiare il numero);
     // separatamente, quanti si sono ritirati nella stagione sportiva corrente (visibilità sull'abbandono).
-    const stagioneAttualeKpi = stagioneCorrente();
-    const rangeStagioneKpi = rangeStagione(stagioneAttualeKpi);
+    const rangeStagioneKpi = annoConteggio();   // ritirati: anno in corso, dal 1° gennaio
     let atletiAttiviCount = 0, ritiratiStagioneCount = 0;
     snapAtleti.docs.forEach(d => {
       const dati = d.data();
@@ -3249,7 +3248,7 @@
       <div class="kpi-card">
         <span class="kpi-value">${atletiAttiviCount}</span>
         <span class="kpi-label">Atleti totali</span>
-        ${ritiratiStagioneCount > 0 ? `<span class="kpi-ritirati">${ritiratiStagioneCount} ritirat${ritiratiStagioneCount===1?'o':'i'} in stagione</span>` : ''}
+        ${ritiratiStagioneCount > 0 ? `<span class="kpi-ritirati">${ritiratiStagioneCount} ritirat${ritiratiStagioneCount===1?'o':'i'} quest'anno</span>` : ''}
       </div>
       <div class="kpi-card"><span class="kpi-value">${totaleGare}</span><span class="kpi-label">Gare totali</span></div>
       <div class="kpi-card">
@@ -3453,7 +3452,7 @@
 
       const atletiGruppoTutti = (atletiPerGruppo[id] || []).slice().sort((a,b) => a.nome.localeCompare(b.nome));
       const atletiGruppo = atletiGruppoTutti.filter(a => !a.archiviato);
-      const rangeStagioneGruppo = rangeStagione(stagioneCorrente());
+      const rangeStagioneGruppo = annoConteggio();
       const ritiratiStagioneGruppo = atletiGruppoTutti.filter(a =>
         a.archiviato && a.archiviatoIl && a.archiviatoIl >= rangeStagioneGruppo.inizio && a.archiviatoIl <= rangeStagioneGruppo.fine
       ).length;
@@ -3535,7 +3534,7 @@
           </div>
           <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
             <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">
-              👤 Atleti (${atletiGruppo.length})${ritiratiStagioneGruppo > 0 ? ` <span style="color:var(--clay); text-transform:none; letter-spacing:normal;">· ${ritiratiStagioneGruppo} ritirat${ritiratiStagioneGruppo===1?'o':'i'} in stagione</span>` : ''}
+              👤 Atleti (${atletiGruppo.length})${ritiratiStagioneGruppo > 0 ? ` <span style="color:var(--clay); text-transform:none; letter-spacing:normal;">· ${ritiratiStagioneGruppo} ritirat${ritiratiStagioneGruppo===1?'o':'i'} quest'anno</span>` : ''}
             </p>
             ${elencoHtml}
           </div>
@@ -3912,7 +3911,7 @@
     }).sort((a,b) => b.totale - a.totale || a.nome.localeCompare(b.nome));
 
     // Atleti = solo attivi; separatamente, quanti ritirati nella stagione corrente
-    const rangeStagioneReport = rangeStagione(stagioneCorrente());
+    const rangeStagioneReport = annoConteggio();
     const atletiAttiviReport = reportAtletiDocs.filter(a => !a.archiviato).length;
     const ritiratiStagioneReport = reportAtletiDocs.filter(a =>
       a.archiviato && a.archiviatoIl >= rangeStagioneReport.inizio && a.archiviatoIl <= rangeStagioneReport.fine
@@ -6267,7 +6266,7 @@
     document.getElementById('kpi-media').textContent = String(d.kpi.media).replace('.', ',');
     const ritiratiEl = document.getElementById('kpi-atleti-ritirati');
     if(d.kpi.ritiratiStagione > 0){
-      ritiratiEl.textContent = `${d.kpi.ritiratiStagione} ritirat${d.kpi.ritiratiStagione===1?'o':'i'} in stagione`;
+      ritiratiEl.textContent = `${d.kpi.ritiratiStagione} ritirat${d.kpi.ritiratiStagione===1?'o':'i'} quest'anno`;
       ritiratiEl.style.display = '';
     } else {
       ritiratiEl.style.display = 'none';
@@ -6613,7 +6612,7 @@
       <div style="padding:18px 0;">
         <h3 style="margin:0 0 8px; font-size:15px;">🏠 Home "Andamento"</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          I 4 numeri in alto sono i totali di tutta la società (con i ritirati in stagione, se ce ne sono). "Squadre" apre il dettaglio di un gruppo; "Attività e strumenti" raccoglie gare, eventi, messaggi, certificati e confronto tra i gruppi.
+          I 4 numeri in alto sono i totali di tutta la società (con i ritirati dell'anno in corso, se ce ne sono). "Squadre" apre il dettaglio di un gruppo; "Attività e strumenti" raccoglie gare, eventi, messaggi, certificati e confronto tra i gruppi.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificati da controllare</h3>
