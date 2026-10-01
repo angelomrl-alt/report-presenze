@@ -3273,7 +3273,8 @@
     if(!ultimaData){
       ultimaGiornataCont.innerHTML = '<p class="empty-note">Nessun risultato con posizione registrato ancora.</p>';
     } else {
-      const risultatiUltimaData = risultatiConPosizione.filter(r => r.data === ultimaData);
+      // Solo i podi (1°, 2° e 3°) dell'ultima giornata
+      const risultatiUltimaData = risultatiConPosizione.filter(r => r.data === ultimaData && [1,2,3].includes(parseInt(r.piazzamento, 10)));
       const perGara = new Map(); // nomeGara -> {luogo, righe:[]}
       risultatiUltimaData.forEach(r => {
         const chiave = r.gara || '—';
@@ -3282,7 +3283,9 @@
       });
       const dataLabel = new Date(ultimaData + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' });
       const medaglie = {1:'🥇',2:'🥈',3:'🥉'};
-      ultimaGiornataCont.innerHTML = `
+      ultimaGiornataCont.innerHTML = perGara.size === 0
+      ? `<p class="empty-note">Nessun podio nell'ultima giornata di gare (${dataLabel}).</p>`
+      : `
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
           <p style="font-size:12.5px; color:var(--text-dim); margin:0 0 12px;">${dataLabel}</p>
           ${Array.from(perGara.entries()).map(([nomeGara, info]) => {
@@ -3320,9 +3323,9 @@
       if(!ultimaData){
         anteprimaGaraEl.textContent = 'Nessun risultato registrato ancora';
       } else {
-        const nomiGare = Array.from(new Set(risultatiConPosizione.filter(r => r.data === ultimaData).map(r => r.gara || '—')));
+        const nomiGare = Array.from(new Set(risultatiConPosizione.filter(r => r.data === ultimaData && [1,2,3].includes(parseInt(r.piazzamento, 10))).map(r => r.gara || '—')));
         const dataBreve = new Date(ultimaData + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' });
-        anteprimaGaraEl.textContent = `${dataBreve} · ${nomiGare.join(', ')}`;
+        anteprimaGaraEl.textContent = nomiGare.length > 0 ? `${dataBreve} · ${nomiGare.join(', ')}` : `${dataBreve} · nessun podio`;
       }
     }
 
