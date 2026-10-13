@@ -537,7 +537,8 @@
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
   }
   .griglia-azioni .corsia:hover, .griglia-azioni .corsia:active{background:var(--bg-track);}
-  .griglia-azioni.tre-card .c-report{grid-column:1 / -1;}
+  .griglia-azioni.cinque-card .c-gestisci{grid-column:1 / -1;}
+  .griglia-azioni .c-gestisci .corsia-icona{color:var(--text-dim);}
   .griglia-azioni .corsia-riga,
   .griglia-azioni .corsia-freccia{display:none;}
   .griglia-azioni .corsia-corpo{flex-direction:column; align-items:flex-start; gap:8px; padding:14px;}
@@ -1726,6 +1727,17 @@
           </div>
           <div class="corsia-freccia">›</div>
         </div>
+
+        <div class="corsia c-gestisci" id="card-gestisci">
+          <div class="corsia-riga"></div>
+          <div class="corsia-corpo">
+            <div class="corsia-icona"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1"/><path d="M16 5a3 3 0 0 1 0 6"/><path d="M21 20v-1a4 4 0 0 0-3-3.9"/></svg></div>
+            <div class="corsia-testi">
+              <div class="corsia-titolo">Gestisci atleti</div>
+            </div>
+          </div>
+          <div class="corsia-freccia">›</div>
+        </div>
       </div>
 
       <div class="foglio-batteria" style="margin-top:20px;">
@@ -1804,9 +1816,6 @@
         <span id="save-feedback" class="save-feedback"></span>
       </div>
 
-      <p style="margin-top:22px;">
-        <a href="javascript:void(0)" id="link-gestisci-atleti" class="link-discreto">⚙️ Gestisci atleti del gruppo (segna chi si è ritirato)</a>
-      </p>
     </main>
   </section>
 
@@ -1814,7 +1823,7 @@
   <section id="view-gestisci-atleti" class="view">
     <header class="topbar">
       <div class="brand-mini">
-        <button class="btn-back" id="back-to-presenze-from-gestisci" aria-label="Torna a Registra presenze">←</button>
+        <button class="btn-back" id="back-to-presenze-from-gestisci" aria-label="Torna alla home">←</button>
         🏃 Atletica Silca <span class="role-tag">Gestisci atleti</span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
@@ -3739,14 +3748,9 @@
 
   document.getElementById('gestisci-atleti-search').addEventListener('input', renderGestisciAtletiListe);
 
-  document.getElementById('link-gestisci-atleti').addEventListener('click', () => {
-    if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
-    apriGestisciAtleti();
-  });
-
   document.getElementById('back-to-presenze-from-gestisci').addEventListener('click', () => {
     if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
-    apriPresenze();
+    showView('view-coach');
   });
 
   async function controllaRegistrazioneEsistente(){
@@ -6396,7 +6400,7 @@
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
         const schedeAttive = !!(g && g.nome === 'Cadetti');
         document.getElementById('card-schede').style.display = schedeAttive ? '' : 'none';
-        document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
+        document.querySelector('.griglia-azioni').classList.toggle('cinque-card', schedeAttive);
         renderMessaggiCoach();
         showView('view-coach');
       } else {
@@ -6624,7 +6628,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Link in fondo a Registra presenze: qui puoi segnare come ritirato un atleta che non fa più parte del gruppo (i suoi dati restano salvati, recuperabili in ogni momento).
+          Dalla home, tocca Gestisci atleti: puoi segnare come ritirato un atleta che non fa più parte del gruppo (i suoi dati restano salvati, recuperabili in ogni momento) oppure spostarlo in un'altra squadra.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificato medico</h3>
@@ -6708,6 +6712,10 @@
   // --- Navigazione Risultati gare ---
   document.getElementById('card-risultati').addEventListener('click', apriRisultati);
   document.getElementById('card-schede').addEventListener('click', apriSchede);
+  document.getElementById('card-gestisci').addEventListener('click', () => {
+    if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
+    apriGestisciAtleti();
+  });
   document.getElementById('back-to-coach-from-risultati').addEventListener('click', () => {
     if(risultatiAtletiUnsub) { risultatiAtletiUnsub(); risultatiAtletiUnsub = null; }
     if(risultatiUnsub) { risultatiUnsub(); risultatiUnsub = null; }
