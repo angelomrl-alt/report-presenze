@@ -1825,6 +1825,7 @@
       <p class="sub">Qui puoi segnare come ritirato un atleta che non fa più parte del gruppo. Per segnare presenze o gare usa le altre sezioni: qui non c'è nulla legato al giorno per giorno, apposta per evitare tocchi per errore.</p>
 
       <input type="text" id="gestisci-atleti-search" class="scheda-search" placeholder="🔍 Cerca atleta...">
+      <p id="gestisci-atleti-feedback" class="save-feedback" style="min-height:18px;"></p>
       <div id="gestisci-atleti-lista" class="roster-list"></div>
 
       <div class="sezione-archiviati">
@@ -3053,16 +3054,26 @@
   // ---------- Sposta atleta in un altro gruppo (società) ----------
   // Cambia solo gruppoId sul documento atleta (la scheda è legata all'id e lo segue) e annota
   // il passaggio in storicoGruppi. Presenze e risultati passati restano nel gruppo di allora.
-  let spostaAtletaId = null;
+  let spostaContesto = null;   // { atleta:{id,nome,storicoGruppi}, gruppoOrigine, daAllenatore }
 
   function apriSpostaAtleta(atletaId){
     const a = adminRosterDocs.find(x => x.id === atletaId);
     if(!a) return;
-    spostaAtletaId = atletaId;
-    const corrente = GRUPPI[adminRosterGruppoId];
-    document.getElementById('sposta-titolo').textContent = `Sposta ${a.nome}`;
+    apriSheetSposta({ atleta: a, gruppoOrigine: adminRosterGruppoId, daAllenatore: false });
+  }
+
+  function apriSpostaDaAllenatore(atletaId){
+    const a = gestisciAtletiDocs.find(x => x.id === atletaId);
+    if(!a) return;
+    apriSheetSposta({ atleta: a, gruppoOrigine: currentGruppoId, daAllenatore: true });
+  }
+
+  function apriSheetSposta(ctx){
+    spostaContesto = ctx;
+    const corrente = GRUPPI[ctx.gruppoOrigine];
+    document.getElementById('sposta-titolo').textContent = `Sposta ${ctx.atleta.nome}`;
     document.getElementById('sposta-sub').textContent = `Da ${corrente ? corrente.nome : 'gruppo attuale'} a un altro gruppo`;
-    const opzioni = Object.entries(GRUPPI).filter(([id]) => id !== adminRosterGruppoId)
+    const opzioni = Object.entries(GRUPPI).filter(([id]) => id !== ctx.gruppoOrigine)
       .sort((x,y) => x[1].nome.localeCompare(y[1].nome));
     const sel = document.getElementById('sposta-gruppo');
     sel.innerHTML = opzioni.length > 0
@@ -3070,17 +3081,19 @@
       : '<option value="">Nessun altro gruppo disponibile</option>';
     document.getElementById('sposta-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('sposta-feedback').textContent = '';
+    document.getElementById('sposta-avviso-allenatore').style.display = ctx.daAllenatore ? '' : 'none';
     document.getElementById('sposta-conferma').disabled = opzioni.length === 0;
     document.getElementById('sposta-overlay').style.display = 'flex';
   }
 
   function chiudiSpostaAtleta(){
     document.getElementById('sposta-overlay').style.display = 'none';
-    spostaAtletaId = null;
+    spostaContesto = null;
   }
 
   async function confermaSpostaAtleta(){
-    const a = adminRosterDocs.find(x => x.id === spostaAtletaId);
+    const ctx = spostaContesto;
+    const a = ctx && ctx.atleta;
     const nuovoId = document.getElementById('sposta-gruppo').value;
     const data = document.getElementById('sposta-data').value || new Date().toISOString().slice(0,10);
     const fb = document.getElementById('sposta-feedback');
@@ -3091,18 +3104,25 @@
     fb.textContent = 'Sposto...';
     try{
       // Presenze e risultati sono legati al nome: due atleti con lo stesso nome nello stesso gruppo si confonderebbero.
-      const snapDest = await getDocs(query(collection(db,'atleti'), where('gruppoId','==', nuovoId)));
-      const omonimo = snapDest.docs.some(d => String(d.data().nome || '').trim().toLowerCase() === a.nome.trim().toLowerCase());
+      let omonimo = false;
+      try{
+        const snapDest = await getDocs(query(collection(db,'atleti'), where('gruppoId','==', nuovoId)));
+        omonimo = snapDest.docs.some(d => String(d.data().nome || '').trim().toLowerCase() === a.nome.trim().toLowerCase());
+      } catch(errLettura){
+        // L'allenatore potrebbe non poter leggere gli atleti di un altro gruppo: in quel caso salto il controllo.
+        if(!ctx.daAllenatore) throw errLettura;
+      }
       if(omonimo){
         fb.textContent = `In ${GRUPPI[nuovoId].nome} c'è già un atleta con questo nome. Correggi prima uno dei due nomi.`;
         return;
       }
-      const vecchio = GRUPPI[adminRosterGruppoId];
-      const voce = { da: adminRosterGruppoId, daNome: vecchio ? vecchio.nome : '', a: nuovoId, aNome: GRUPPI[nuovoId].nome, data };
+      const vecchio = GRUPPI[ctx.gruppoOrigine];
+      const voce = { da: ctx.gruppoOrigine, daNome: vecchio ? vecchio.nome : '', a: nuovoId, aNome: GRUPPI[nuovoId].nome, data };
       await updateDoc(doc(db,'atleti', a.id), { gruppoId: nuovoId, storicoGruppi: [...(a.storicoGruppi || []), voce] });
       const nomeSpostato = a.nome;
+      const daAllenatore = ctx.daAllenatore;
       chiudiSpostaAtleta();
-      const fbLista = document.getElementById('admin-bulk-feedback');
+      const fbLista = document.getElementById(daAllenatore ? 'gestisci-atleti-feedback' : 'admin-bulk-feedback');
       if(fbLista) fbLista.textContent = `${nomeSpostato} spostato in ${GRUPPI[nuovoId].nome} ✓`;
     } catch(err){
       console.error('Spostamento atleta non riuscito:', err);
@@ -3647,11 +3667,12 @@
     const g = GRUPPI[currentGruppoId];
     document.getElementById('gestisci-atleti-group-name').textContent = g ? g.nome : "Il tuo gruppo";
     document.getElementById('gestisci-atleti-search').value = "";
+    document.getElementById('gestisci-atleti-feedback').textContent = '';
 
     if(gestisciAtletiUnsub) gestisciAtletiUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     gestisciAtletiUnsub = onSnapshot(q, snap => {
-      gestisciAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, archiviato: !!d.data().archiviato }))
+      gestisciAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] }))
         .sort((a,b)=>a.nome.localeCompare(b.nome));
       renderGestisciAtletiListe();
     });
@@ -3670,9 +3691,16 @@
       : attivi.map(a => `
           <div class="roster-item">
             <span class="nome">${a.nome}</span>
-            <button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Ritira</button>
+            <span style="display:flex; gap:8px; align-items:center;">
+              <button type="button" class="btn-sposta" data-id="${a.id}" aria-label="Sposta ${escHtml(a.nome)} in un altro gruppo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10h13l-3-3"/><path d="M17 14H4l3 3"/></svg> Sposta</button>
+              <button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Ritira</button>
+            </span>
           </div>
         `).join('');
+
+    listaCont.querySelectorAll('.btn-sposta').forEach(btn => {
+      btn.addEventListener('click', () => apriSpostaDaAllenatore(btn.dataset.id));
+    });
 
     listaCont.querySelectorAll('.btn-archivia-testo').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -7278,6 +7306,7 @@
       <p><span class="ok">✓</span> La scheda segue l'atleta</p>
       <p><span class="ok">✓</span> Il passaggio resta annotato nello storico</p>
       <p><span class="info">i</span> Le presenze e i risultati passati restano nel gruppo di prima</p>
+      <p id="sposta-avviso-allenatore" style="display:none;"><span class="info">!</span> Dopo lo spostamento non vedrai più l'atleta nel tuo gruppo. Per riaverlo dovrà spostarlo l'altro allenatore o la società.</p>
     </div>
     <p id="sposta-feedback" class="save-feedback" style="min-height:18px;"></p>
     <div class="sposta-azioni">
