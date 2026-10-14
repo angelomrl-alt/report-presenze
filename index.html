@@ -4285,6 +4285,103 @@
     URL.revokeObjectURL(url);
   }
 
+  // ---------- Esporta presenze agli allenamenti (CSV, per mese) ----------
+  const MESI_ESTESI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+  function apriEsportaPresenze(){
+    const selG = document.getElementById('esporta-presenze-gruppo');
+    selG.innerHTML = '<option value="tutti">Tutti i gruppi</option>' +
+      Object.entries(GRUPPI).sort((a,b) => a[1].nome.localeCompare(b[1].nome))
+        .map(([id,g]) => `<option value="${id}">${escHtml(g.nome)}</option>`).join('');
+    // Mesi dell'anno in corso (fino a oggi) e di quello precedente, dal più recente
+    const oggi = new Date();
+    const opzioni = [];
+    for(let a = oggi.getFullYear(); a >= oggi.getFullYear() - 1; a--){
+      const ultimo = (a === oggi.getFullYear()) ? oggi.getMonth() : 11;
+      for(let m = ultimo; m >= 0; m--) opzioni.push({ v: `${a}-${String(m + 1).padStart(2,'0')}`, t: `${MESI_ESTESI[m]} ${a}` });
+    }
+    document.getElementById('esporta-presenze-mese').innerHTML = opzioni.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
+    document.getElementById('esporta-presenze-feedback').textContent = '';
+    document.getElementById('esporta-presenze-conferma').disabled = false;
+    document.getElementById('esporta-presenze-overlay').style.display = 'flex';
+  }
+
+  function chiudiEsportaPresenze(){
+    document.getElementById('esporta-presenze-overlay').style.display = 'none';
+  }
+
+  async function esportaPresenzeCSV(){
+    const gid = document.getElementById('esporta-presenze-gruppo').value;
+    const mese = document.getElementById('esporta-presenze-mese').value;
+    const fb = document.getElementById('esporta-presenze-feedback');
+    const btn = document.getElementById('esporta-presenze-conferma');
+    if(!mese){ fb.textContent = 'Scegli il mese.'; return; }
+
+    btn.disabled = true;
+    fb.textContent = 'Preparo il file...';
+    try{
+      const tutti = gid === 'tutti';
+      const [snapP, snapA] = await Promise.all([
+        tutti ? getDocs(collection(db,'presenze')) : getDocs(query(collection(db,'presenze'), where('gruppoId','==', gid))),
+        tutti ? getDocs(collection(db,'atleti')) : getDocs(query(collection(db,'atleti'), where('gruppoId','==', gid)))
+      ]);
+      const sessioni = snapP.docs.map(d => d.data())
+        .filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(mese + '-'));
+      const atleti = snapA.docs.map(d => d.data());
+      const [anno, mm] = mese.split('-');
+      const titoloMese = `${MESI_ESTESI[parseInt(mm, 10) - 1]} ${anno}`;
+
+      const gruppiScelti = (tutti ? Object.keys(GRUPPI) : [gid]).filter(g => GRUPPI[g])
+        .sort((a,b) => GRUPPI[a].nome.localeCompare(GRUPPI[b].nome));
+      const righe = [];
+      gruppiScelti.forEach(g => {
+        const sess = sessioni.filter(x => x.gruppoId === g).sort((x,y) => x.data.localeCompare(y.data));
+        if(righe.length > 0) righe.push([]);
+        righe.push([`${GRUPPI[g].nome} — ${titoloMese}`]);
+        if(sess.length === 0){
+          righe.push(['Nessun allenamento registrato in questo mese']);
+          return;
+        }
+        // Atleti attivi del gruppo + chiunque compaia nelle registrazioni del mese (anche chi si è ritirato dopo)
+        const nomi = new Set(atleti.filter(a => a.gruppoId === g && !a.archiviato).map(a => a.nome));
+        sess.forEach(x => { (x.presenti || []).forEach(n => nomi.add(n)); (x.assenti || []).forEach(n => nomi.add(n)); });
+        righe.push(['Atleta', ...sess.map(x => `${x.data.slice(8,10)}/${x.data.slice(5,7)}`), 'Presenze', 'Allenamenti del mese', '% presenza']);
+        Array.from(nomi).sort((a,b) => String(a).localeCompare(String(b))).forEach(n => {
+          let pres = 0;
+          const celle = sess.map(x => {
+            if((x.presenti || []).includes(n)){ pres++; return 'P'; }
+            return (x.assenti || []).includes(n) ? 'A' : '';
+          });
+          righe.push([n, ...celle, pres, sess.length, Math.round(pres / sess.length * 100) + '%']);
+        });
+        righe.push(['Presenti', ...sess.map(x => (x.presenti || []).length), '', '', '']);
+      });
+
+      // Separatore ";" e BOM: si apre in colonne con Excel italiano e con Fogli Google
+      const csv = '\uFEFF' + righe.map(r => r.map(csvEscape).join(';')).join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const nomeGruppo = tutti ? 'tutti' : GRUPPI[gid].nome.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      link.href = url;
+      link.download = `presenze_${mese}_${nomeGruppo}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      chiudiEsportaPresenze();
+    } catch(err){
+      console.error('Esportazione presenze non riuscita:', err);
+      fb.textContent = err.code === 'permission-denied' ? '⚠️ Permessi insufficienti per leggere le presenze.' : '⚠️ Errore durante l\'esportazione, riprova.';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('esporta-presenze-annulla').addEventListener('click', chiudiEsportaPresenze);
+  document.getElementById('esporta-presenze-conferma').addEventListener('click', esportaPresenzeCSV);
+  document.getElementById('esporta-presenze-overlay').addEventListener('click', e => { if(e.target.id === 'esporta-presenze-overlay') chiudiEsportaPresenze(); });
+
   function apriImportaCertificati(){
     document.getElementById('importa-cert-testo').value = '';
     document.getElementById('importa-cert-anteprima').innerHTML = '';
@@ -6523,6 +6620,7 @@
         <button type="button" class="side-panel-btn" id="sp-importa-storico">📥 Importa storico (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-importa-certificati">🩺 Importa certificati (in blocco)</button>
         <button type="button" class="side-panel-btn" id="sp-esporta-atleti">📤 Esporta atleti (CSV)</button>
+        <button type="button" class="side-panel-btn" id="sp-esporta-presenze">📤 Esporta presenze (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-crea-evento">📅 Crea evento</button>
         <button type="button" class="side-panel-btn" id="sp-impostazioni">🔧 Impostazioni</button>
       </div>`;
@@ -6556,6 +6654,7 @@
       document.getElementById('sp-importa-storico')?.addEventListener('click', () => { chiudiPannello(); apriImporta(); });
       document.getElementById('sp-importa-certificati')?.addEventListener('click', () => { chiudiPannello(); apriImportaCertificati(); });
       document.getElementById('sp-esporta-atleti')?.addEventListener('click', () => { chiudiPannello(); esportaAtletiCSV(); });
+      document.getElementById('sp-esporta-presenze')?.addEventListener('click', () => { chiudiPannello(); apriEsportaPresenze(); });
       document.getElementById('sp-crea-evento')?.addEventListener('click', () => {
         chiudiPannello();
         document.getElementById('evento-nuovo-nome').value = '';
@@ -7345,6 +7444,27 @@
     </div>
     <div id="prestazioni-chips" class="andamento-chips"></div>
     <div id="prestazioni-corpo"></div>
+  </div>
+</div>
+
+<!-- FINESTRA: esporta presenze agli allenamenti -->
+<div id="esporta-presenze-overlay" class="sposta-overlay" style="display:none;">
+  <div class="sposta-sheet" role="dialog" aria-modal="true" aria-labelledby="esporta-presenze-titolo">
+    <h3 id="esporta-presenze-titolo" style="margin:0 0 2px; font-size:16px;">Esporta presenze allenamenti</h3>
+    <p style="margin:0 0 14px; font-size:12.5px; color:var(--text-dim);">File CSV (si apre con Excel o Fogli Google): per ogni allenamento del mese, P = presente e A = assente.</p>
+    <div class="fisico-campo" style="margin-bottom:10px;">
+      <label for="esporta-presenze-gruppo">Gruppo</label>
+      <select id="esporta-presenze-gruppo"></select>
+    </div>
+    <div class="fisico-campo" style="margin-bottom:14px;">
+      <label for="esporta-presenze-mese">Mese</label>
+      <select id="esporta-presenze-mese"></select>
+    </div>
+    <p id="esporta-presenze-feedback" class="save-feedback" style="min-height:18px;"></p>
+    <div class="sposta-azioni">
+      <button type="button" class="btn-secondary" id="esporta-presenze-annulla">Annulla</button>
+      <button type="button" class="btn-primary" id="esporta-presenze-conferma" style="width:auto; padding:11px 22px;">Scarica CSV</button>
+    </div>
   </div>
 </div>
 
