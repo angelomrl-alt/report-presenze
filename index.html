@@ -1061,6 +1061,28 @@
   .perc-bar{height:5px; border-radius:3px; background:var(--bg-track); overflow:hidden;}
   .perc-bar span{display:block; height:100%; background:var(--primary);}
   .perc-bar.bassa span{background:var(--danger);}
+  .pa-nav{display:flex; align-items:center; justify-content:space-between; margin:12px 0;}
+  .pa-mese{font-size:15px; font-weight:600;}
+  .pa-freccia{background:var(--surface-2); border:1px solid var(--border-strong); border-radius:10px; padding:4px 16px; font-size:20px; line-height:1.2; color:var(--text); cursor:pointer;}
+  .pa-freccia:disabled{opacity:.35; cursor:default;}
+  .pa-sintesi{display:flex; gap:8px; margin-bottom:12px;}
+  .pa-sintesi > div{flex:1; background:var(--bg-track); border-radius:10px; padding:8px 10px;}
+  .pa-sintesi small{display:block; font-size:11px; color:var(--text-dim);}
+  .pa-sintesi strong{font-size:16px;}
+  .pa-cal-testa, .pa-cal{display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; text-align:center;}
+  .pa-cal-testa{margin-bottom:4px;}
+  .pa-cal-testa span{font-size:11px; color:var(--text-dim);}
+  .pa-g{padding:7px 0; border-radius:8px; font-size:13px; color:var(--text-dim);}
+  .pa-g.pa-p{background:color-mix(in srgb, var(--primary) 22%, var(--surface)); color:var(--text); font-weight:600;}
+  .pa-g.pa-a{background:color-mix(in srgb, var(--danger) 22%, var(--surface)); color:var(--text); font-weight:600;}
+  .pa-g.pa-n{border:1px dashed var(--border-strong); color:var(--text);}
+  .pa-legenda{display:flex; gap:12px; flex-wrap:wrap; font-size:11.5px; color:var(--text-dim); margin:10px 0;}
+  .pa-legenda i{display:inline-block; width:10px; height:10px; border-radius:3px; vertical-align:-1px; margin-right:4px;}
+  .pa-elenco{border-top:1px solid var(--surface-2);}
+  .pa-riga{display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--surface-2); font-size:14px;}
+  .pa-txt-p{color:var(--primary); font-weight:600;}
+  .pa-txt-a{color:var(--danger); font-weight:600;}
+  .pa-txt-n{color:var(--text-dim);}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -1880,6 +1902,23 @@
         <div>
           <div class="report-mini" style="margin-bottom:12px;"><small>Medaglie del gruppo</small><strong id="report-medaglie-gruppo">—</strong></div>
           <div class="atleti-list" id="lista-gare"></div>
+        </div>
+      </details>
+
+      <details class="report-section" id="report-sez-atleta">
+        <summary class="report-summary-flex"><span>👤 Presenze per atleta</span><span class="report-summary-num"><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
+        <div>
+          <div class="fisico-campo">
+            <label for="pa-atleta">Atleta</label>
+            <select id="pa-atleta"></select>
+          </div>
+          <div class="pa-nav">
+            <button type="button" class="pa-freccia" id="pa-prec" aria-label="Mese precedente">‹</button>
+            <span class="pa-mese" id="pa-mese-label"></span>
+            <button type="button" class="pa-freccia" id="pa-succ" aria-label="Mese successivo">›</button>
+          </div>
+          <p class="test-suggerimento" id="pa-avviso" style="display:none; margin:0 0 8px;"></p>
+          <div id="pa-corpo"></div>
         </div>
       </details>
     </main>
@@ -6385,8 +6424,111 @@
   });
 
 
+  // ---------- Presenze per atleta (allenatore): scegli atleta e mese, vedi giorno per giorno ----------
+  let paMese = null;     // 'YYYY-MM'
+  let paAtleta = '';     // nome dell'atleta scelto
+
+  function meseCorrentePA(){
+    const o = new Date();
+    return `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function renderPresenzeAtleta(){
+    const sel = document.getElementById('pa-atleta');
+    if(!sel) return;
+    if(!paMese) paMese = meseCorrentePA();
+
+    // Atleti attivi del gruppo (l'elenco si ricostruisce solo se cambia, così la scelta non si perde)
+    const atleti = reportAtletiDocs.filter(a => !a.archiviato).map(a => a.nome).sort((x,y) => String(x).localeCompare(String(y)));
+    const chiave = atleti.join('|');
+    if(sel.dataset.chiave !== chiave){
+      sel.innerHTML = atleti.length > 0
+        ? atleti.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('')
+        : '<option value="">Nessun atleta</option>';
+      sel.dataset.chiave = chiave;
+    }
+    if(!atleti.includes(paAtleta)) paAtleta = atleti[0] || '';
+    sel.value = paAtleta;
+
+    const [anno, mm] = paMese.split('-').map(Number);
+    document.getElementById('pa-mese-label').textContent = `${MESI_ESTESI[mm - 1]} ${anno}`;
+    document.getElementById('pa-succ').disabled = paMese >= meseCorrentePA();
+    const avviso = document.getElementById('pa-avviso');
+    avviso.style.display = anno < new Date().getFullYear() ? '' : 'none';
+    avviso.textContent = 'Mese di un anno precedente: i totali del report contano solo l\'anno in corso.';
+
+    const corpo = document.getElementById('pa-corpo');
+    if(!paAtleta){ corpo.innerHTML = '<p class="empty-note">Nessun atleta nel gruppo.</p>'; return; }
+
+    // Allenamenti del mese e stato dell'atleta in ciascuno: P, A oppure non in elenco
+    const sess = reportSessioni
+      .filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(paMese + '-'))
+      .sort((x,y) => x.data.localeCompare(y.data));
+    if(sess.length === 0){
+      corpo.innerHTML = '<p class="empty-note">Nessun allenamento registrato in questo mese.</p>';
+      return;
+    }
+    const righe = sess.map(x => ({
+      data: x.data,
+      stato: (x.presenti || []).includes(paAtleta) ? 'P' : ((x.assenti || []).includes(paAtleta) ? 'A' : '')
+    }));
+    const registrati = righe.filter(r => r.stato !== '').length;
+    const presenze = righe.filter(r => r.stato === 'P').length;
+    const perc = registrati > 0 ? Math.round(presenze / registrati * 100) : 0;
+
+    // Calendario del mese (settimana da lunedì)
+    const statoPerGiorno = {};
+    righe.forEach(r => { statoPerGiorno[parseInt(r.data.slice(8, 10), 10)] = r.stato; });
+    const offset = (new Date(anno, mm - 1, 1).getDay() + 6) % 7;
+    const giorniMese = new Date(anno, mm, 0).getDate();
+    let celle = '<span></span>'.repeat(offset);
+    for(let g = 1; g <= giorniMese; g++){
+      const st = statoPerGiorno[g];
+      const cls = st === 'P' ? 'pa-p' : (st === 'A' ? 'pa-a' : (st === '' ? 'pa-n' : ''));
+      celle += `<span class="pa-g ${cls}">${g}</span>`;
+    }
+    const nomiGiorni = ['L','M','M','G','V','S','D'];
+
+    const nomeGiorno = data => {
+      const t = new Date(data + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'short', day:'numeric', month:'short' });
+      return t.charAt(0).toUpperCase() + t.slice(1);
+    };
+    const testoStato = { P:['Presente','pa-txt-p'], A:['Assente','pa-txt-a'], '':['Non in elenco','pa-txt-n'] };
+
+    corpo.innerHTML = `
+      <div class="pa-sintesi">
+        <div><small>Presenze</small><strong>${presenze} su ${registrati}</strong></div>
+        <div><small>Percentuale</small><strong>${registrati > 0 ? perc + '%' : '—'}</strong></div>
+      </div>
+      <div class="pa-cal-testa">${nomiGiorni.map(n => `<span>${n}</span>`).join('')}</div>
+      <div class="pa-cal">${celle}</div>
+      <div class="pa-legenda">
+        <span><i style="background:color-mix(in srgb, var(--primary) 45%, var(--surface));"></i>Presente</span>
+        <span><i style="background:color-mix(in srgb, var(--danger) 45%, var(--surface));"></i>Assente</span>
+        <span><i style="border:1px dashed var(--border-strong);"></i>Non in elenco</span>
+      </div>
+      <div class="pa-elenco">
+        ${righe.map(r => `<div class="pa-riga"><span>${escHtml(nomeGiorno(r.data))}</span><span class="${testoStato[r.stato][1]}">${testoStato[r.stato][0]}</span></div>`).join('')}
+      </div>`;
+  }
+
+  document.getElementById('pa-atleta').addEventListener('change', e => { paAtleta = e.target.value; renderPresenzeAtleta(); });
+  document.getElementById('pa-prec').addEventListener('click', () => {
+    const [a, m] = (paMese || meseCorrentePA()).split('-').map(Number);
+    const d = new Date(a, m - 2, 1);
+    paMese = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    renderPresenzeAtleta();
+  });
+  document.getElementById('pa-succ').addEventListener('click', () => {
+    const [a, m] = (paMese || meseCorrentePA()).split('-').map(Number);
+    const d = new Date(a, m, 1);
+    const nuovo = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if(nuovo <= meseCorrentePA()){ paMese = nuovo; renderPresenzeAtleta(); }
+  });
+
   function renderReport(){
     const d = calcolaReport();
+    renderPresenzeAtleta();
     document.getElementById('report-sub').textContent = `Dati del ${annoConteggio().anno} (dal 1° gennaio), calcolati dalle presenze registrate nell'app.`;
 
     document.getElementById('kpi-allenamenti').textContent = d.kpi.allenamenti;
@@ -6717,7 +6859,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Numero di atleti; i conteggi ripartono da zero ogni 1° gennaio (i dati vecchi restano salvati); nel menu Allenamenti media, sessioni per mese e % di presenza di ogni atleta (con ↑ ↓ → se in aumento, calo o stabile); nel menu Gare le medaglie del gruppo e i podi 🥇🥈🥉 di ciascuno.
+          Numero di atleti; i conteggi ripartono da zero ogni 1° gennaio (i dati vecchi restano salvati); nel menu Allenamenti media, sessioni per mese e % di presenza di ogni atleta (con ↑ ↓ → se in aumento, calo o stabile); nel menu Gare le medaglie del gruppo e i podi 🥇🥈🥉 di ciascuno; nel menu Presenze per atleta scegli un atleta e un mese per vedere giorno per giorno se c'era.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi dalla società</h3>
