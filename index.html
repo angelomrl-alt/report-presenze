@@ -537,7 +537,7 @@
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
   }
   .griglia-azioni .corsia:hover, .griglia-azioni .corsia:active{background:var(--bg-track);}
-  .griglia-azioni.cinque-card .c-gestisci{grid-column:1 / -1;}
+  .griglia-azioni.tre-card .c-gestisci{grid-column:1 / -1;}
   .griglia-azioni .c-gestisci .corsia-icona{color:var(--text-dim);}
   .griglia-azioni .corsia-riga,
   .griglia-azioni .corsia-freccia{display:none;}
@@ -1083,6 +1083,28 @@
   .pa-txt-p{color:var(--primary); font-weight:600;}
   .pa-txt-a{color:var(--danger); font-weight:600;}
   .pa-txt-n{color:var(--text-dim);}
+  /* Home allenatore: barra compatta, card principale, comandi affiancati */
+  #view-coach .topbar{display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; padding:14px 16px; gap:8px;}
+  #view-coach .topbar .brand-mini{grid-column:auto;}
+  #view-coach .topbar .btn-hamburger{width:48px; height:40px; padding:0; flex:none;}
+  #view-coach .topbar [data-logout]{display:none;}
+  #view-coach .header-gruppo-corsie{margin-bottom:12px;}
+  #cert-avviso-banner-home{padding:10px 14px; margin-bottom:12px;}
+  .cert-compatto summary{list-style:none; display:flex; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; font-size:13.5px; font-weight:600;}
+  .cert-compatto summary::-webkit-details-marker{display:none;}
+  .cert-compatto[open] summary span[aria-hidden]{transform:rotate(180deg);}
+  .cert-compatto .cert-lista{margin:8px 0 0; font-size:13px; line-height:1.5; font-weight:400;}
+  .card-principale{display:flex; align-items:center; gap:14px; background:color-mix(in srgb, var(--primary) 14%, var(--surface)); border:1px solid color-mix(in srgb, var(--primary) 50%, var(--surface)); border-radius:16px; padding:16px; margin-bottom:10px; cursor:pointer;}
+  .card-principale:active{background:color-mix(in srgb, var(--primary) 22%, var(--surface));}
+  .card-principale .cp-icona{width:32px; height:32px; flex:none; fill:none; stroke:var(--text); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  .card-principale .cp-testi{flex:1; min-width:0;}
+  .card-principale .cp-titolo{font-size:17px; font-weight:700; color:var(--text);}
+  .card-principale .cp-sub{font-size:12.5px; color:var(--text-dim); margin-top:2px;}
+  .card-principale .cp-freccia{font-size:22px; color:var(--text-dim);}
+  #view-coach .griglia-azioni{gap:8px; margin-bottom:0;}
+  #view-coach .griglia-azioni .corsia-corpo{flex-direction:row; align-items:center; gap:10px; padding:12px;}
+  #view-coach .griglia-azioni .corsia-titolo{font-size:13.5px;}
+  #view-coach .griglia-azioni .corsia-icona svg{width:20px; height:20px;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -1687,7 +1709,7 @@
     <header class="topbar">
       <div class="brand-mini">🏃 Atletica Silca <span class="role-tag">Allenatore</span></div>
       <button class="btn-logout" data-logout>Esci</button>
-      <button type="button" class="btn-logout btn-hamburger">☰</button>
+      <button type="button" class="btn-logout btn-hamburger" aria-label="Menu">☰</button>
     </header>
     <main>
       <div class="header-gruppo-corsie">
@@ -1704,19 +1726,16 @@
       </div>
       <div class="foglio-batteria" id="msg-elenco-coach" style="display:none; margin-bottom:20px;"></div>
 
-      <h3 class="section-title azioni-rapide-titolo">Azioni rapide</h3>
-      <div class="foglio-batteria griglia-azioni">
-        <div class="corsia c-presenze" id="card-presenze">
-          <div class="corsia-riga"></div>
-          <div class="corsia-corpo">
-            <div class="corsia-icona"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg></div>
-            <div class="corsia-testi">
-              <div class="corsia-titolo">Registra presenze</div>
-              </div>
-          </div>
-          <div class="corsia-freccia">›</div>
+      <div class="card-principale" id="card-presenze" role="button" tabindex="0">
+        <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
+        <div class="cp-testi">
+          <div class="cp-titolo">Registra presenze</div>
+          <div class="cp-sub" id="presenze-ultimo">Ultimo allenamento: —</div>
         </div>
+        <span class="cp-freccia" aria-hidden="true">›</span>
+      </div>
 
+      <div class="foglio-batteria griglia-azioni">
         <div class="corsia c-gara" id="card-risultati">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
@@ -3657,7 +3676,25 @@
   }
 
   // Banner avviso certificati, riusabile in più schermate (presenze, gara, home allenatore)
-  function renderBannerCertificati(elementId, listaAtleti){
+  // Riga "Ultimo allenamento" sulla card Registra presenze (si aggiorna da sola)
+  let ultimoAllUnsub = null;
+  function avviaUltimoAllenamento(gruppoId){
+    if(ultimoAllUnsub){ ultimoAllUnsub(); ultimoAllUnsub = null; }
+    const el = document.getElementById('presenze-ultimo');
+    if(!el) return;
+    ultimoAllUnsub = onSnapshot(query(collection(db,'presenze'), where('gruppoId','==', gruppoId)), snap => {
+      const sessioni = snap.docs.map(d => d.data())
+        .filter(x => x.tipo === 'allenamento' && typeof x.data === 'string')
+        .sort((a,b) => b.data.localeCompare(a.data));
+      if(sessioni.length === 0){ el.textContent = 'Nessun allenamento registrato'; return; }
+      const u = sessioni[0];
+      let quando = new Date(u.data + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'short', day:'numeric', month:'short' });
+      quando = quando.charAt(0).toUpperCase() + quando.slice(1);
+      el.textContent = `Ultimo allenamento: ${quando} · ${(u.presenti || []).length} presenti`;
+    }, () => { el.textContent = ''; });
+  }
+
+  function renderBannerCertificati(elementId, listaAtleti, compatto = false){
     const banner = document.getElementById(elementId);
     if(!banner) return;
     const inAvviso = (listaAtleti || []).filter(a => {
@@ -3668,6 +3705,15 @@
       banner.style.display = 'none';
     } else {
       banner.style.display = 'block';
+      if(compatto){
+        const n = inAvviso.length;
+        const nomi = inAvviso.map(a => {
+          const st = statoCertificato(a.scadenzaCertificato);
+          return `${escHtml(a.nome)} (${st.stato === 'scaduto' ? 'scaduto' : st.testo})`;
+        }).join(', ');
+        banner.innerHTML = `<details class="cert-compatto"><summary><span>⚕️ ${n} certificat${n === 1 ? 'o' : 'i'} da verificare</span><span aria-hidden="true">▾</span></summary><p class="cert-lista">${nomi}. Verifica con la società.</p></details>`;
+        return;
+      }
       banner.innerHTML = `⚕️ <strong>${inAvviso.length}</strong> certificato/i medico/i scaduto/i o in scadenza: ${inAvviso.map(a => {
         const s = statoCertificato(a.scadenzaCertificato);
         return `${a.nome} (${s.stato === 'scaduto' ? 'scaduto' : s.testo})`;
@@ -6635,11 +6681,12 @@
         const snapConteggio = await getDocs(qConteggio);
         const atletiAttiviHome = snapConteggio.docs.filter(d => !d.data().archiviato).map(d => ({ nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' }));
         document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${atletiAttiviHome.length} atleti` : "";
-        renderBannerCertificati('cert-avviso-banner-home', atletiAttiviHome);
+        renderBannerCertificati('cert-avviso-banner-home', atletiAttiviHome, true);
+        avviaUltimoAllenamento(dati.gruppoId);
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
         const schedeAttive = !!(g && g.nome === 'Cadetti');
         document.getElementById('card-schede').style.display = schedeAttive ? '' : 'none';
-        document.querySelector('.griglia-azioni').classList.toggle('cinque-card', schedeAttive);
+        document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
         renderMessaggiCoach();
         showView('view-coach');
       } else {
@@ -6677,6 +6724,7 @@
   document.querySelectorAll('[data-logout]').forEach(btn => {
     btn.addEventListener('click', async function(){
       if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
+      if(ultimoAllUnsub) { ultimoAllUnsub(); ultimoAllUnsub = null; }
       if(reportAtletiUnsub) { reportAtletiUnsub(); reportAtletiUnsub = null; }
       if(reportPresenzeUnsub) { reportPresenzeUnsub(); reportPresenzeUnsub = null; }
       if(reportRisultatiUnsub) { reportRisultatiUnsub(); reportRisultatiUnsub = null; }
@@ -6771,11 +6819,13 @@
     html += `<p class="side-panel-title">Impostazioni</p>
       <button type="button" class="side-panel-btn" id="sp-password">🔑 Cambia password</button>
       <button type="button" class="side-panel-btn" id="sp-guida">❓ Come funziona l'app</button>
-      <button type="button" class="side-panel-btn" id="sp-tema">🌙 Tema scuro</button>`;
+      <button type="button" class="side-panel-btn" id="sp-tema">🌙 Tema scuro</button>${currentRuolo === 'allenatore' ? `
+      <button type="button" class="side-panel-btn" id="sp-esci">🚪 Esci</button>` : ''}`;
 
     sidePanelContent.innerHTML = html;
 
     document.getElementById('sp-password')?.addEventListener('click', () => { chiudiPannello(); cambiaPassword(); });
+    document.getElementById('sp-esci')?.addEventListener('click', () => { chiudiPannello(); document.querySelector('#view-coach [data-logout]')?.click(); });
     document.getElementById('sp-guida')?.addEventListener('click', () => {
       chiudiPannello();
       document.getElementById('guida-content').innerHTML = isRuoloSocieta() ? guidaContenutoSocieta : guidaContenutoAllenatore;
@@ -6928,6 +6978,7 @@
 
   // --- Navigazione Registra presenze ---
   document.getElementById('card-presenze').addEventListener('click', apriPresenze);
+  document.getElementById('card-presenze').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(); } });
 
   // --- Navigazione Guida (Allenatore) ---
   document.getElementById('back-to-coach-from-guida').addEventListener('click', () => {
