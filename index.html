@@ -1105,6 +1105,11 @@
   #view-coach .griglia-azioni .corsia-corpo{flex-direction:row; align-items:center; gap:10px; padding:12px;}
   #view-coach .griglia-azioni .corsia-titolo{font-size:13.5px;}
   #view-coach .griglia-azioni .corsia-icona svg{width:20px; height:20px;}
+  .griglia-azioni.senza-allenamenti #card-risultati{grid-column:1 / -1; background:color-mix(in srgb, var(--primary) 14%, var(--surface)); border:1px solid color-mix(in srgb, var(--primary) 50%, var(--surface));}
+  #view-coach .griglia-azioni.senza-allenamenti #card-risultati .corsia-corpo{padding:16px;}
+  #view-coach .griglia-azioni.senza-allenamenti #card-risultati .corsia-titolo{font-size:17px; font-weight:700;}
+  #view-coach .griglia-azioni.senza-allenamenti #card-risultati .corsia-icona svg{width:30px; height:30px;}
+  .griglia-azioni.senza-allenamenti.tre-card .c-gestisci{grid-column:auto;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -1905,7 +1910,7 @@
         <span class="kpi-ritirati" id="kpi-atleti-ritirati" style="display:none;"></span>
       </div>
 
-      <details class="report-section">
+      <details class="report-section" id="report-sez-allenamenti">
         <summary class="report-summary-flex"><span>⭐ Allenamenti</span><span class="report-summary-num"><span id="kpi-allenamenti">0</span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
         <div>
           <div class="report-mini-grid">
@@ -3676,6 +3681,12 @@
   }
 
   // Banner avviso certificati, riusabile in più schermate (presenze, gara, home allenatore)
+  // Gruppi che non fanno registrazione degli allenamenti (es. Mezzofondo): solo gare.
+  // Si riconosce dal nome, oppure aggiungendo sul gruppo (Firestore) il campo senzaAllenamenti = true.
+  function gruppoSenzaAllenamenti(g){
+    return !!(g && (g.senzaAllenamenti === true || String(g.nome || '').trim().toLowerCase() === 'mezzofondo'));
+  }
+
   // Riga "Ultimo allenamento" sulla card Registra presenze (si aggiorna da sola)
   let ultimoAllUnsub = null;
   function avviaUltimoAllenamento(gruppoId){
@@ -6574,6 +6585,9 @@
 
   function renderReport(){
     const d = calcolaReport();
+    const soloGare = gruppoSenzaAllenamenti(GRUPPI[currentGruppoId]);
+    document.getElementById('report-sez-allenamenti').style.display = soloGare ? 'none' : '';
+    document.getElementById('report-sez-atleta').style.display = soloGare ? 'none' : '';
     renderPresenzeAtleta();
     document.getElementById('report-sub').textContent = `Dati del ${annoConteggio().anno} (dal 1° gennaio), calcolati dalle presenze registrate nell'app.`;
 
@@ -6682,11 +6696,14 @@
         const atletiAttiviHome = snapConteggio.docs.filter(d => !d.data().archiviato).map(d => ({ nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' }));
         document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${atletiAttiviHome.length} atleti` : "";
         renderBannerCertificati('cert-avviso-banner-home', atletiAttiviHome, true);
-        avviaUltimoAllenamento(dati.gruppoId);
+        const senzaAllenamenti = gruppoSenzaAllenamenti(g);
+        if(!senzaAllenamenti) avviaUltimoAllenamento(dati.gruppoId);
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
         const schedeAttive = !!(g && g.nome === 'Cadetti');
         document.getElementById('card-schede').style.display = schedeAttive ? '' : 'none';
         document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
+        document.getElementById('card-presenze').style.display = senzaAllenamenti ? 'none' : '';
+        document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
         renderMessaggiCoach();
         showView('view-coach');
       } else {
