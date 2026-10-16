@@ -1110,6 +1110,25 @@
   #view-coach .griglia-azioni.senza-allenamenti #card-risultati .corsia-titolo{font-size:17px; font-weight:700;}
   #view-coach .griglia-azioni.senza-allenamenti #card-risultati .corsia-icona svg{width:30px; height:30px;}
   .griglia-azioni.senza-allenamenti.tre-card .c-gestisci{grid-column:auto;}
+  /* Home Società: stessa impostazione compatta della home allenatore */
+  #view-admin .topbar{display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; padding:14px 16px; gap:8px;}
+  #view-admin .topbar .brand-mini{grid-column:auto;}
+  #view-admin .topbar .btn-hamburger{width:48px; height:40px; padding:0; flex:none;}
+  #view-admin .topbar [data-logout]{display:none;}
+  #view-admin .header-gruppo-corsie{padding:0 0 4px !important;}
+  #view-admin .header-gruppo-corsie h2{font-size:26px;}
+  #view-admin .kpi-grid{gap:8px; margin:12px 0 4px !important;}
+  #view-admin .kpi-card{padding:10px 12px; gap:2px; border-radius:12px;}
+  #view-admin .kpi-value{font-size:24px; line-height:1.1;}
+  #view-admin .kpi-label{font-size:11.5px;}
+  #view-admin .kpi-medaglie{font-size:15px; gap:10px;}
+  #view-admin .section-eyebrow{margin-top:18px !important;}
+  #view-admin .corsia-summary{gap:10px; padding:11px 14px;}
+  #view-admin .corsia-summary .corsia-riga{margin:-11px 0 -11px -14px;}
+  #view-admin .corsia-summary .corsia-icona{width:34px; height:34px; font-size:17px; border-radius:10px;}
+  #view-admin .corsia-titolo{font-size:14px; margin-bottom:0;}
+  #view-admin .corsia-anteprima{font-size:11.5px; margin-top:1px;}
+  #view-admin .corsia-details-corpo{padding:0 14px 14px 14px;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -6836,13 +6855,13 @@
     html += `<p class="side-panel-title">Impostazioni</p>
       <button type="button" class="side-panel-btn" id="sp-password">🔑 Cambia password</button>
       <button type="button" class="side-panel-btn" id="sp-guida">❓ Come funziona l'app</button>
-      <button type="button" class="side-panel-btn" id="sp-tema">🌙 Tema scuro</button>${currentRuolo === 'allenatore' ? `
-      <button type="button" class="side-panel-btn" id="sp-esci">🚪 Esci</button>` : ''}`;
+      <button type="button" class="side-panel-btn" id="sp-tema">🌙 Tema scuro</button>
+      <button type="button" class="side-panel-btn" id="sp-esci">🚪 Esci</button>`;
 
     sidePanelContent.innerHTML = html;
 
     document.getElementById('sp-password')?.addEventListener('click', () => { chiudiPannello(); cambiaPassword(); });
-    document.getElementById('sp-esci')?.addEventListener('click', () => { chiudiPannello(); document.querySelector('#view-coach [data-logout]')?.click(); });
+    document.getElementById('sp-esci')?.addEventListener('click', () => { chiudiPannello(); document.querySelector(currentRuolo === 'allenatore' ? '#view-coach [data-logout]' : '#view-admin [data-logout]')?.click(); });
     document.getElementById('sp-guida')?.addEventListener('click', () => {
       chiudiPannello();
       document.getElementById('guida-content').innerHTML = isRuoloSocieta() ? guidaContenutoSocieta : guidaContenutoAllenatore;
