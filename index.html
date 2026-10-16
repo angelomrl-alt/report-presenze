@@ -1129,6 +1129,9 @@
   #view-admin .corsia-titolo{font-size:14px; margin-bottom:0;}
   #view-admin .corsia-anteprima{font-size:11.5px; margin-top:1px;}
   #view-admin .corsia-details-corpo{padding:0 14px 14px 14px;}
+  .corsia-eyebrow{display:block; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:3px;}
+  .corsia-titolo.corsia-titolo-evento{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:19px; font-weight:700; line-height:1.15; letter-spacing:.005em; margin-bottom:3px;}
+  #view-admin .corsia-titolo.corsia-titolo-evento{font-size:17px; margin-bottom:2px;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -1811,8 +1814,9 @@
             <span class="corsia-riga" id="eventi-riga-coach" style="background:var(--accent-lane);"></span>
             <span class="corsia-icona" id="eventi-icona-coach" style="background:color-mix(in srgb, var(--accent-lane) 16%, var(--surface));">📅</span>
             <span class="corsia-testi">
-              <span class="corsia-titolo">Prossimi eventi</span>
-              <span class="corsia-anteprima" id="anteprima-eventi-coach">—</span>
+              <span class="corsia-eyebrow">Prossimi eventi</span>
+              <span class="corsia-titolo corsia-titolo-evento" id="titolo-eventi-coach">—</span>
+              <span class="corsia-anteprima" id="anteprima-eventi-coach"></span>
             </span>
             <span class="corsia-freccia-details">›</span>
           </summary>
@@ -2234,8 +2238,9 @@
             <span class="corsia-riga" id="eventi-riga-societa" style="background:var(--accent-lane);"></span>
             <span class="corsia-icona" id="eventi-icona-societa" style="background:color-mix(in srgb, var(--accent-lane) 16%, var(--surface));">📅</span>
             <span class="corsia-testi">
-              <span class="corsia-titolo">Prossimi eventi</span>
-              <span class="corsia-anteprima" id="anteprima-eventi">—</span>
+              <span class="corsia-eyebrow">Prossimi eventi</span>
+              <span class="corsia-titolo corsia-titolo-evento" id="titolo-eventi">—</span>
+              <span class="corsia-anteprima" id="anteprima-eventi"></span>
             </span>
             <span class="corsia-freccia-details">›</span>
           </summary>
@@ -2744,19 +2749,28 @@
 
       const anteprimaEventiEl = document.getElementById('anteprima-eventi');
       const anteprimaEventiCoachEl = document.getElementById('anteprima-eventi-coach');
-      let testoAnteprimaEventi;
+      const titoloEventiEl = document.getElementById('titolo-eventi');
+      const titoloEventiCoachEl = document.getElementById('titolo-eventi-coach');
+      let titoloEventi, testoAnteprimaEventi;
       if(eventiDocs.length === 0){
-        testoAnteprimaEventi = 'Nessun evento nei prossimi giorni';
-      } else if(entroSoglia){
-        const nome = eventiDocs[0].nome || 'Evento';
-        if(giorniProssimo === 0) testoAnteprimaEventi = `🔴 ${nome} oggi`;
-        else if(giorniProssimo === 1) testoAnteprimaEventi = `🔴 ${nome} domani`;
-        else testoAnteprimaEventi = `⏳ ${nome} tra ${giorniProssimo} giorni`;
+        titoloEventi = 'Nessun evento in programma';
+        testoAnteprimaEventi = '';
       } else {
         const prossimo = eventiDocs[0];
-        const dataBreve = prossimo.data ? new Date(prossimo.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' }) : '';
-        testoAnteprimaEventi = `${dataBreve} · ${prossimo.nome || 'Evento'}`;
+        titoloEventi = prossimo.nome || 'Evento';
+        let dataLunga = prossimo.data
+          ? new Date(prossimo.data + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'short', day:'numeric', month:'long' })
+          : 'Data da definire';
+        dataLunga = dataLunga.charAt(0).toUpperCase() + dataLunga.slice(1);
+        let quanto = '';
+        if(giorniProssimo !== null){
+          quanto = giorniProssimo === 0 ? 'oggi' : (giorniProssimo === 1 ? 'domani' : `tra ${giorniProssimo} giorni`);
+        }
+        const icona = urgente ? '🔴 ' : (entroSoglia ? '⏳ ' : '');
+        testoAnteprimaEventi = `${icona}${dataLunga}${quanto ? ' · ' + quanto : ''}`;
       }
+      if(titoloEventiEl) titoloEventiEl.textContent = titoloEventi;
+      if(titoloEventiCoachEl) titoloEventiCoachEl.textContent = titoloEventi;
       if(anteprimaEventiEl) anteprimaEventiEl.textContent = testoAnteprimaEventi;
       if(anteprimaEventiCoachEl) anteprimaEventiCoachEl.textContent = testoAnteprimaEventi;
 
