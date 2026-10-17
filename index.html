@@ -1165,6 +1165,7 @@
   .ap-azioni button{font-family:inherit; font-size:12.5px; padding:5px 10px; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text); cursor:pointer;}
   .ap-azioni .ap-registra{background:var(--primary); border-color:var(--primary); color:#10231a; font-weight:700;}
   .giorni-check{display:flex; flex-wrap:wrap; gap:8px 14px;}
+  .gara-atleta-header .cert-badge{display:table; margin:3px 0 0 0;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -5029,10 +5030,13 @@
     cont.innerHTML = risultatiAtletiDocs.map(a => {
       const righe = garaPartecipanti.get(a.id);
       const partecipa = righe !== undefined;
+      const cert = statoCertificato(a.scadenzaCertificato);
+      const certHtml = cert.stato === 'mancante' ? '' :
+        `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : (cert.stato === 'avviso' ? `⚠️ ${cert.testo}` : cert.testo)}</span>`;
       return `
         <div class="gara-atleta-block">
           <div class="gara-atleta-header">
-            <span class="nome">${a.nome}</span>
+            <span class="nome">${a.nome}${certHtml}</span>
             <button type="button" class="partecipa-pill ${partecipa ? 'partecipa' : ''}" data-id="${a.id}">
               ${partecipa ? 'Partecipa' : 'Non partecipa'}
             </button>
