@@ -1166,6 +1166,35 @@
   .ap-azioni .ap-registra{background:var(--primary); border-color:var(--primary); color:#10231a; font-weight:700;}
   .giorni-check{display:flex; flex-wrap:wrap; gap:8px 14px;}
   .gara-atleta-header .cert-badge{display:table; margin:3px 0 0 0;}
+  #view-report-societa .topbar{display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; padding:14px 16px; gap:8px;}
+  #view-report-societa .topbar .brand-mini{grid-column:auto;}
+  #view-report-societa .topbar .btn-hamburger{width:48px; height:40px; padding:0; flex:none;}
+  #view-report-societa .topbar [data-logout]{display:none;}
+  .rs-eyebrow{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); margin:0;}
+  .rs-kpi{display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:8px; margin:12px 0 18px;}
+  .rs-kpi > div{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 12px;}
+  .rs-kpi .n{display:block; font-family:'Oswald',sans-serif; font-size:24px; font-weight:700; line-height:1.1;}
+  .rs-kpi .l{font-size:11.5px; color:var(--text-dim);}
+  .rs-tabella-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--surface); margin-bottom:18px;}
+  .rs-tab{border-collapse:collapse; width:100%; font-size:12.5px;}
+  .rs-tab th{text-align:left; padding:8px 10px; font-size:11px; color:var(--text-dim); background:var(--surface-2); font-weight:600; white-space:nowrap;}
+  .rs-tab td{padding:8px 10px; border-top:1px solid var(--border); white-space:nowrap;}
+  .rs-dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px;}
+  .rs-barre{display:flex; align-items:flex-end; gap:6px; height:96px;}
+  .rs-barra{flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px;}
+  .rs-barra .b{width:100%; max-width:26px; background:var(--primary); opacity:.8; border-radius:3px 3px 0 0;}
+  .rs-barra .n, .rs-barra .m{font-size:10px; color:var(--text-dim);}
+  .rs-box{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:18px; font-size:13.5px; line-height:1.5;}
+  .rs-spunti{margin:0; padding-left:18px;}
+  .rs-spunti li{margin-bottom:8px;}
+  .rs-nomi{display:block; font-size:12.5px; color:var(--text-dim); margin-top:2px;}
+  .rs-azioni{display:flex; gap:10px; flex-wrap:wrap; margin:20px 0 8px;}
+  body.stampa-societa > *:not(#view-report-societa){display:none !important;}
+  body.stampa-societa #view-report-societa{display:block !important; background:#fff; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body.stampa-societa #view-report-societa .topbar, body.stampa-societa .rs-azioni, body.stampa-societa #view-report-societa .sub:last-child{display:none !important;}
+  body.senza-nomi .rs-solo-nomi{display:none !important;}
+  body.stampa-societa .chart-confronto-svg{width:100% !important; height:auto !important;}
+  body.stampa-societa .chart-confronto-scroll{overflow:visible;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -2300,25 +2329,60 @@
           </div>
         </details>
 
-        <details class="corsia-details">
-          <summary class="corsia-summary">
+        <div class="corsia-details" id="riga-report-societa" style="cursor:pointer;">
+          <div class="corsia-summary" role="button" tabindex="0">
             <span class="corsia-riga" style="background:var(--c-agnese);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--c-agnese) 14%, var(--surface));">📊</span>
             <span class="corsia-testi">
-              <span class="corsia-titolo">Confronto tra i gruppi</span>
-              <span class="corsia-anteprima">Allenamenti e gare per squadra</span>
+              <span class="corsia-titolo">Report della società</span>
+              <span class="corsia-anteprima" id="anteprima-report-societa">Confronto tra le squadre e riepilogo di stagione</span>
             </span>
             <span class="corsia-freccia-details">›</span>
-          </summary>
-          <div class="corsia-details-corpo">
-            <h3 class="section-title">Confronto allenamenti tra i gruppi</h3>
-            <div id="chart-confronto-allenamenti" class="chart-confronto-wrap"></div>
-
-            <h3 class="section-title" style="margin-top:24px;">Confronto gare tra i gruppi</h3>
-            <div id="chart-confronto-gare" class="chart-confronto-wrap"></div>
           </div>
-        </details>
+        </div>
       </div>
+    </main>
+  </section>
+
+  <!-- ===================== REPORT DELLA SOCIETÀ (riepilogo di stagione + confronto tra i gruppi) ===================== -->
+  <section id="view-report-societa" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-from-report-societa" aria-label="Torna alla home">←</button>
+        🏃 Atletica Silca <span class="role-tag">Report</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+      <button type="button" class="btn-logout btn-hamburger" aria-label="Menu">☰</button>
+    </header>
+    <main>
+      <p class="rs-eyebrow">Atletica Silca · Report generale</p>
+      <h2 id="rs-titolo" style="margin:2px 0 0;">Stagione</h2>
+      <p class="sub" id="rs-sub" style="margin:2px 0 0;"></p>
+      <div class="rs-kpi" id="rs-kpi"></div>
+
+      <h3 class="section-title">Squadre a confronto</h3>
+      <div class="rs-tabella-wrap" id="rs-tabella"></div>
+
+      <h3 class="section-title">Allenamenti per mese</h3>
+      <div id="chart-confronto-allenamenti" class="chart-confronto-wrap"></div>
+
+      <h3 class="section-title" style="margin-top:22px;">Gare per mese</h3>
+      <div id="chart-confronto-gare" class="chart-confronto-wrap"></div>
+
+      <h3 class="section-title" style="margin-top:22px;">Presenza media per mese</h3>
+      <div class="rs-box" id="rs-presenza-mese"></div>
+
+      <h3 class="section-title">Medagliere</h3>
+      <div class="rs-box" id="rs-medagliere"></div>
+
+      <h3 class="section-title">Spunti da discutere</h3>
+      <div class="rs-box" id="rs-spunti"></div>
+
+      <div class="rs-azioni">
+        <button type="button" class="btn-secondary" id="rs-pdf-nomi">📄 PDF con nomi</button>
+        <button type="button" class="btn-secondary" id="rs-pdf-numeri">📄 PDF solo numeri</button>
+      </div>
+      <p class="sub" style="font-size:12px;">Si apre la stampa del telefono: scegli "Salva come PDF" e poi condividi il file.</p>
     </main>
   </section>
 
@@ -3296,6 +3360,177 @@
     if(typeof popolaSelectDestinatarioMessaggi === 'function') popolaSelectDestinatarioMessaggi();
   }
 
+  // ---------- Report della società (riepilogo di stagione + confronto tra i gruppi) ----------
+  let datiReportSocieta = null;
+
+  function costruisciReportSocieta(ctx){
+    const anno = annoConteggio();
+    const gruppiIds = Object.keys(GRUPPI).sort((a,b) => String(GRUPPI[a].nome).localeCompare(String(GRUPPI[b].nome)));
+
+    // Presenze (P) e assenze (A) segnate negli allenamenti: per gruppo, per mese e per atleta
+    const paGruppo = {}, paMese = {}, paAtleta = {};
+    ctx.docsPresenze.forEach(d => {
+      const x = d.data();
+      if(x.tipo !== 'allenamento' || !x.gruppoId || !GRUPPI[x.gruppoId] || typeof x.data !== 'string') return;
+      if(gruppoSenzaAllenamenti(GRUPPI[x.gruppoId])) return;
+      const presenti = x.presenti || [], assenti = x.assenti || [];
+      const g = paGruppo[x.gruppoId] || (paGruppo[x.gruppoId] = { P:0, A:0 });
+      g.P += presenti.length; g.A += assenti.length;
+      const mese = x.data.slice(0, 7);
+      const m = paMese[mese] || (paMese[mese] = { P:0, A:0 });
+      m.P += presenti.length; m.A += assenti.length;
+      const mappa = paAtleta[x.gruppoId] || (paAtleta[x.gruppoId] = new Map());
+      presenti.forEach(n => { const r = mappa.get(n) || { P:0, A:0 }; r.P++; mappa.set(n, r); });
+      assenti.forEach(n => { const r = mappa.get(n) || { P:0, A:0 }; r.A++; mappa.set(n, r); });
+    });
+    const perc = r => (r && (r.P + r.A) > 0) ? Math.round(r.P / (r.P + r.A) * 100) : null;
+
+    // Una riga per squadra
+    const squadre = gruppiIds.map(gid => {
+      const g = GRUPPI[gid];
+      const atleti = ctx.atletiPerGruppo[gid] || [];
+      const senza = gruppoSenzaAllenamenti(g);
+      const med = { oro:0, argento:0, bronzo:0 };
+      (ctx.medagliePerGruppoAtleta[gid] || new Map()).forEach(v => { med.oro += v.oro; med.argento += v.argento; med.bronzo += v.bronzo; });
+      return {
+        gid, nome: g.nome, colore: g.colore,
+        attivi: atleti.filter(a => !a.archiviato).length,
+        ritirati: atleti.filter(a => a.archiviato && a.archiviatoIl && a.archiviatoIl >= anno.inizio && a.archiviatoIl <= anno.fine).length,
+        senzaAllenamenti: senza,
+        allenamenti: senza ? null : (ctx.conteggiAllenamenti[gid] || 0),
+        presenza: senza ? null : perc(paGruppo[gid]),
+        gare: ctx.conteggiGare[gid] || 0,
+        oro: med.oro, argento: med.argento, bronzo: med.bronzo
+      };
+    });
+
+    const totPA = Object.values(paGruppo).reduce((t, r) => ({ P: t.P + r.P, A: t.A + r.A }), { P:0, A:0 });
+    const presenzaMedia = perc(totPA);
+    const mesiPresenza = Object.keys(paMese).sort().map(chiave => ({
+      chiave, label: MESI[parseInt(chiave.slice(5, 7), 10) - 1].slice(0, 3), mese: MESI[parseInt(chiave.slice(5, 7), 10) - 1], perc: perc(paMese[chiave])
+    })).filter(m => m.perc !== null);
+
+    // Chi ha più medaglie
+    const topMedaglie = [];
+    Object.keys(ctx.medagliePerGruppoAtleta).forEach(gid => {
+      if(!GRUPPI[gid]) return;
+      ctx.medagliePerGruppoAtleta[gid].forEach((v, nome) => {
+        topMedaglie.push({ nome, gruppo: GRUPPI[gid].nome, oro: v.oro, argento: v.argento, bronzo: v.bronzo, tot: v.oro + v.argento + v.bronzo });
+      });
+    });
+    topMedaglie.sort((a, b) => b.tot - a.tot || b.oro - a.oro || a.nome.localeCompare(b.nome));
+
+    // Atleti con presenza molto bassa (almeno 5 allenamenti segnati) e certificati
+    const sotto30 = [], scaduti = [], inScadenza = [];
+    gruppiIds.forEach(gid => {
+      (ctx.atletiPerGruppo[gid] || []).filter(a => !a.archiviato).forEach(a => {
+        const r = paAtleta[gid] && paAtleta[gid].get(a.nome);
+        if(r && (r.P + r.A) >= 5 && perc(r) < 30) sotto30.push({ nome: a.nome, gruppo: GRUPPI[gid].nome, perc: perc(r) });
+        const st = statoCertificato(a.scadenzaCertificato);
+        if(st.stato === 'scaduto') scaduti.push({ nome: a.nome, gruppo: GRUPPI[gid].nome });
+        else if(st.stato === 'avviso') inScadenza.push({ nome: a.nome, gruppo: GRUPPI[gid].nome, testo: st.testo });
+      });
+    });
+
+    // Nuovi arrivi: la data di inserimento viene salvata dal 2026; il dato è completo solo dal 2027 in poi
+    const nuoviArrivi = parseInt(anno.anno, 10) >= 2027
+      ? Object.values(ctx.atletiPerGruppo).reduce((t, lista) => t + lista.filter(a => a.creatoIl && a.creatoIl >= anno.inizio && a.creatoIl <= anno.fine).length, 0)
+      : null;
+
+    // Spunti da discutere, ricavati dai dati
+    const spunti = [];
+    if(mesiPresenza.length >= 2){
+      const alto = mesiPresenza.reduce((b, m) => m.perc > b.perc ? m : b);
+      const basso = mesiPresenza.reduce((b, m) => m.perc < b.perc ? m : b);
+      if(alto.chiave !== basso.chiave) spunti.push({ testo: `Presenza media più alta a ${alto.mese} (${alto.perc}%) e più bassa a ${basso.mese} (${basso.perc}%).` });
+    }
+    const conPresenza = squadre.filter(q => q.presenza !== null);
+    if(conPresenza.length >= 2){
+      const alta = conPresenza.reduce((b, q) => q.presenza > b.presenza ? q : b);
+      const bassa = conPresenza.reduce((b, q) => q.presenza < b.presenza ? q : b);
+      if(alta.gid !== bassa.gid) spunti.push({ testo: `Tra le squadre, presenza più alta ${alta.nome} (${alta.presenza}%) e più bassa ${bassa.nome} (${bassa.presenza}%).` });
+    }
+    const maxRit = squadre.reduce((b, q) => q.ritirati > b.ritirati ? q : b, { ritirati: 0 });
+    if(maxRit.ritirati > 0) spunti.push({ testo: ctx.ritirati === 1 ? `1 ritirato nell'anno, in ${maxRit.nome}.` : `${ctx.ritirati} ritirati nell'anno, il numero più alto in ${maxRit.nome} (${maxRit.ritirati}).` });
+    if(scaduti.length + inScadenza.length > 0){
+      spunti.push({
+        testo: `${scaduti.length} certificat${scaduti.length === 1 ? 'o' : 'i'} medic${scaduti.length === 1 ? 'o scaduto' : 'i scaduti'} e ${inScadenza.length} in scadenza.`,
+        nomi: [...scaduti.map(x => `${x.nome} (${x.gruppo}, scaduto)`), ...inScadenza.map(x => `${x.nome} (${x.gruppo}, ${x.testo})`)].join(' · ')
+      });
+    }
+    if(sotto30.length > 0){
+      spunti.push({
+        testo: `${sotto30.length} atlet${sotto30.length === 1 ? 'a' : 'i'} sotto il 30% di presenza (con almeno 5 allenamenti segnati).`,
+        nomi: sotto30.map(x => `${x.nome} (${x.gruppo}, ${x.perc}%)`).join(' · ')
+      });
+    }
+
+    datiReportSocieta = {
+      anno: anno.anno, atletiAttivi: ctx.atletiAttivi, ritirati: ctx.ritirati, allenamenti: ctx.allenamenti, gare: ctx.gare,
+      oro: ctx.oro, argento: ctx.argento, bronzo: ctx.bronzo, presenzaMedia, nuoviArrivi,
+      squadre, mesiPresenza, topMedaglie: topMedaglie.slice(0, 5), spunti
+    };
+    const anteprima = document.getElementById('anteprima-report-societa');
+    if(anteprima) anteprima.textContent = `Stagione ${anno.anno} · confronto tra le squadre`;
+    if(document.getElementById('view-report-societa').classList.contains('active')) renderReportSocieta();
+    return datiReportSocieta;
+  }
+
+  function renderReportSocieta(){
+    const d = datiReportSocieta;
+    const el = id => document.getElementById(id);
+    if(!d){ el('rs-sub').textContent = 'Dati in caricamento…'; return; }
+    el('rs-titolo').textContent = `Stagione ${d.anno}`;
+    el('rs-sub').textContent = `Dal 1° gennaio al 31 dicembre ${d.anno}`;
+
+    const kpi = [
+      { n: d.atletiAttivi, l: 'atleti attivi' },
+      { n: d.ritirati, l: d.ritirati === 1 ? 'ritirato nell\'anno' : 'ritirati nell\'anno', rosso: d.ritirati > 0 },
+      ...(d.nuoviArrivi !== null ? [{ n: d.nuoviArrivi, l: 'nuovi arrivi' }] : []),
+      { n: d.allenamenti, l: 'allenamenti' },
+      { n: d.gare, l: 'gare' },
+      { n: d.presenzaMedia === null ? '—' : d.presenzaMedia + '%', l: 'presenza media' }
+    ];
+    el('rs-kpi').innerHTML = kpi.map(k => `<div><span class="n"${k.rosso ? ' style="color:var(--danger);"' : ''}>${k.n}</span><span class="l">${k.l}</span></div>`).join('');
+
+    const podi = q => [q.oro ? `🥇${q.oro}` : '', q.argento ? `🥈${q.argento}` : '', q.bronzo ? `🥉${q.bronzo}` : ''].filter(Boolean).join(' ') || '—';
+    el('rs-tabella').innerHTML = `<table class="rs-tab">
+      <thead><tr><th>Squadra</th><th>Atleti</th><th>Ritirati</th><th>Allen.</th><th>Presenza</th><th>Gare</th><th>Podi</th></tr></thead>
+      <tbody>${d.squadre.map(q => `<tr>
+        <td><span class="rs-dot" style="background:${escHtml(q.colore || '#999')};"></span>${escHtml(q.nome)}</td>
+        <td>${q.attivi}</td><td>${q.ritirati}</td>
+        <td>${q.allenamenti === null ? '—' : q.allenamenti}</td>
+        <td>${q.presenza === null ? '—' : q.presenza + '%'}</td>
+        <td>${q.gare}</td><td>${podi(q)}</td></tr>`).join('')}</tbody></table>`;
+
+    el('rs-presenza-mese').innerHTML = d.mesiPresenza.length === 0
+      ? '<span class="empty-note">Nessun dato ancora.</span>'
+      : `<div class="rs-barre">${d.mesiPresenza.map(m => `<div class="rs-barra"><span class="n">${m.perc}%</span><div class="b" style="height:${Math.max(3, Math.round(m.perc * 0.62))}px;"></div><span class="m">${escHtml(m.label)}</span></div>`).join('')}</div>
+         <p class="sub" style="font-size:11.5px; margin:8px 0 0;">Percentuale di presenti sul totale degli atleti segnati agli allenamenti (presenti + assenti).</p>`;
+
+    const totPodi = d.oro + d.argento + d.bronzo;
+    el('rs-medagliere').innerHTML = `<p style="margin:0;"><strong>${totPodi === 0 ? 'Nessun podio ancora' : `🥇${d.oro} 🥈${d.argento} 🥉${d.bronzo}`}</strong> in ${d.gare} gar${d.gare === 1 ? 'a' : 'e'}.</p>` +
+      (d.topMedaglie.length === 0 ? '' : `<div class="rs-solo-nomi" style="margin-top:8px;"><span class="rs-nomi">Atleti con più medaglie</span>${d.topMedaglie.map(a =>
+        `<div style="display:flex; justify-content:space-between; gap:8px; padding:3px 0;"><span>${escHtml(a.nome)} <span style="color:var(--text-dim);">(${escHtml(a.gruppo)})</span></span><span>${[a.oro ? '🥇' + a.oro : '', a.argento ? '🥈' + a.argento : '', a.bronzo ? '🥉' + a.bronzo : ''].filter(Boolean).join(' ')}</span></div>`).join('')}</div>`);
+
+    el('rs-spunti').innerHTML = d.spunti.length === 0
+      ? '<span class="empty-note">Nessuno spunto automatico: i dati non mostrano anomalie.</span>'
+      : `<ul class="rs-spunti">${d.spunti.map(x => `<li>${escHtml(x.testo)}${x.nomi ? `<span class="rs-nomi rs-solo-nomi">${escHtml(x.nomi)}</span>` : ''}</li>`).join('')}</ul>`;
+
+    document.querySelectorAll('#view-report-societa .chart-confronto-scroll').forEach(b => { b.scrollLeft = b.scrollWidth; });
+  }
+
+  function pulisciStampaSocieta(){
+    document.body.classList.remove('stampa-societa', 'senza-nomi');
+  }
+  function stampaReportSocieta(conNomi){
+    pulisciStampaSocieta();
+    document.body.classList.add('stampa-societa');
+    if(!conNomi) document.body.classList.add('senza-nomi');
+    window.print();
+  }
+  window.addEventListener('afterprint', pulisciStampaSocieta);
+
   async function renderGroupsGrid(){
     const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
       getDocs(collection(db,'atleti')),
@@ -3598,6 +3833,12 @@
     }
     impostaGraficoConfronto('chart-confronto-allenamenti', mensileAllenamentiPerGruppo, legendaGruppiConTotaliAllenamenti);
     impostaGraficoConfronto('chart-confronto-gare', mensileGareContiPerGruppo);
+
+    costruisciReportSocieta({
+      docsPresenze, atletiPerGruppo, conteggiAllenamenti, conteggiGare, medagliePerGruppoAtleta,
+      atletiAttivi: atletiAttiviCount, ritirati: ritiratiStagioneCount, allenamenti: totaleGiorniAllenamento, gare: totaleGare,
+      oro, argento, bronzo
+    });
     aggiornaPannelloSquadre();
 
     function renderDettaglioGruppo(){
@@ -7244,6 +7485,12 @@
 
   // --- Navigazione Registra presenze ---
   document.getElementById('card-presenze').addEventListener('click', apriPresenze);
+  const apriReportSocieta = () => { pulisciStampaSocieta(); showView('view-report-societa'); renderReportSocieta(); window.scrollTo(0, 0); };
+  document.getElementById('riga-report-societa').addEventListener('click', apriReportSocieta);
+  document.getElementById('riga-report-societa').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriReportSocieta(); } });
+  document.getElementById('back-from-report-societa').addEventListener('click', () => { pulisciStampaSocieta(); showView('view-admin'); });
+  document.getElementById('rs-pdf-nomi').addEventListener('click', () => stampaReportSocieta(true));
+  document.getElementById('rs-pdf-numeri').addEventListener('click', () => stampaReportSocieta(false));
   document.getElementById('card-presenze').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(); } });
 
   // --- Navigazione Guida (Allenatore) ---
@@ -7504,7 +7751,7 @@
     if(!nome) return;
     const dati = { gruppoId: adminRosterGruppoId, nome };
     if(inputNascita.value) dati.dataNascita = inputNascita.value;
-    await addDoc(collection(db,'atleti'), dati);
+    await addDoc(collection(db,'atleti'), { ...dati, creatoIl: dataLocaleISO(new Date()) });
     input.value = "";
     inputNascita.value = "";
   });
@@ -7521,7 +7768,7 @@
     btn.disabled = true;
     feedback.textContent = "Aggiunta in corso…";
     try{
-      await Promise.all(nomi.map(nome => addDoc(collection(db,'atleti'), { gruppoId: adminRosterGruppoId, nome })));
+      await Promise.all(nomi.map(nome => addDoc(collection(db,'atleti'), { gruppoId: adminRosterGruppoId, nome, creatoIl: dataLocaleISO(new Date()) })));
       feedback.textContent = `${nomi.length} atleti aggiunti ✓`;
       textarea.value = "";
     } catch(err){
@@ -7805,7 +8052,7 @@
     const input = document.getElementById('nuovo-atleta');
     const nome = input.value.trim();
     if(!nome) return;
-    await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome });
+    await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome, creatoIl: dataLocaleISO(new Date()) });
     input.value = "";
   });
 
