@@ -3468,7 +3468,8 @@
     datiReportSocieta = {
       anno: anno.anno, atletiAttivi: ctx.atletiAttivi, ritirati: ctx.ritirati, allenamenti: ctx.allenamenti, gare: ctx.gare,
       oro: ctx.oro, argento: ctx.argento, bronzo: ctx.bronzo, presenzaMedia, nuoviArrivi,
-      squadre, mesiPresenza, topMedaglie: topMedaglie.slice(0, 5), spunti
+      squadre, mesiPresenza, topMedaglie: topMedaglie.slice(0, 5), spunti,
+      podiStorico: ctx.podiStorico || 0, gareStorico: ctx.gareStorico || 0
     };
     const anteprima = document.getElementById('anteprima-report-societa');
     if(anteprima) anteprima.textContent = `Stagione ${anno.anno} · confronto tra le squadre`;
@@ -3512,6 +3513,11 @@
     el('rs-medagliere').innerHTML = `<p style="margin:0;"><strong>${totPodi === 0 ? 'Nessun podio ancora' : `🥇${d.oro} 🥈${d.argento} 🥉${d.bronzo}`}</strong> in ${d.gare} gar${d.gare === 1 ? 'a' : 'e'}.</p>` +
       (d.topMedaglie.length === 0 ? '' : `<div class="rs-solo-nomi" style="margin-top:8px;"><span class="rs-nomi">Atleti con più medaglie</span>${d.topMedaglie.map(a =>
         `<div style="display:flex; justify-content:space-between; gap:8px; padding:3px 0;"><span>${escHtml(a.nome)} <span style="color:var(--text-dim);">(${escHtml(a.gruppo)})</span></span><span>${[a.oro ? '🥇' + a.oro : '', a.argento ? '🥈' + a.argento : '', a.bronzo ? '🥉' + a.bronzo : ''].filter(Boolean).join(' ')}</span></div>`).join('')}</div>`);
+
+    if(d.podiStorico > 0){
+      el('rs-medagliere').insertAdjacentHTML('beforeend',
+        `<p class="sub" style="font-size:11.5px; margin:8px 0 0;">${d.podiStorico === 1 ? 'Incluso' : 'Inclusi'} ${d.podiStorico} pod${d.podiStorico === 1 ? 'io' : 'i'} (${d.gareStorico} gar${d.gareStorico === 1 ? 'a' : 'e'}) importat${d.podiStorico === 1 ? 'o' : 'i'} dallo storico: non ${d.podiStorico === 1 ? 'ha' : 'hanno'} una data, quindi ${d.podiStorico === 1 ? 'conta' : 'contano'} nell'anno in corso.</p>`);
+    }
 
     el('rs-spunti').innerHTML = d.spunti.length === 0
       ? '<span class="empty-note">Nessuno spunto automatico: i dati non mostrano anomalie.</span>'
@@ -3594,15 +3600,34 @@
     const conteggiGare = {};
     Object.keys(garaDatePerGruppo).forEach(gid => { conteggiGare[gid] = garaDatePerGruppo[gid].size; });
 
+    // Podi importati dallo storico: salvati senza data, quindi il filtro dell'anno li scarterebbe.
+    // Si contano nell'anno in corso. Le loro gare si riconoscono dal nome, escludendo quelle già presenti con una data.
+    const risultatiStorico = snapRisultati.docs.map(d => d.data()).filter(r => !r.data && r.gruppoId);
+    const nomiGareDatate = {};   // gruppoId -> Set(nome gara in minuscolo)
+    const aggiungiNomeDatato = (gid, nome) => {
+      if(!gid || !nome) return;
+      (nomiGareDatate[gid] = nomiGareDatate[gid] || new Set()).add(String(nome).trim().toLowerCase());
+    };
+    docsGare.forEach(d => { const g = d.data(); aggiungiNomeDatato(g.gruppoId, g.nome); });
+    docsRisultati.forEach(d => { const r = d.data(); aggiungiNomeDatato(r.gruppoId, r.gara); });
+    const gareStoricoPerGruppo = {};
+    const gareStoricoSocieta = new Set();
+    risultatiStorico.forEach(r => {
+      const nome = String(r.gara || '').trim().toLowerCase();
+      if(!nome || (nomiGareDatate[r.gruppoId] && nomiGareDatate[r.gruppoId].has(nome))) return;
+      (gareStoricoPerGruppo[r.gruppoId] = gareStoricoPerGruppo[r.gruppoId] || new Set()).add(nome);
+      gareStoricoSocieta.add(nome);
+    });
+    Object.keys(gareStoricoPerGruppo).forEach(gid => { conteggiGare[gid] = (conteggiGare[gid] || 0) + gareStoricoPerGruppo[gid].size; });
+
     // Gare totali = eventi distinti a livello società (non la somma per gruppo, evita di contare più volte la stessa gara)
     const garaDateSocieta = new Set();
     Object.values(garaDatePerGruppo).forEach(set => set.forEach(d => garaDateSocieta.add(d)));
-    const totaleGare = garaDateSocieta.size;
+    const totaleGare = garaDateSocieta.size + gareStoricoSocieta.size;
 
     let oro = 0, argento = 0, bronzo = 0;
     const medagliePerGruppoAtleta = {}; // gruppoId -> Map(nome -> {oro,argento,bronzo})
-    docsRisultati.forEach(d => {
-      const r = d.data();
+    [...docsRisultati.map(d => d.data()), ...risultatiStorico].forEach(r => {
       const p = parseInt(r.piazzamento, 10);
       if(p === 1) oro++;
       else if(p === 2) argento++;
@@ -3652,7 +3677,7 @@
     `;
 
     document.getElementById('admin-kpi-grid').insertAdjacentHTML('beforeend',
-      `<p style="grid-column:1 / -1; margin:0; font-size:11.5px; color:var(--text-dim);">Conteggi dal 1° gennaio ${annoConteggio().anno}.</p>`);
+      `<p style="grid-column:1 / -1; margin:0; font-size:11.5px; color:var(--text-dim);">Conteggi dal 1° gennaio ${annoConteggio().anno}.${risultatiStorico.length > 0 ? ' Inclusi i podi importati dallo storico (senza data).' : ''}</p>`);
 
     // Riepilogo ultima giornata di gare
 
@@ -3837,7 +3862,9 @@
     costruisciReportSocieta({
       docsPresenze, atletiPerGruppo, conteggiAllenamenti, conteggiGare, medagliePerGruppoAtleta,
       atletiAttivi: atletiAttiviCount, ritirati: ritiratiStagioneCount, allenamenti: totaleGiorniAllenamento, gare: totaleGare,
-      oro, argento, bronzo
+      oro, argento, bronzo,
+      podiStorico: risultatiStorico.filter(r => [1,2,3].includes(parseInt(r.piazzamento, 10))).length,
+      gareStorico: gareStoricoSocieta.size
     });
     aggiornaPannelloSquadre();
 
