@@ -1189,7 +1189,9 @@
   .rs-spunti li{margin-bottom:8px;}
   .rs-nomi{display:block; font-size:12.5px; color:var(--text-dim); margin-top:2px;}
   .rs-azioni{display:flex; gap:10px; flex-wrap:wrap; margin:20px 0 8px;}
-  body.stampa-societa > *:not(#view-report-societa){display:none !important;}
+  /* La pagina sta dentro #app: si nasconde tutto il resto SENZA nascondere #app, altrimenti il PDF esce bianco */
+  body.stampa-societa > *:not(#app){display:none !important;}
+  body.stampa-societa #app > *:not(#view-report-societa){display:none !important;}
   body.stampa-societa #view-report-societa{display:block !important; background:#fff; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   body.stampa-societa #view-report-societa .topbar, body.stampa-societa .rs-azioni, body.stampa-societa #view-report-societa .sub:last-child{display:none !important;}
   body.senza-nomi .rs-solo-nomi{display:none !important;}
@@ -5542,6 +5544,7 @@
         .map(d => ({ id:d.id, nome:d.data().nome, schedaCompilata: !!d.data().schedaCompilata }))
         .sort((a,b)=>a.nome.localeCompare(b.nome));
       renderSchedeRoster();
+      sincronizzaFlagSchede(schedeRosterDocs);
     });
 
     showView('view-schede');
@@ -5559,7 +5562,7 @@
     cont.innerHTML = elenco.map(a => `
       <div class="roster-item roster-item-clickable" data-id="${a.id}" data-nome="${a.nome}" style="cursor:pointer; margin-bottom:8px;">
         <span style="display:flex; align-items:center; gap:10px;">
-          <span class="puntino-scheda${a.schedaCompilata ? ' compilata' : ''}"></span>
+          <span class="puntino-scheda${(a.schedaCompilata || schedeConDatiLocale.has(a.id)) ? ' compilata' : ''}"></span>
           <span class="nome">${a.nome}</span>
         </span>
         <span style="color:var(--text-dim); font-size:16px;">›</span>
@@ -5581,8 +5584,29 @@
       (s.crescita && s.crescita.length > 0) ||
       (s.obiettivi && s.obiettivi.length > 0) ||
       (s.prestazioni && s.prestazioni.length > 0) ||
+      (s.testMotori && s.testMotori.length > 0) ||
       (s.note && s.note.length > 0)
     );
+  }
+
+  // Riallinea i bollini dell'elenco: per gli atleti con il bollino grigio rilegge la scheda una volta per sessione.
+  // Così si vedono anche le schede compilate prima che esistesse il flag, o con i soli test motori.
+  const schedeFlagControllati = new Set();
+  const schedeConDatiLocale = new Set();
+  async function sincronizzaFlagSchede(atleti){
+    const daControllare = atleti.filter(a => !a.schedaCompilata && !schedeFlagControllati.has(a.id));
+    daControllare.forEach(a => schedeFlagControllati.add(a.id));
+    await Promise.all(daControllare.map(async a => {
+      try{
+        const snap = await getDoc(doc(db,'schedeAtleti', a.id));
+        if(!snap.exists() || !schedaHaContenuto({ ...schedaDefault(), ...snap.data() })) return;
+        schedeConDatiLocale.add(a.id);                       // il bollino compare subito, anche se la scrittura fosse negata
+        renderSchedeRoster();
+        await updateDoc(doc(db,'atleti', a.id), { schedaCompilata: true });
+      } catch(err){
+        console.error('Controllo scheda non riuscito per', a.nome, err);
+      }
+    }));
   }
 
   // Salva la scheda e allinea un flag "schedaCompilata" sul documento dell'atleta stesso:
@@ -6036,7 +6060,7 @@
     { id:'lungo',   nome:'Salto in lungo da fermo', unita:'cm', minoreMeglio:false },
     { id:'situps',  nome:'Sit-ups',                 unita:'n.', minoreMeglio:false },
     { id:'navetta', nome:'10x5 m corsa a navetta',  unita:'s',  minoreMeglio:true  },
-    { id:'palla',   nome:'30',     unita:'m',  minoreMeglio:false }
+    { id:'palla',   nome:'Lancio palla medica',     unita:'m',  minoreMeglio:false }
   ];
   let schedaTestRigaInModifica = null;   // null | 'nuova' | id riga
   let schedaTestBozza = null;            // { periodo, valori } se il form è aperto
