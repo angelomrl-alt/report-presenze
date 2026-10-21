@@ -1197,6 +1197,31 @@
   body.senza-nomi .rs-solo-nomi{display:none !important;}
   body.stampa-societa .chart-confronto-svg{width:100% !important; height:auto !important;}
   body.stampa-societa .chart-confronto-scroll{overflow:visible;}
+  .cf-segmenti{display:flex; gap:6px; margin:10px 0;}
+  .cf-seg{flex:1; font-family:inherit; font-size:13px; padding:8px 6px; border-radius:10px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text-dim); cursor:pointer;}
+  .cf-seg.attivo{background:color-mix(in srgb, var(--primary) 16%, var(--surface)); border-color:var(--primary); color:var(--text); font-weight:700;}
+  .cf-avviso{font-size:12.5px; color:var(--text-dim); margin:0 0 10px;}
+  .cf-avviso button{font-family:inherit; font-size:12.5px; background:none; border:none; color:var(--text); text-decoration:underline; padding:0; cursor:pointer;}
+  .cf-tab th[data-col]{cursor:pointer; white-space:nowrap;}
+  .cf-tab td.cf-num{text-align:right; font-variant-numeric:tabular-nums;}
+  .cf-tab th.cf-num{text-align:right;}
+  .cf-tab td.cf-best{background:color-mix(in srgb, var(--primary) 22%, transparent); font-weight:700;}
+  .cf-tab td.cf-worst{color:var(--danger);}
+  .cf-tab tr.cf-media td{background:var(--bg-track); font-weight:700;}
+  .cf-tab td.cf-nome{white-space:normal; min-width:110px; max-width:160px;}
+  .cf-tab td.cf-pos{color:var(--text-dim); width:26px;}
+  .cf-azioni{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+  .cf-riga-sesso{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid var(--surface-2); font-size:14px;}
+  .cf-mf{display:flex; gap:6px;}
+  .cf-mf-btn{font-family:inherit; font-size:13px; font-weight:700; width:40px; padding:6px 0; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text-dim); cursor:pointer;}
+  .cf-mf-btn.attivo{background:color-mix(in srgb, var(--primary) 22%, var(--surface)); border-color:var(--primary); color:var(--text);}
+  /* PDF del confronto: pagina in orizzontale, solo la tabella */
+  body.stampa-confronto > *:not(#app){display:none !important;}
+  body.stampa-confronto #app > *:not(#view-confronto-atleti){display:none !important;}
+  body.stampa-confronto #view-confronto-atleti{display:block !important; background:#fff; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+  body.stampa-confronto #view-confronto-atleti .topbar, body.stampa-confronto .cf-segmenti, body.stampa-confronto #cf-filtro-test, body.stampa-confronto #cf-filtro-prest, body.stampa-confronto #cf-senza-sesso, body.stampa-confronto .cf-azioni{display:none !important;}
+  body.stampa-confronto .test-tabella-wrap{overflow:visible; border:none;}
+  body.stampa-confronto .cf-tab{font-size:12px;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -2110,8 +2135,45 @@
         <span><span class="puntino-scheda compilata"></span> Scheda con almeno un dato</span>
         <span><span class="puntino-scheda"></span> Scheda ancora vuota</span>
       </div>
+      <button type="button" id="btn-confronta-atleti" class="btn-secondary" style="width:100%; margin-bottom:12px;">📊 Confronta atleti</button>
       <input type="text" id="schede-search" class="scheda-search" placeholder="🔍 Cerca atleta...">
       <div id="schede-roster"></div>
+    </main>
+  </section>
+
+  <!-- ===================== CONFRONTA ATLETI ===================== -->
+  <section id="view-confronto-atleti" class="view">
+    <header class="topbar">
+      <div class="brand-mini">
+        <button class="btn-back" id="back-to-schede-from-confronto" aria-label="Torna all'elenco">←</button>
+        🏃 Atletica Silca <span class="role-tag">Confronto</span>
+      </div>
+      <button class="btn-logout" data-logout>Esci</button>
+      <button type="button" class="btn-logout btn-hamburger">☰</button>
+    </header>
+    <main>
+      <h2 id="cf-titolo">Confronta atleti</h2>
+      <p class="sub" id="cf-sub"></p>
+      <div class="cf-segmenti" id="cf-modo">
+        <button type="button" class="cf-seg attivo" data-modo="test">Test motori</button>
+        <button type="button" class="cf-seg" data-modo="prestazioni">Prestazioni</button>
+      </div>
+      <div class="cf-segmenti" id="cf-sesso">
+        <button type="button" class="cf-seg attivo" data-sesso="tutti">Tutti</button>
+        <button type="button" class="cf-seg" data-sesso="M">Maschi</button>
+        <button type="button" class="cf-seg" data-sesso="F">Femmine</button>
+      </div>
+      <p class="cf-avviso" id="cf-senza-sesso"></p>
+      <div id="cf-filtro-test" class="fisico-campo" style="margin-bottom:10px;">
+        <label for="cf-periodo">Rilevazione</label>
+        <select id="cf-periodo"></select>
+      </div>
+      <div id="cf-filtro-prest" class="andamento-chips" style="display:none;"></div>
+      <div id="cf-corpo"></div>
+      <div class="cf-azioni">
+        <button type="button" class="btn-secondary" id="cf-pdf">🖨️ PDF</button>
+        <button type="button" class="btn-secondary" id="cf-condividi">📤 Condividi</button>
+      </div>
     </main>
   </section>
 
@@ -5541,12 +5603,13 @@
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     schedeRosterUnsub = onSnapshot(qAtleti, snap => {
       schedeRosterDocs = snap.docs.filter(d => !d.data().archiviato)
-        .map(d => ({ id:d.id, nome:d.data().nome, schedaCompilata: !!d.data().schedaCompilata }))
+        .map(d => ({ id:d.id, nome:d.data().nome, schedaCompilata: !!d.data().schedaCompilata, sesso: d.data().sesso || '' }))
         .sort((a,b)=>a.nome.localeCompare(b.nome));
       renderSchedeRoster();
       sincronizzaFlagSchede(schedeRosterDocs);
     });
 
+    document.getElementById('btn-confronta-atleti').style.display = schedaModelloCadetti() ? '' : 'none';
     showView('view-schede');
   }
 
@@ -6807,6 +6870,308 @@
       window.open('https://wa.me/?text=' + encodeURIComponent(testo), '_blank');
     }
   });
+
+  // ---------- Confronta atleti (Cadetti): test motori e prestazioni di tutti gli atleti, con filtro maschi/femmine ----------
+  let confrontoDati = [];            // [{id, nome, sesso, scheda}]
+  let cfModo = 'test';               // 'test' | 'prestazioni'
+  let cfSesso = 'tutti';             // 'tutti' | 'M' | 'F'
+  let cfPeriodo = '__ultima__';
+  let cfSpecialita = null;
+  let cfOrdine = { col: null, dir: 1 };
+
+  async function apriConfrontoAtleti(){
+    if(!schedaModelloCadetti()) return;
+    document.getElementById('cf-corpo').innerHTML = '<p class="empty-note">Carico le schede degli atleti...</p>';
+    document.getElementById('cf-sub').textContent = '';
+    showView('view-confronto-atleti');
+    await caricaConfrontoAtleti();
+    renderConfronto();
+  }
+
+  // Una lettura per atleta (le regole permettono di leggere le singole schede del proprio gruppo)
+  async function caricaConfrontoAtleti(){
+    confrontoDati = await Promise.all(schedeRosterDocs.map(async a => {
+      try{
+        const snap = await getDoc(doc(db,'schedeAtleti', a.id));
+        return { ...a, scheda: snap.exists() ? { ...schedaDefault(), ...snap.data() } : schedaDefault(), errore: false };
+      } catch(err){
+        console.error('Lettura scheda non riuscita per', a.nome, err);
+        return { ...a, scheda: schedaDefault(), errore: true };
+      }
+    }));
+  }
+
+  function cfAtletiFiltrati(){
+    return confrontoDati.filter(a => cfSesso === 'tutti' || a.sesso === cfSesso);
+  }
+
+  // Test motori: per ogni atleta il valore di ogni colonna (ultimo disponibile oppure di un periodo scelto)
+  function cfCalcolaTest(){
+    const colonne = testColonneGruppo();
+    const valore = (a, col) => {
+      let righe = a.scheda.testMotori || [];
+      if(cfPeriodo !== '__ultima__') righe = righe.filter(r => r.periodo === cfPeriodo);
+      for(let i = righe.length - 1; i >= 0; i--){
+        const v = righe[i].valori && righe[i].valori[col.id];
+        if(v !== undefined && v !== '') return v;
+      }
+      return '';
+    };
+    const righe = cfAtletiFiltrati().map(a => {
+      const vals = colonne.map(c => valore(a, c));
+      return { a, vals, nums: vals.map(v => v === '' ? null : testNum(v)) };
+    });
+    const miglior = colonne.map((c, i) => {
+      const n = righe.map(r => r.nums[i]).filter(x => x !== null);
+      if(n.length === 0) return { best: null, worst: null };
+      const mn = Math.min(...n), mx = Math.max(...n);
+      const best = c.minoreMeglio ? mn : mx;
+      const peggio = c.minoreMeglio ? mx : mn;
+      return { best, worst: (n.length >= 3 && peggio !== best) ? peggio : null };
+    });
+    const medie = colonne.map((c, i) => {
+      const n = righe.map(r => r.nums[i]).filter(x => x !== null);
+      return n.length ? n.reduce((t, x) => t + x, 0) / n.length : null;
+    });
+    if(cfOrdine.col !== null && cfOrdine.col < colonne.length){
+      const i = cfOrdine.col, c = colonne[i];
+      righe.sort((x, y) => {
+        const a = x.nums[i], b = y.nums[i];
+        if(a === null && b === null) return x.a.nome.localeCompare(y.a.nome);
+        if(a === null) return 1;
+        if(b === null) return -1;
+        const d = c.minoreMeglio ? a - b : b - a;
+        return (d * cfOrdine.dir) || x.a.nome.localeCompare(y.a.nome);
+      });
+    }
+    return { colonne, righe, miglior, medie };
+  }
+
+  // Prestazioni: classifica degli atleti nella specialità scelta (tempi: vince il più basso; misure: il più alto)
+  function cfCalcolaPrestazioni(){
+    const conteggio = new Map();
+    confrontoDati.forEach(a => {
+      new Set((a.scheda.prestazioni || []).map(p => p.specialita).filter(Boolean)).forEach(n => conteggio.set(n, (conteggio.get(n) || 0) + 1));
+    });
+    const nomi = Array.from(conteggio.keys()).sort((x, y) => (conteggio.get(y) - conteggio.get(x)) || x.localeCompare(y));
+    if(!nomi.includes(cfSpecialita)) cfSpecialita = nomi[0] || null;
+    if(!cfSpecialita) return { nomi, specialita: null, righe: [], tempo: false };
+
+    const per = cfAtletiFiltrati().map(a => ({
+      a,
+      punti: (a.scheda.prestazioni || []).filter(p => p.specialita === cfSpecialita)
+        .map(p => ({ p: leggiDatoPrestazione(p.valore), raw: p.valore })).filter(x => x.p)
+    }));
+    const tutti = per.flatMap(x => x.punti);
+    const tempo = tutti.length > 0 && tutti.filter(x => x.p.tempo).length * 2 >= tutti.length;
+    per.forEach(x => {
+      x.usati = x.punti.filter(pt => pt.p.tempo === tempo);
+      x.best = x.usati.length ? x.usati.reduce((b, pt) => (tempo ? pt.p.n < b.p.n : pt.p.n > b.p.n) ? pt : b) : null;
+      x.ultimo = x.usati.length ? x.usati[x.usati.length - 1] : null;
+    });
+    per.sort((x, y) => {
+      if(!x.best && !y.best) return x.a.nome.localeCompare(y.a.nome);
+      if(!x.best) return 1;
+      if(!y.best) return -1;
+      return (tempo ? x.best.p.n - y.best.p.n : y.best.p.n - x.best.p.n) || x.a.nome.localeCompare(y.a.nome);
+    });
+    return { nomi, specialita: cfSpecialita, righe: per, tempo };
+  }
+
+  function cfDescrizione(){
+    const sessoTxt = cfSesso === 'M' ? 'Maschi' : (cfSesso === 'F' ? 'Femmine' : 'Tutti');
+    if(cfModo === 'test'){
+      return `Test motori · ${sessoTxt} · ${cfPeriodo === '__ultima__' ? 'ultima rilevazione di ogni atleta' : cfPeriodo}`;
+    }
+    return `Prestazioni${cfSpecialita ? ' · ' + cfSpecialita : ''} · ${sessoTxt}`;
+  }
+
+  function renderConfronto(){
+    const nM = confrontoDati.filter(a => a.sesso === 'M').length;
+    const nF = confrontoDati.filter(a => a.sesso === 'F').length;
+    const nSenza = confrontoDati.length - nM - nF;
+    const nErrori = confrontoDati.filter(a => a.errore).length;
+
+    document.querySelectorAll('#cf-modo .cf-seg').forEach(b => b.classList.toggle('attivo', b.dataset.modo === cfModo));
+    document.querySelectorAll('#cf-sesso .cf-seg').forEach(b => {
+      const k = b.dataset.sesso;
+      b.classList.toggle('attivo', k === cfSesso);
+      b.textContent = k === 'tutti' ? `Tutti (${confrontoDati.length})` : (k === 'M' ? `Maschi (${nM})` : `Femmine (${nF})`);
+    });
+
+    const av = document.getElementById('cf-senza-sesso');
+    av.innerHTML = (nSenza > 0
+      ? `${nSenza} atlet${nSenza === 1 ? 'a' : 'i'} senza sesso indicato: compar${nSenza === 1 ? 'e' : 'ono'} solo in "Tutti". <button type="button" id="cf-imposta-sesso">Indica M/F</button>`
+      : `<button type="button" id="cf-imposta-sesso">Modifica M/F degli atleti</button>`)
+      + (nErrori > 0 ? ` · ${nErrori} schede non lette.` : '');
+    document.getElementById('cf-imposta-sesso').addEventListener('click', apriImpostaSesso);
+
+    document.getElementById('cf-filtro-test').style.display = cfModo === 'test' ? '' : 'none';
+    document.getElementById('cf-filtro-prest').style.display = cfModo === 'prestazioni' ? 'flex' : 'none';
+    if(cfModo === 'test') renderConfrontoTest(); else renderConfrontoPrestazioni();
+
+    document.getElementById('cf-titolo').textContent = `Confronta atleti · ${GRUPPI[currentGruppoId] ? GRUPPI[currentGruppoId].nome : ''}`;
+    document.getElementById('cf-sub').textContent = `${cfDescrizione()} · ${new Date().toLocaleDateString('it-IT')}`;
+  }
+
+  function renderConfrontoTest(){
+    // Elenco delle rilevazioni (periodi) presenti nelle schede
+    const periodi = [];
+    confrontoDati.forEach(a => (a.scheda.testMotori || []).forEach(r => { if(r.periodo && !periodi.includes(r.periodo)) periodi.push(r.periodo); }));
+    if(cfPeriodo !== '__ultima__' && !periodi.includes(cfPeriodo)) cfPeriodo = '__ultima__';
+    const sel = document.getElementById('cf-periodo');
+    sel.innerHTML = '<option value="__ultima__">Ultima rilevazione di ogni atleta</option>' + periodi.map(p => `<option value="${escHtml(p)}">${escHtml(p)}</option>`).join('');
+    sel.value = cfPeriodo;
+
+    const d = cfCalcolaTest();
+    const corpo = document.getElementById('cf-corpo');
+    if(d.righe.length === 0){
+      corpo.innerHTML = '<p class="empty-note">Nessun atleta da mostrare con questo filtro.</p>';
+      return;
+    }
+    const freccia = i => cfOrdine.col === i ? (cfOrdine.dir === 1 ? ' ▲' : ' ▼') : '';
+    const intest = d.colonne.map((c, i) => `<th class="cf-num" data-col="${i}">${escHtml(c.nome)}${freccia(i)}${c.unita ? `<span class="test-unita">(${escHtml(c.unita)})</span>` : ''}</th>`).join('');
+    const righeHtml = d.righe.map(r => `<tr><td class="cf-nome">${escHtml(r.a.nome)}</td>${r.vals.map((v, i) => {
+      const n = r.nums[i];
+      const cls = n !== null && n === d.miglior[i].best ? ' cf-best' : (n !== null && n === d.miglior[i].worst ? ' cf-worst' : '');
+      return `<td class="cf-num${cls}">${v === '' ? '—' : escHtml(v)}</td>`;
+    }).join('')}</tr>`).join('');
+    const etichettaMedia = cfSesso === 'M' ? 'Media maschi' : (cfSesso === 'F' ? 'Media femmine' : 'Media gruppo');
+    const mediaHtml = `<tr class="cf-media"><td class="cf-nome">${etichettaMedia}</td>${d.medie.map(m => `<td class="cf-num">${m === null ? '—' : testFmt(Math.round(m * 100) / 100)}</td>`).join('')}</tr>`;
+    corpo.innerHTML = `
+      <div class="test-tabella-wrap"><table class="test-tabella cf-tab">
+        <thead><tr><th data-col="nome">Atleta${cfOrdine.col === null ? '' : ' ↺'}</th>${intest}</tr></thead>
+        <tbody>${righeHtml}${mediaHtml}</tbody>
+      </table></div>
+      <p class="test-suggerimento">Verde = miglior valore della colonna, rosso = il più basso. Tocca un titolo per ordinare, "Atleta" per tornare all'ordine alfabetico.</p>`;
+  }
+
+  function renderConfrontoPrestazioni(){
+    const d = cfCalcolaPrestazioni();
+    const chips = document.getElementById('cf-filtro-prest');
+    chips.innerHTML = d.nomi.map(n => `<button type="button" class="andamento-chip${n === d.specialita ? ' attivo' : ''}" data-nome="${escHtml(n)}">${escHtml(n)}</button>`).join('');
+    chips.querySelectorAll('.andamento-chip').forEach(b => b.addEventListener('click', () => { cfSpecialita = b.dataset.nome; renderConfronto(); }));
+
+    const corpo = document.getElementById('cf-corpo');
+    if(!d.specialita){ corpo.innerHTML = '<p class="empty-note">Nessuna prestazione inserita ancora nelle schede.</p>'; return; }
+    if(d.righe.length === 0){ corpo.innerHTML = '<p class="empty-note">Nessun atleta da mostrare con questo filtro.</p>'; return; }
+    let pos = 0;
+    const righeHtml = d.righe.map(x => {
+      const haDato = !!x.best;
+      if(haDato) pos++;
+      return `<tr><td class="cf-pos">${haDato ? pos : '–'}</td><td class="cf-nome">${escHtml(x.a.nome)}</td>
+        <td class="cf-num${haDato && pos === 1 ? ' cf-best' : ''}">${haDato ? escHtml(x.best.raw) : '—'}</td>
+        <td class="cf-num">${haDato ? escHtml(x.ultimo.raw) : '—'}</td></tr>`;
+    }).join('');
+    corpo.innerHTML = `
+      <div class="test-tabella-wrap"><table class="test-tabella cf-tab">
+        <thead><tr><th>#</th><th>Atleta</th><th class="cf-num">Migliore</th><th class="cf-num">Ultimo</th></tr></thead>
+        <tbody>${righeHtml}</tbody>
+      </table></div>
+      <p class="test-suggerimento">${d.tempo ? 'Per i tempi vince il valore più basso.' : 'Per le misure vince il valore più alto.'} Gli atleti senza dato restano in fondo.</p>`;
+  }
+
+  // Indicare maschio/femmina: si salva sul documento dell'atleta (campo sesso: 'M' | 'F')
+  function apriImpostaSesso(){
+    document.getElementById('sesso-feedback').textContent = '';
+    renderListaSesso();
+    document.getElementById('sesso-overlay').style.display = 'flex';
+  }
+  function renderListaSesso(){
+    const lista = document.getElementById('sesso-lista');
+    lista.innerHTML = confrontoDati.map(a => `
+      <div class="cf-riga-sesso"><span>${escHtml(a.nome)}</span>
+        <span class="cf-mf">
+          <button type="button" class="cf-mf-btn${a.sesso === 'M' ? ' attivo' : ''}" data-id="${a.id}" data-s="M" aria-label="Maschio">M</button>
+          <button type="button" class="cf-mf-btn${a.sesso === 'F' ? ' attivo' : ''}" data-id="${a.id}" data-s="F" aria-label="Femmina">F</button>
+        </span>
+      </div>`).join('');
+    lista.querySelectorAll('.cf-mf-btn').forEach(b => b.addEventListener('click', () => impostaSesso(b.dataset.id, b.dataset.s)));
+  }
+  async function impostaSesso(id, s){
+    const a = confrontoDati.find(x => x.id === id);
+    if(!a) return;
+    const precedente = a.sesso;
+    a.sesso = a.sesso === s ? '' : s;
+    const fb = document.getElementById('sesso-feedback');
+    try{
+      await updateDoc(doc(db,'atleti', id), { sesso: a.sesso });
+      const r = schedeRosterDocs.find(x => x.id === id);
+      if(r) r.sesso = a.sesso;
+      fb.textContent = '';
+    } catch(err){
+      console.error('Salvataggio sesso non riuscito:', err);
+      a.sesso = precedente;
+      fb.textContent = err.code === 'permission-denied' ? '⚠️ Permessi mancanti per salvare il sesso dell\'atleta.' : '⚠️ Non sono riuscito a salvare, riprova.';
+    }
+    renderListaSesso();
+    renderConfronto();
+  }
+
+  // PDF (pagina in orizzontale) e condivisione come testo
+  function pulisciStampaConfronto(){
+    document.body.classList.remove('stampa-confronto');
+    const st = document.getElementById('cf-page-style');
+    if(st) st.remove();
+  }
+  function cfStampa(){
+    pulisciStampaConfronto();
+    document.body.classList.add('stampa-confronto');
+    const st = document.createElement('style');
+    st.id = 'cf-page-style';
+    st.textContent = '@page{size:A4 landscape; margin:10mm;}';
+    document.head.appendChild(st);
+    window.print();
+  }
+  window.addEventListener('afterprint', pulisciStampaConfronto);
+
+  function cfTestoCondivisione(){
+    let t = `📊 Confronto ${GRUPPI[currentGruppoId] ? GRUPPI[currentGruppoId].nome : ''} — ${cfDescrizione()}\n`;
+    if(cfModo === 'test'){
+      const d = cfCalcolaTest();
+      d.righe.forEach(r => {
+        const parti = d.colonne.map((c, i) => r.vals[i] !== '' ? `${c.nome} ${r.vals[i]}${c.unita ? ' ' + c.unita : ''}` : null).filter(Boolean);
+        t += `\n${r.a.nome}: ${parti.join(' · ') || '—'}`;
+      });
+      const medie = d.colonne.map((c, i) => d.medie[i] !== null ? `${c.nome} ${testFmt(Math.round(d.medie[i] * 100) / 100)}` : null).filter(Boolean);
+      if(medie.length > 0) t += `\n\nMedia: ${medie.join(' · ')}`;
+    } else {
+      const d = cfCalcolaPrestazioni();
+      let pos = 0;
+      d.righe.forEach(x => {
+        if(x.best){ pos++; t += `\n${pos}. ${x.a.nome} — migliore ${x.best.raw} · ultimo ${x.ultimo.raw}`; }
+        else t += `\n– ${x.a.nome} — nessun dato`;
+      });
+    }
+    return t;
+  }
+
+  document.getElementById('btn-confronta-atleti').addEventListener('click', apriConfrontoAtleti);
+  document.getElementById('back-to-schede-from-confronto').addEventListener('click', () => showView('view-schede'));
+  document.querySelectorAll('#cf-modo .cf-seg').forEach(b => b.addEventListener('click', () => { cfModo = b.dataset.modo; cfOrdine = { col: null, dir: 1 }; renderConfronto(); }));
+  document.querySelectorAll('#cf-sesso .cf-seg').forEach(b => b.addEventListener('click', () => { cfSesso = b.dataset.sesso; renderConfronto(); }));
+  document.getElementById('cf-periodo').addEventListener('change', e => { cfPeriodo = e.target.value; renderConfronto(); });
+  document.getElementById('cf-corpo').addEventListener('click', e => {
+    const th = e.target.closest('th[data-col]');
+    if(!th || cfModo !== 'test') return;
+    if(th.dataset.col === 'nome'){ cfOrdine = { col: null, dir: 1 }; }
+    else {
+      const i = parseInt(th.dataset.col, 10);
+      cfOrdine = cfOrdine.col === i ? { col: i, dir: -cfOrdine.dir } : { col: i, dir: 1 };
+    }
+    renderConfronto();
+  });
+  document.getElementById('cf-pdf').addEventListener('click', cfStampa);
+  document.getElementById('cf-condividi').addEventListener('click', () => {
+    const testo = cfTestoCondivisione();
+    if(navigator.share){
+      navigator.share({ text: testo }).catch(() => {});
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(testo), '_blank');
+    }
+  });
+  document.getElementById('sesso-chiudi').addEventListener('click', () => { document.getElementById('sesso-overlay').style.display = 'none'; });
+  document.getElementById('sesso-overlay').addEventListener('click', e => { if(e.target.id === 'sesso-overlay') document.getElementById('sesso-overlay').style.display = 'none'; });
 
   // ---------- Report stagionale stampabile/PDF ----------
 
@@ -8222,6 +8587,19 @@
       <button type="button" class="btn-secondary" id="esporta-presenze-annulla">Annulla</button>
       <button type="button" class="btn-primary" id="esporta-presenze-conferma" style="width:auto; padding:11px 22px;">Scarica CSV</button>
     </div>
+  </div>
+</div>
+
+<!-- FINESTRA: indicare maschio o femmina -->
+<div id="sesso-overlay" class="sposta-overlay" style="display:none;">
+  <div class="sposta-sheet" role="dialog" aria-modal="true" aria-labelledby="sesso-titolo">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+      <h3 id="sesso-titolo" style="margin:0; font-size:16px;">Maschio o femmina?</h3>
+      <button type="button" id="sesso-chiudi" class="btn-secondary" aria-label="Chiudi" style="width:auto; padding:4px 12px;">✕</button>
+    </div>
+    <p style="margin:0 0 10px; font-size:12.5px; color:var(--text-dim);">Serve per dividere maschi e femmine nel confronto. Tocca M o F: si salva subito. Tocca di nuovo per togliere.</p>
+    <p id="sesso-feedback" class="save-feedback" style="min-height:16px;"></p>
+    <div id="sesso-lista"></div>
   </div>
 </div>
 
