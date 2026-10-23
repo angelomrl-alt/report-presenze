@@ -1222,6 +1222,53 @@
   body.stampa-confronto #view-confronto-atleti .topbar, body.stampa-confronto .cf-segmenti, body.stampa-confronto #cf-filtro-test, body.stampa-confronto #cf-filtro-prest, body.stampa-confronto #cf-senza-sesso, body.stampa-confronto .cf-azioni{display:none !important;}
   body.stampa-confronto .test-tabella-wrap{overflow:visible; border:none;}
   body.stampa-confronto .cf-tab{font-size:12px;}
+  /* Scheda atleta: intestazione compatta, schede (tab), pulsante flottante, modulo a finestra dal basso */
+  #view-scheda-atleta .topbar{display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:8px; padding:12px 14px; position:sticky; top:0; z-index:30;}
+  #view-scheda-atleta .topbar .brand-mini{flex:1; min-width:0; display:flex; align-items:center; gap:8px; grid-column:auto;}
+  #view-scheda-atleta .topbar [data-logout], #view-scheda-atleta .topbar .btn-hamburger{display:none;}
+  .sa-intest{display:flex; flex-direction:column; min-width:0; line-height:1.2;}
+  #view-scheda-atleta #scheda-atleta-nome{font-size:16px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sa-sub{font-size:11.5px; color:var(--text-dim); font-weight:400;}
+  .sa-nav{display:flex; gap:6px; flex:none;}
+  .sa-nav-btn{font-family:inherit; font-size:18px; line-height:1; width:38px; height:38px; border-radius:10px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text); cursor:pointer; padding:0;}
+  .sa-nav-btn:disabled{opacity:.35; cursor:default;}
+  .sa-menu{position:absolute; right:12px; top:calc(100% - 4px); background:var(--surface); border:1px solid var(--border-strong); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.18); padding:6px; flex-direction:column; min-width:210px; z-index:40;}
+  .sa-menu button{font-family:inherit; font-size:14px; text-align:left; background:none; border:none; padding:11px 12px; border-radius:8px; color:var(--text); cursor:pointer;}
+  .sa-menu button:active{background:var(--bg-track);}
+  .sa-tabs{display:none;}
+  #view-scheda-atleta.scheda-compatta .sa-tabs{display:flex; gap:4px; background:var(--bg-track); border-radius:12px; padding:3px; margin:0 0 12px;}
+  .sa-tab{flex:1; font-family:inherit; font-size:13px; padding:9px 4px; border:none; border-radius:9px; background:transparent; color:var(--text-dim); cursor:pointer;}
+  .sa-tab.attivo{background:var(--surface); color:var(--text); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .sa-cnt{font-weight:400; color:var(--text-dim);}
+  .sa-sintesi{margin:0; font-size:12px; color:var(--text-dim);}
+  .sa-toolbar{display:none;}
+  #view-scheda-atleta.scheda-compatta .categoria-badge{display:none;}
+  #view-scheda-atleta.scheda-compatta .riepilogo{border:none; background:transparent; box-shadow:none; padding:0; margin:0 0 10px;}
+  #view-scheda-atleta.scheda-compatta .riepilogo-titolo{display:none;}
+  #view-scheda-atleta.scheda-compatta .scheda-azioni-riga{display:none;}
+  #view-scheda-atleta #scheda-sezioni.scheda-griglia{display:block; padding-bottom:90px; margin-bottom:0;}
+  #view-scheda-atleta #scheda-sezioni.scheda-griglia .report-section{padding:0; border:none; box-shadow:none; background:transparent; margin:0;}
+  #view-scheda-atleta #scheda-sezioni.scheda-griglia .report-section > summary{display:none;}
+  #view-scheda-atleta #scheda-sezioni.scheda-griglia .report-section > div{padding:0;}
+  #view-scheda-atleta #scheda-sezioni.scheda-griglia .report-section > .sa-toolbar{display:flex; align-items:center; justify-content:space-between; padding:2px 0 10px;}
+  .sa-toolbar-titolo{font-size:14px; font-weight:700;}
+  .sa-toolbar-azioni{display:flex; gap:6px;}
+  .sa-icona-btn{width:38px; height:34px; border-radius:10px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .sa-icona-btn svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+  #scheda-sezioni[data-tab="test"] #scheda-prestazioni-section, #scheda-sezioni[data-tab="test"] #scheda-note-section,
+  #scheda-sezioni[data-tab="prestazioni"] #scheda-test-section, #scheda-sezioni[data-tab="prestazioni"] #scheda-note-section,
+  #scheda-sezioni[data-tab="note"] #scheda-test-section, #scheda-sezioni[data-tab="note"] #scheda-prestazioni-section{display:none !important;}
+  .scheda-compatta .sa-azioni-test, .scheda-compatta .sa-azioni-prest{display:none;}
+  .sa-fab{display:none; position:fixed; right:16px; bottom:18px; z-index:50; align-items:center; gap:6px; font-family:inherit; font-size:14px; font-weight:700; padding:12px 18px; border-radius:26px; border:1px solid var(--primary); background:var(--primary); color:#10231a; box-shadow:0 6px 18px rgba(0,0,0,.25); cursor:pointer;}
+  .sa-fab svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.5; stroke-linecap:round;}
+  #view-scheda-atleta.scheda-compatta .sa-fab{display:flex;}
+  #view-scheda-atleta.scheda-compatta #scheda-test-form, #view-scheda-atleta.scheda-compatta #scheda-prestazioni-form{
+    position:fixed; left:0; right:0; bottom:0; z-index:60; margin:0 auto; max-width:560px; background:var(--surface); padding:16px 16px 22px;
+    border-radius:18px 18px 0 0; max-height:88vh; overflow:auto;
+    box-shadow:0 0 0 100vmax rgba(0,0,0,.38), 0 -8px 30px rgba(0,0,0,.25);
+  }
+  .sa-sheet-testa{grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:15px; font-weight:700;}
+  .sa-sheet-x{font-family:inherit; font-size:16px; width:34px; height:34px; border-radius:10px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text); cursor:pointer; padding:0;}
   .podi-atleta{font-size:12.5px; color:var(--text-dim); margin-left:10px; white-space:nowrap;}
   .gr-disciplina{flex:1 1 130px; min-width:120px;}
   .gr-piazzamento{flex:1 1 130px; min-width:120px;}
@@ -2182,10 +2229,19 @@
     <header class="topbar">
       <div class="brand-mini">
         <button class="btn-back" id="back-to-schede-from-dettaglio" aria-label="Torna all'elenco">←</button>
-        <span id="scheda-atleta-nome">—</span>
+        <span class="sa-intest"><span id="scheda-atleta-nome">—</span><span class="sa-sub" id="scheda-atleta-sub"></span></span>
       </div>
       <button class="btn-logout" data-logout>Esci</button>
+      <span class="sa-nav">
+        <button type="button" id="scheda-prev" class="sa-nav-btn" aria-label="Atleta precedente">‹</button>
+        <button type="button" id="scheda-next" class="sa-nav-btn" aria-label="Atleta successivo">›</button>
+        <button type="button" id="scheda-menu-btn" class="sa-nav-btn" aria-label="Altro">⋯</button>
+      </span>
       <button type="button" class="btn-logout btn-hamburger">☰</button>
+      <div class="sa-menu" id="scheda-menu" style="display:none;">
+        <button type="button" id="scheda-menu-condividi">📤 Condividi scheda</button>
+        <button type="button" id="scheda-menu-pdf">🖨️ Report stagione PDF</button>
+      </div>
     </header>
     <main>
       <span class="categoria-badge" id="scheda-atleta-gruppo">—</span>
@@ -2205,7 +2261,13 @@
         <div id="scheda-riepilogo-corpo"></div>
       </div>
 
-      <div id="scheda-sezioni">
+      <div class="sa-tabs" id="sa-tabs">
+        <button type="button" class="sa-tab attivo" data-tab="test">Test <span class="sa-cnt" id="sa-cnt-test"></span></button>
+        <button type="button" class="sa-tab" data-tab="prestazioni">Prestazioni <span class="sa-cnt" id="sa-cnt-prest"></span></button>
+        <button type="button" class="sa-tab" data-tab="note">Note <span class="sa-cnt" id="sa-cnt-note"></span></button>
+      </div>
+
+      <div id="scheda-sezioni" data-tab="test">
       <!-- DATI FISICI + STORICO CRESCITA (unica finestra) -->
       <details class="report-section" id="scheda-fisico-section">
         <summary>🧍 Dati fisici e crescita</summary>
@@ -2271,6 +2333,10 @@
       <!-- TEST MOTORI (solo Cadetti, colonne condivise dal gruppo) -->
       <details class="report-section sez-test" id="scheda-test-section" style="display:none;">
         <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 13V9"/><path d="M10 3h4"/></svg></span>Test motori</summary>
+        <div class="sa-toolbar"><span class="sa-toolbar-titolo">Test motori</span><span class="sa-toolbar-azioni">
+          <button type="button" id="sa-test-andamento" class="sa-icona-btn" aria-label="Andamento"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg></button>
+          <button type="button" id="sa-test-colonne" class="sa-icona-btn" aria-label="Modifica colonne"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></button>
+        </span></div>
         <div id="scheda-test-corpo"></div>
       </details>
 
@@ -2278,14 +2344,18 @@
       <details class="report-section sez-obiettivi" id="scheda-prestazioni-section">
         <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg></span>Prestazioni</summary>
         <div>
+          <div class="sa-toolbar"><span class="sa-toolbar-titolo">Prestazioni</span><span class="sa-toolbar-azioni">
+            <button type="button" id="sa-prest-andamento" class="sa-icona-btn" aria-label="Andamento"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg></button>
+          </span></div>
           <div id="scheda-prestazioni-corpo"></div>
         </div>
       </details>
 
       <!-- NOTE LIBERE -->
-      <details class="report-section sez-note">
+      <details class="report-section sez-note" id="scheda-note-section">
         <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M9 11h6M9 15h6"/></svg></span>Note dell'allenatore</summary>
         <div>
+          <div class="sa-toolbar"><span class="sa-toolbar-titolo">Note dell'allenatore</span></div>
           <div id="scheda-note-list"></div>
           <div class="nuova-nota">
             <textarea id="scheda-nuova-nota-input" placeholder="Scrivi una nuova nota... (la data si aggiunge da sola)"></textarea>
@@ -2305,6 +2375,7 @@
           <span>Report stagione PDF</span>
         </button>
       </div>
+      <button type="button" id="scheda-fab" class="sa-fab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span id="scheda-fab-testo">Rilevazione</span></button>
     </main>
   </section>
 
@@ -5633,7 +5704,7 @@
     `).join('');
 
     cont.querySelectorAll('.roster-item-clickable').forEach(el => {
-      el.addEventListener('click', () => apriSchedaAtleta(el.dataset.id, el.dataset.nome));
+      el.addEventListener('click', () => { schedaTabAttiva = 'test'; apriSchedaAtleta(el.dataset.id, el.dataset.nome); });
     });
   }
 
@@ -5791,6 +5862,7 @@
     renderSchedaTestMotori();
     renderSchedaRiepilogo();
     renderReportStagioneSelect();
+    impostaTabScheda(schedaTabAttiva);
     showView('view-scheda-atleta');
   }
 
@@ -5805,6 +5877,55 @@
     return eta;
   }
 
+  // ---------- Scheda atleta: schede (tab), intestazione, navigazione tra atleti ----------
+  let schedaTabAttiva = 'test';
+  let schedaTestUltimoPeriodo = '';   // si ricorda tra un atleta e l'altro: lo scrivi una volta sola
+
+  function impostaTabScheda(tab){
+    schedaTabAttiva = tab;
+    const cont = document.getElementById('scheda-sezioni');
+    cont.dataset.tab = tab;
+    ['scheda-test-section', 'scheda-prestazioni-section', 'scheda-note-section'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.open = true;
+    });
+    document.querySelectorAll('#sa-tabs .sa-tab').forEach(b => b.classList.toggle('attivo', b.dataset.tab === tab));
+    document.getElementById('scheda-fab-testo').textContent = { test: 'Rilevazione', prestazioni: 'Prestazione', note: 'Nota' }[tab] || 'Aggiungi';
+  }
+
+  function aggiornaContatoriScheda(){
+    const d = schedaDatiCorrenti;
+    if(!d) return;
+    document.getElementById('sa-cnt-test').textContent = (d.testMotori || []).length;
+    document.getElementById('sa-cnt-prest').textContent = (d.prestazioni || []).length;
+    document.getElementById('sa-cnt-note').textContent = (d.note || []).length;
+  }
+
+  function aggiornaIntestazioneScheda(eta){
+    const g = GRUPPI[currentGruppoId];
+    document.getElementById('scheda-atleta-sub').textContent =
+      [eta !== null && eta !== undefined ? eta + ' anni' : null, g ? g.nome : null].filter(Boolean).join(' · ');
+    const idx = schedeRosterDocs.findIndex(a => a.id === schedaAtletaId);
+    document.getElementById('scheda-prev').disabled = idx <= 0;
+    document.getElementById('scheda-next').disabled = idx < 0 || idx >= schedeRosterDocs.length - 1;
+  }
+
+  // Passa all'atleta precedente/successivo dell'elenco senza tornare indietro
+  function vaiAdAtletaAdiacente(delta, apriNuovaRilevazione){
+    const idx = schedeRosterDocs.findIndex(a => a.id === schedaAtletaId);
+    const dest = idx >= 0 ? schedeRosterDocs[idx + delta] : null;
+    if(!dest) return;
+    apriSchedaAtleta(dest.id, dest.nome);
+    if(apriNuovaRilevazione){
+      impostaTabScheda('test');
+      schedaTestRigaInModifica = 'nuova';
+      renderSchedaTestMotori();
+    } else {
+      impostaTabScheda(schedaTabAttiva);
+    }
+    window.scrollTo(0, 0);
+  }
+
   function renderSchedaRiepilogo(){
     const cont = document.getElementById('scheda-riepilogo-corpo');
     if(!schedaDatiCorrenti){ cont.innerHTML = ''; return; }
@@ -5817,14 +5938,13 @@
       const testC = schedaDatiCorrenti.testMotori || [];
       const ultimoTest = testC.length > 0 ? testC[testC.length - 1].periodo : '—';
       const notaC = (schedaDatiCorrenti.note || []).slice().sort((a,b) => (b.data||'').localeCompare(a.data||''))[0];
-      cont.innerHTML = `
-        <div class="riepilogo-chips">
-          <div class="riepilogo-chip"><span class="k">Età</span><span class="v">${etaC !== null ? etaC + ' anni' : '—'}</span></div>
-          <div class="riepilogo-chip"><span class="k">Ultima prestazione</span><span class="v">${ultimaPrest ? escHtml(ultimaPrest.specialita + ' · ' + ultimaPrest.valore) : '—'}</span></div>
-          <div class="riepilogo-chip"><span class="k">Ultimo test</span><span class="v">${escHtml(ultimoTest)}</span></div>
-          <div class="riepilogo-chip"><span class="k">Rilevazioni</span><span class="v">${testC.length}</span></div>
-          <div class="riepilogo-chip largo"><span class="k">Ultima nota</span><span class="v">${notaC ? escHtml(notaC.testo) : '—'}</span></div>
-        </div>`;
+      const partiS = [];
+      if(testC.length > 0) partiS.push(`${testC.length} rilevazion${testC.length === 1 ? 'e' : 'i'} · ultimo test ${escHtml(ultimoTest)}`);
+      if(ultimaPrest) partiS.push(`ultima prestazione ${escHtml(ultimaPrest.specialita + ' ' + ultimaPrest.valore)}`);
+      if(notaC && notaC.data) partiS.push(`ultima nota ${new Date(notaC.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' })}`);
+      cont.innerHTML = `<p class="sa-sintesi">${partiS.length > 0 ? partiS.join(' · ') : 'Nessun dato ancora'}</p>`;
+      aggiornaIntestazioneScheda(etaC);
+      aggiornaContatoriScheda();
       return;
     }
 
@@ -6261,9 +6381,12 @@
 
     if(schedaTestRigaInModifica !== null){
       const esistente = righe.find(r => r.id === schedaTestRigaInModifica);
-      const base = schedaTestBozza || (esistente ? { periodo: esistente.periodo, valori: esistente.valori || {} } : { periodo:'', valori:{} });
+      const base = schedaTestBozza || (esistente ? { periodo: esistente.periodo, valori: esistente.valori || {} } : { periodo: schedaTestUltimoPeriodo, valori:{} });
+      const idxAtl = schedeRosterDocs.findIndex(a => a.id === schedaAtletaId);
+      const haProssimo = !esistente && idxAtl >= 0 && idxAtl < schedeRosterDocs.length - 1;
       html += `
         <div class="test-form" id="scheda-test-form" data-riga="${schedaTestRigaInModifica}">
+          <div class="sa-sheet-testa"><span>${esistente ? 'Modifica rilevazione' : 'Nuova rilevazione'} · ${escHtml(schedaAtletaNome)}</span><button type="button" class="sa-sheet-x" data-chiudi aria-label="Chiudi">✕</button></div>
           <div class="fisico-campo" style="grid-column:1/-1;">
             <label for="test-periodo">Data / periodo</label>
             <input type="text" id="test-periodo" placeholder="es. Set 2026" value="${escHtml(base.periodo)}">
@@ -6275,13 +6398,14 @@
             </div>`).join('')}
           <div class="test-azioni" style="grid-column:1/-1;">
             <button type="button" class="btn-secondary" id="test-salva-btn">Salva rilevazione</button>
+            ${haProssimo ? '<button type="button" class="btn-secondary" id="test-salva-prossimo-btn">Salva e prossimo ›</button>' : ''}
             <button type="button" class="btn-secondary" id="test-annulla-btn">Annulla</button>
             ${esistente ? '<button type="button" class="btn-remove" id="test-elimina-btn">Elimina</button>' : ''}
           </div>
         </div>`;
     } else {
       html += `
-        <div class="test-azioni">
+        <div class="test-azioni sa-azioni-test">
           <button type="button" class="btn-secondary" id="test-nuova-btn">+ Nuova rilevazione</button>
           <button type="button" class="btn-secondary" id="test-andamento-btn"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg> Andamento</button>
           <button type="button" class="btn-secondary" id="test-colonne-btn">Modifica colonne</button>
@@ -6331,8 +6455,7 @@
       await salvaScheda(schedaAtletaId);
       renderSchedaTestMotori();
     });
-    const salva = document.getElementById('test-salva-btn');
-    if(salva) salva.addEventListener('click', async () => {
+    const eseguiSalvataggioTest = async (prossimo) => {
       const periodo = document.getElementById('test-periodo').value.trim();
       if(!periodo){ alert('Scrivi la data o il periodo.'); return; }
       const valori = {};
@@ -6356,10 +6479,20 @@
         alert('Non sono riuscito a salvare la rilevazione. Riprova.');
         return;
       }
+      schedaTestUltimoPeriodo = periodo;
       schedaTestRigaInModifica = null;
       schedaTestBozza = null;
       renderSchedaTestMotori();
-    });
+      if(prossimo) vaiAdAtletaAdiacente(1, true);
+    };
+    const salva = document.getElementById('test-salva-btn');
+    if(salva) salva.addEventListener('click', () => eseguiSalvataggioTest(false));
+    const salvaPross = document.getElementById('test-salva-prossimo-btn');
+    if(salvaPross) salvaPross.addEventListener('click', () => eseguiSalvataggioTest(true));
+    corpo.querySelectorAll('[data-chiudi]').forEach(b => b.addEventListener('click', () => {
+      const a = document.getElementById('test-annulla-btn');
+      if(a) a.click();
+    }));
   }
 
   // ---------- Andamento test motori (grafico a linea, un test alla volta) ----------
@@ -6603,6 +6736,7 @@
       const base = prestazioneBozza || (esistente ? { data: esistente.data || '', specialita: esistente.specialita, valore: esistente.valore } : { data:'', specialita:'', valore:'' });
       html += `
         <div class="test-form" id="scheda-prestazioni-form" data-riga="${prestazioneInModifica}">
+          <div class="sa-sheet-testa"><span>${esistente ? 'Modifica prestazione' : 'Nuova prestazione'} · ${escHtml(schedaAtletaNome)}</span><button type="button" class="sa-sheet-x" data-chiudi aria-label="Chiudi">✕</button></div>
           <div class="fisico-campo">
             <label for="prest-data">Data</label>
             <input type="text" id="prest-data" placeholder="es. settembre" value="${escHtml(base.data)}">
@@ -6623,7 +6757,7 @@
         </div>`;
     } else {
       html += `
-        <div class="test-azioni">
+        <div class="test-azioni sa-azioni-prest">
           <button type="button" class="btn-secondary" id="prest-nuova-btn">+ Nuova prestazione</button>
           <button type="button" class="btn-secondary" id="prest-andamento-btn"><svg viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px;"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg> Andamento</button>
         </div>`;
@@ -6650,6 +6784,7 @@
     if(andBtn) andBtn.addEventListener('click', apriAndamentoPrestazioni);
     const annulla = document.getElementById('prest-annulla-btn');
     if(annulla) annulla.addEventListener('click', () => { prestazioneInModifica = null; prestazioneBozza = null; renderSchedaPrestazioni(); });
+    corpo.querySelectorAll('[data-chiudi]').forEach(b => b.addEventListener('click', () => { if(annulla) annulla.click(); }));
 
     const elimina = document.getElementById('prest-elimina-btn');
     if(elimina) elimina.addEventListener('click', async () => {
@@ -7172,6 +7307,29 @@
   });
   document.getElementById('sesso-chiudi').addEventListener('click', () => { document.getElementById('sesso-overlay').style.display = 'none'; });
   document.getElementById('sesso-overlay').addEventListener('click', e => { if(e.target.id === 'sesso-overlay') document.getElementById('sesso-overlay').style.display = 'none'; });
+
+  document.querySelectorAll('#sa-tabs .sa-tab').forEach(b => b.addEventListener('click', () => impostaTabScheda(b.dataset.tab)));
+  document.getElementById('scheda-prev').addEventListener('click', () => vaiAdAtletaAdiacente(-1, false));
+  document.getElementById('scheda-next').addEventListener('click', () => vaiAdAtletaAdiacente(1, false));
+  document.getElementById('scheda-menu-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const m = document.getElementById('scheda-menu');
+    m.style.display = m.style.display === 'none' ? 'flex' : 'none';
+  });
+  document.addEventListener('click', () => { const m = document.getElementById('scheda-menu'); if(m) m.style.display = 'none'; });
+  document.getElementById('scheda-menu-condividi').addEventListener('click', () => document.getElementById('condividi-scheda-btn').click());
+  document.getElementById('scheda-menu-pdf').addEventListener('click', () => document.getElementById('report-stagione-btn').click());
+  document.getElementById('sa-test-andamento').addEventListener('click', () => { const b = document.getElementById('test-andamento-btn'); if(b) b.click(); });
+  document.getElementById('sa-test-colonne').addEventListener('click', () => { const b = document.getElementById('test-colonne-btn'); if(b) b.click(); });
+  document.getElementById('sa-prest-andamento').addEventListener('click', () => { const b = document.getElementById('prest-andamento-btn'); if(b) b.click(); });
+  document.getElementById('scheda-fab').addEventListener('click', () => {
+    if(schedaTabAttiva === 'test'){ const b = document.getElementById('test-nuova-btn'); if(b) b.click(); }
+    else if(schedaTabAttiva === 'prestazioni'){ const b = document.getElementById('prest-nuova-btn'); if(b) b.click(); }
+    else {
+      const t = document.getElementById('scheda-nuova-nota-input');
+      if(t){ t.scrollIntoView({ behavior:'smooth', block:'center' }); t.focus({ preventScroll:true }); }
+    }
+  });
 
   // ---------- Report stagionale stampabile/PDF ----------
 
