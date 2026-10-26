@@ -1900,18 +1900,26 @@
         <span class="cp-freccia" aria-hidden="true">›</span>
       </div>
 
-      <div class="foglio-batteria griglia-azioni">
-        <div class="corsia c-gara" id="card-risultati">
-          <div class="corsia-riga"></div>
-          <div class="corsia-corpo">
-            <div class="corsia-icona"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2 4l2 4H5"/></svg></div>
-            <div class="corsia-testi">
-              <div class="corsia-titolo">Registra gara</div>
-              </div>
+      <div id="presenze-cas-cards" style="display:none;">
+        <div class="card-principale" id="card-presenze-cas123" role="button" tabindex="0">
+          <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
+          <div class="cp-testi">
+            <div class="cp-titolo">Presenze CAS 1-2-3</div>
+            <div class="cp-sub" id="presenze-ultimo-cas123">Ultimo allenamento: —</div>
           </div>
-          <div class="corsia-freccia">›</div>
+          <span class="cp-freccia" aria-hidden="true">›</span>
         </div>
+        <div class="card-principale" id="card-presenze-cas45" role="button" tabindex="0">
+          <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
+          <div class="cp-testi">
+            <div class="cp-titolo">Presenze CAS 4-5</div>
+            <div class="cp-sub" id="presenze-ultimo-cas45">Ultimo allenamento: —</div>
+          </div>
+          <span class="cp-freccia" aria-hidden="true">›</span>
+        </div>
+      </div>
 
+      <div class="foglio-batteria griglia-azioni">
         <div class="corsia c-report" id="card-report">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
@@ -2008,6 +2016,8 @@
 
       <div id="cert-avviso-banner" class="info-banner cert-banner" style="display:none;"></div>
 
+      <div id="roster-da-assegnare"></div>
+
       <div id="roster-list" class="roster-list">
         <div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>
       </div>
@@ -2072,18 +2082,16 @@
         <div class="rr-cella"><span class="kpi-value" id="kpi-gare">0</span><span class="rr-lab">gare</span></div>
       </div>
 
-      <details class="report-section" id="report-sez-storico">
-        <summary class="report-summary-flex"><span>👥 Storico per atleta</span><span class="report-summary-num"><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
-        <div>
-          <p class="storico-sintesi" id="storico-sintesi"></p>
-          <div class="report-mini report-mini-largo" id="storico-mensile-box" style="margin-bottom:12px;"><small>Sessioni per mese</small><div class="report-barre" id="report-mensile-allenamenti"></div></div>
-          <div class="atleti-list" id="storico-lista"></div>
-          <details class="nomi-controllo" id="nomi-controllo" style="display:none;">
-            <summary id="nomi-controllo-titolo"></summary>
-            <div id="nomi-controllo-corpo"></div>
-          </details>
+      <div class="report-section" id="report-export" style="padding:14px 16px; margin-bottom:12px;">
+        <div style="font-weight:600; margin-bottom:8px;">📤 Esporta presenze (Excel)</div>
+        <p class="sub" style="margin:0 0 10px; font-size:12.5px;">File con il totale dei giorni di presenza di ogni atleta nel mese, da condividere con la società.</p>
+        <div class="fisico-campo" style="margin-bottom:10px;">
+          <label for="export-mese">Mese</label>
+          <select id="export-mese"></select>
         </div>
-      </details>
+        <button type="button" class="btn-primary" id="export-excel-btn" style="width:100%;">Esporta e condividi</button>
+        <p class="save-feedback" id="export-feedback" style="min-height:18px; margin:8px 0 0;"></p>
+      </div>
 
       <details class="report-section" id="report-sez-atleta">
         <summary class="report-summary-flex"><span>👤 Presenze per atleta</span><span class="report-summary-num"><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
@@ -4160,6 +4168,15 @@
   let dateAllenamentiRegistrate = new Set();
   let presenzeCaricate = false;
 
+  // Gruppi con presenze divise in sezioni (menu separati). Chiave = ID documento del gruppo.
+  const SEZIONI_PER_GRUPPO = {
+    'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3' }, { id:'cas45', nome:'CAS 4-5' } ]   // gruppo cas123
+  };
+  function sezioniGruppo(gid){ return SEZIONI_PER_GRUPPO[gid] || null; }
+  let sezioneCorrente = null;          // id sezione aperta in Registra presenze (null = gruppo senza sezioni)
+  let atletiSenzaSezione = [];         // atleti del gruppo non ancora assegnati a una sezione
+  let sezioniRegistratePerData = new Map(); // data -> Set(id sezione già registrate)
+
   function dataLocaleISO(d){
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
@@ -4199,17 +4216,22 @@
       const t = new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'short' });
       return t.charAt(0).toUpperCase() + t.slice(1);
     };
+    const sezAvviso = sezioniGruppo(currentGruppoId);
+    const bottoniRegistra = iso => sezAvviso
+      ? sezAvviso.filter(z => !(sezioniRegistratePerData.get(iso) || new Set()).has(z.id))
+          .map(z => `<button type="button" class="ap-registra" data-data="${iso}" data-sez="${z.id}">${z.nome}</button>`).join('')
+      : `<button type="button" class="ap-registra" data-data="${iso}">Registra</button>`;
     box.innerHTML = `<div class="ap-titolo">⏰ Presenze da registrare</div>` + mancanti.map(iso => `
       <div class="ap-riga">
         <span>${etichetta(iso)}</span>
         <span class="ap-azioni">
-          <button type="button" class="ap-registra" data-data="${iso}">Registra</button>
+          ${bottoniRegistra(iso)}
           <button type="button" class="ap-salta" data-data="${iso}">Non c'è stato</button>
         </span>
       </div>`).join('');
     box.style.display = '';
     box.querySelectorAll('.ap-registra').forEach(b => b.addEventListener('click', () => {
-      apriPresenze();
+      apriPresenze(b.dataset.sez || null);
       const campo = document.getElementById('presenze-data');
       campo.value = b.dataset.data;
       campo.dispatchEvent(new Event('input'));
@@ -4234,6 +4256,29 @@
       const sessioni = snap.docs.map(d => d.data())
         .filter(x => x.tipo === 'allenamento' && typeof x.data === 'string')
         .sort((a,b) => b.data.localeCompare(a.data));
+      const sezDef = sezioniGruppo(gruppoId);
+      if(sezDef){
+        // Gruppo a sezioni: un giorno è "registrato" solo quando ci sono tutte le sezioni
+        sezioniRegistratePerData = new Map();
+        sessioni.forEach(x => {
+          if(!sezioniRegistratePerData.has(x.data)) sezioniRegistratePerData.set(x.data, new Set());
+          if(x.sezione) sezioniRegistratePerData.get(x.data).add(x.sezione);
+        });
+        dateAllenamentiRegistrate = new Set(Array.from(sezioniRegistratePerData.entries())
+          .filter(([, set]) => sezDef.every(z => set.has(z.id))).map(([d]) => d));
+        presenzeCaricate = true;
+        aggiornaAvvisoPresenze();
+        sezDef.forEach(z => {
+          const elz = document.getElementById('presenze-ultimo-' + z.id);
+          if(!elz) return;
+          const u = sessioni.find(x => x.sezione === z.id);
+          if(!u){ elz.textContent = 'Nessun allenamento registrato'; return; }
+          let quandoz = new Date(u.data + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'short', day:'numeric', month:'short' });
+          quandoz = quandoz.charAt(0).toUpperCase() + quandoz.slice(1);
+          elz.textContent = `Ultimo allenamento: ${quandoz} · ${(u.presenti || []).length} presenti`;
+        });
+        return;
+      }
       dateAllenamentiRegistrate = new Set(sessioni.map(x => x.data));
       presenzeCaricate = true;
       aggiornaAvvisoPresenze();
@@ -4277,6 +4322,30 @@
 
     renderBannerCertificati('cert-avviso-banner', rosterDocs);
 
+    // Gruppi a sezioni: atleti non ancora assegnati + spostamento tra sezioni
+    const sezDefR = sezioneCorrente ? sezioniGruppo(currentGruppoId) : null;
+    const boxDA = document.getElementById('roster-da-assegnare');
+    if(boxDA){
+      if(sezDefR && atletiSenzaSezione.length > 0){
+        boxDA.innerHTML = `<div class="info-banner" style="margin-bottom:14px;">
+          <strong>Da assegnare a una sezione (${atletiSenzaSezione.length})</strong>
+          ${atletiSenzaSezione.map(a => `
+            <div class="roster-item" style="margin-top:8px;">
+              <span class="nome">${escHtml(a.nome)}</span>
+              <span style="display:flex; gap:6px;">
+                ${sezDefR.map(z => `<button type="button" class="btn-secondary btn-assegna-sez" style="padding:6px 10px; font-size:12.5px;" data-id="${a.id}" data-sez="${z.id}">${z.nome}</button>`).join('')}
+              </span>
+            </div>`).join('')}
+        </div>`;
+        boxDA.querySelectorAll('.btn-assegna-sez').forEach(btn => btn.addEventListener('click', async () => {
+          try{ await updateDoc(doc(db,'atleti', btn.dataset.id), { sezione: btn.dataset.sez }); }
+          catch(err){ console.error(err); alert('Errore nell\'assegnazione: ' + err.message); }
+        }));
+      } else {
+        boxDA.innerHTML = '';
+      }
+    }
+
     if(rosterDocs.length === 0){
       list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>';
       return;
@@ -4289,12 +4358,20 @@
       return `
         <div class="roster-item">
           <span class="nome">${a.nome}${certHtml}</span>
-          <button type="button" class="presence-pill ${presente ? 'presente' : 'assente'}" data-id="${a.id}">
-            ${presente ? 'Presente' : 'Assente'}
-          </button>
+          <span style="display:flex; gap:8px; align-items:center;">
+            ${sezDefR ? (() => { const altra = sezDefR.find(z => z.id !== sezioneCorrente); return altra ? `<button type="button" class="btn-archivia-testo btn-sez-sposta" data-id="${a.id}" data-sez="${altra.id}">→ ${altra.nome}</button>` : ''; })() : ''}
+            <button type="button" class="presence-pill ${presente ? 'presente' : 'assente'}" data-id="${a.id}">
+              ${presente ? 'Presente' : 'Assente'}
+            </button>
+          </span>
         </div>
       `;
     }).join('');
+
+    list.querySelectorAll('.btn-sez-sposta').forEach(btn => btn.addEventListener('click', async () => {
+      try{ await updateDoc(doc(db,'atleti', btn.dataset.id), { sezione: btn.dataset.sez }); }
+      catch(err){ console.error(err); alert('Errore nello spostamento: ' + err.message); }
+    }));
 
     list.querySelectorAll('.presence-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -4397,11 +4474,13 @@
 
     feedback.textContent = "Controllo registrazioni…";
     try{
-      const q = query(collection(db,'presenze'),
+      const condizioni = [
         where('gruppoId','==', currentGruppoId),
         where('data','==', data),
         where('tipo','==', tipoSelezionato)
-      );
+      ];
+      if(sezioneCorrente) condizioni.push(where('sezione','==', sezioneCorrente));
+      const q = query(collection(db,'presenze'), ...condizioni);
       const snap = await getDocs(q);
       presenzaMap.clear();
 
@@ -4426,9 +4505,13 @@
     renderRoster();
   }
 
-  function apriPresenze(){
+  function apriPresenze(sezId){
     const g = GRUPPI[currentGruppoId];
-    document.getElementById('presenze-group-name').textContent = g ? g.nome : "Il tuo gruppo";
+    const sezDefA = sezioniGruppo(currentGruppoId);
+    const sezInfo = (typeof sezId === 'string' && sezDefA) ? sezDefA.find(z => z.id === sezId) : null;
+    sezioneCorrente = sezInfo ? sezInfo.id : null;
+    atletiSenzaSezione = [];
+    document.getElementById('presenze-group-name').textContent = (g ? g.nome : "Il tuo gruppo") + (sezInfo ? ' · ' + sezInfo.nome : '');
     document.getElementById('presenze-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('save-feedback').textContent = "";
     presenzeDocIdAttuale = null;
@@ -4439,7 +4522,9 @@
 
     const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     rosterUnsub = onSnapshot(q, snap => {
-      rosterDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id: d.id, nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      const tuttiAttivi = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id: d.id, nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', sezione: d.data().sezione || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      atletiSenzaSezione = sezioneCorrente ? tuttiAttivi.filter(a => !a.sezione) : [];
+      rosterDocs = sezioneCorrente ? tuttiAttivi.filter(a => a.sezione === sezioneCorrente) : tuttiAttivi;
       controllaRegistrazioneEsistente();
     });
 
@@ -4457,7 +4542,7 @@
 
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     reportAtletiUnsub = onSnapshot(qAtleti, snap => {
-      reportAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, archiviato: !!d.data().archiviato, archiviatoIl: d.data().archiviatoIl || '' }));
+      reportAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato, archiviatoIl: d.data().archiviatoIl || '' }));
       renderReport();
     });
 
@@ -4479,8 +4564,119 @@
       renderReport();
     });
 
+    popolaMesiExport();
+    caricaXLSX().catch(() => {});   // precarica la libreria Excel, così la condivisione è immediata
     showView('view-report');
   }
+
+  // ---------- Esporta presenze in Excel (mensile, da condividere con la società) ----------
+  function popolaMesiExport(){
+    const sel = document.getElementById('export-mese');
+    if(!sel || sel.dataset.pronto === '1') return;
+    const oggi = new Date();
+    let html = '';
+    for(let i = 0; i < 12; i++){
+      const d = new Date(oggi.getFullYear(), oggi.getMonth() - i, 1);
+      const chiave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      html += `<option value="${chiave}">${MESI_ESTESI[d.getMonth()]} ${d.getFullYear()}</option>`;
+    }
+    sel.innerHTML = html;
+    sel.dataset.pronto = '1';
+  }
+
+  function caricaXLSX(){
+    if(window.XLSX) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      sc.onload = () => resolve();
+      sc.onerror = () => reject(new Error('Impossibile caricare la libreria Excel. Controlla la connessione e riprova.'));
+      document.head.appendChild(sc);
+    });
+  }
+
+  async function esportaPresenzeExcel(){
+    const fb = document.getElementById('export-feedback');
+    const btn = document.getElementById('export-excel-btn');
+    const mese = document.getElementById('export-mese').value;
+    const g = GRUPPI[currentGruppoId];
+    const sezDef = sezioniGruppo(currentGruppoId);
+    btn.disabled = true; fb.textContent = 'Preparo il file…';
+    try{
+      await caricaXLSX();
+      const sess = reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(mese + '-'));
+      const giorniMese = new Set(sess.map(x => x.data));
+      const giorniPerNome = new Map();   // nome -> Set(date di presenza)
+      sess.forEach(x => (x.presenti || []).forEach(n => {
+        if(!giorniPerNome.has(n)) giorniPerNome.set(n, new Set());
+        giorniPerNome.get(n).add(x.data);
+      }));
+
+      // Atleti attivi (anche con 0 presenze) + chi ha presenze nel mese ma ora è ritirato
+      const elenco = new Map();
+      reportAtletiDocs.forEach(a => {
+        if(!a.archiviato || giorniPerNome.has(a.nome)) elenco.set(a.nome, { nome: a.nome, sezione: a.sezione || '' });
+      });
+      giorniPerNome.forEach((_, nome) => { if(!elenco.has(nome)) elenco.set(nome, { nome, sezione: '' }); });
+
+      const ordineSez = id => { const i = sezDef ? sezDef.findIndex(z => z.id === id) : -1; return i === -1 ? 99 : i; };
+      const righeAtleti = Array.from(elenco.values())
+        .sort((x, y) => ordineSez(x.sezione) - ordineSez(y.sezione) || x.nome.localeCompare(y.nome))
+        .map(a => {
+          const n = giorniPerNome.has(a.nome) ? giorniPerNome.get(a.nome).size : 0;
+          const nomeSez = sezDef ? ((sezDef.find(z => z.id === a.sezione) || {}).nome || 'Da assegnare') : null;
+          return sezDef ? [a.nome, nomeSez, n] : [a.nome, n];
+        });
+
+      const [anno, mm] = mese.split('-').map(Number);
+      const meseTesto = `${MESI_ESTESI[mm - 1]} ${anno}`;
+      const nomeGruppo = g ? g.nome : 'Gruppo';
+      const intestazione = sezDef ? ['Atleta', 'Sezione', 'Giorni di presenza'] : ['Atleta', 'Giorni di presenza'];
+      const dati = [
+        ['Atletica Silca Conegliano — Presenze'],
+        ['Gruppo', nomeGruppo],
+        ['Mese', meseTesto],
+        ['Allenamenti svolti nel mese', giorniMese.size],
+        [],
+        intestazione,
+        ...righeAtleti
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(dati);
+      ws['!cols'] = sezDef ? [{ wch: 30 }, { wch: 14 }, { wch: 20 }] : [{ wch: 30 }, { wch: 20 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Presenze');
+
+      const pulito = nomeGruppo.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Gruppo';
+      const nomeFile = `Presenze_${pulito}_${mese}.xlsx`;
+      const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const tipoMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const blob = new Blob([out], { type: tipoMime });
+      const file = new File([blob], nomeFile, { type: tipoMime });
+
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        try{
+          await navigator.share({ files: [file], title: `Presenze ${nomeGruppo} — ${meseTesto}` });
+          fb.textContent = 'File pronto ✓';
+          return;
+        } catch(e){
+          if(e && e.name === 'AbortError'){ fb.textContent = ''; return; }
+          // altro errore di condivisione: ripiego sul download
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = nomeFile;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      fb.textContent = 'File scaricato ✓ (cerca nei Download)';
+    } catch(err){
+      console.error(err);
+      fb.textContent = 'Errore: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  document.getElementById('export-excel-btn').addEventListener('click', esportaPresenzeExcel);
 
   function calcolaReport(){
     const sessioni = reportSessioni.filter(x => inAnnoCorrente(x.data));
@@ -4512,7 +4708,7 @@
     const raceDatesAll = new Set();
     raceDatesByMonth.forEach(set => set.forEach(d => raceDatesAll.add(d)));
 
-    const nAllenamenti = sessioni.filter(s => s.tipo === 'allenamento').length;
+    const nAllenamenti = new Set(sessioni.filter(s => s.tipo === 'allenamento' && s.data).map(s => s.data)).size;
     const nGare = raceDatesAll.size;
     const totalePresenzeSegnate = sessioni.reduce((acc,s) => acc + (s.presenti ? s.presenti.length : 0), 0);
     const media = sessioni.length ? (totalePresenzeSegnate / sessioni.length) : 0;
@@ -4523,8 +4719,10 @@
       if(!mesiMap.has(chiave)) mesiMap.set(chiave, {allenamenti:0, gare:0});
       return mesiMap.get(chiave);
     }
+    const giorniContati = new Set();
     sessioni.forEach(s => {
-      if(!s.data || s.tipo !== 'allenamento') return;
+      if(!s.data || s.tipo !== 'allenamento' || giorniContati.has(s.data)) return;
+      giorniContati.add(s.data);
       assicuraMese(s.data.slice(0,7)).allenamenti++;
     });
     raceDatesByMonth.forEach((set, chiave) => { assicuraMese(chiave).gare = set.size; });
@@ -7556,9 +7754,15 @@
     if(!paAtleta){ corpo.innerHTML = '<p class="empty-note">Nessun atleta nel gruppo.</p>'; return; }
 
     // Allenamenti del mese e stato dell'atleta in ciascuno: P, A oppure non in elenco
-    const sess = reportSessioni
+    const sessPerGiorno = new Map();   // più sezioni nello stesso giorno -> una sola riga
+    reportSessioni
       .filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(paMese + '-'))
-      .sort((x,y) => x.data.localeCompare(y.data));
+      .forEach(x => {
+        const m = sessPerGiorno.get(x.data) || { data: x.data, presenti: [], assenti: [] };
+        m.presenti.push(...(x.presenti || [])); m.assenti.push(...(x.assenti || []));
+        sessPerGiorno.set(x.data, m);
+      });
+    const sess = Array.from(sessPerGiorno.values()).sort((x,y) => x.data.localeCompare(y.data));
     if(sess.length === 0){
       corpo.innerHTML = '<p class="empty-note">Nessun allenamento registrato in questo mese.</p>';
       return;
@@ -7627,7 +7831,7 @@
     document.getElementById('report-sez-atleta').style.display = soloGare ? 'none' : '';
     document.getElementById('rr-cella-allenamenti').style.display = soloGare ? 'none' : '';
     document.querySelector('.report-riepilogo').style.gridTemplateColumns = soloGare ? '1.2fr 1fr' : '';
-    document.getElementById('storico-mensile-box').style.display = soloGare ? 'none' : '';
+    document.getElementById('report-export').style.display = soloGare ? 'none' : '';
     renderPresenzeAtleta();
     document.getElementById('report-sub').textContent = `Dati del ${annoConteggio().anno} (dal 1° gennaio), calcolati dalle presenze registrate nell'app.`;
 
@@ -7641,87 +7845,6 @@
       ritiratiEl.style.display = '';
     } else {
       ritiratiEl.style.display = 'none';
-    }
-
-    // Sintesi del gruppo: media a sessione e medaglie
-    const totOro = d.storico.reduce((t, a) => t + a.oro, 0);
-    const totArg = d.storico.reduce((t, a) => t + a.argento, 0);
-    const totBro = d.storico.reduce((t, a) => t + a.bronzo, 0);
-    const medaglieTesto = (totOro + totArg + totBro) === 0 ? 'Nessun podio ancora' : `Medaglie 🥇${totOro} 🥈${totArg} 🥉${totBro}`;
-    document.getElementById('storico-sintesi').textContent = soloGare
-      ? medaglieTesto
-      : `Media ${String(d.kpi.media).replace('.', ',')} a sessione · ${medaglieTesto}`;
-
-    // Sessioni per mese del gruppo (barre)
-    const barreEl = document.getElementById('report-mensile-allenamenti');
-    const maxMese = Math.max(0, ...d.mensile.map(m => m.allenamenti));
-    barreEl.innerHTML = maxMese === 0
-      ? '<span class="empty-note" style="font-size:12px;">Nessun dato ancora.</span>'
-      : d.mensile.map(m => `
-          <div class="report-barra">
-            <span class="n">${m.allenamenti}</span>
-            <div class="b" style="height:${Math.max(3, Math.round(m.allenamenti / maxMese * 38))}px;"></div>
-            <span class="m">${escHtml(String(m.label).split(' ')[0].slice(0, 3))}</span>
-          </div>`).join('');
-
-    // Storico per atleta (le righe aperte restano aperte quando i dati si aggiornano)
-    const listaEl = document.getElementById('storico-lista');
-    const aperti = new Set(Array.from(listaEl.querySelectorAll('details[open]')).map(x => x.dataset.nome));
-    const rigaPiazzamento = g => {
-      if(g.piazzamento === 1) return '🥇 1°';
-      if(g.piazzamento === 2) return '🥈 2°';
-      if(g.piazzamento === 3) return '🥉 3°';
-      return g.piazzamento ? `${g.piazzamento}°` : '<span class="sa-dim">Partecipazione</span>';
-    };
-    if(d.storico.length === 0){
-      listaEl.innerHTML = '<p class="empty-note">Nessun atleta nel gruppo ancora.</p>';
-    } else {
-      listaEl.innerHTML = d.storico.map(a => {
-        const perc = d.kpi.allenamenti > 0 ? Math.min(100, Math.round(a.totale / d.kpi.allenamenti * 100)) : 0;
-        const podi = [a.oro ? `🥇${a.oro}` : '', a.argento ? `🥈${a.argento}` : '', a.bronzo ? `🥉${a.bronzo}` : ''].filter(Boolean).join(' ');
-        const gareTxt = `${a.gareTot} gar${a.gareTot === 1 ? 'a' : 'e'}${podi ? ' · ' + podi : ''}`;
-        const dati = soloGare ? gareTxt : `${a.totale} allenament${a.totale === 1 ? 'o' : 'i'} · ${perc}% &nbsp;|&nbsp; ${gareTxt}`;
-
-        let bloccoAllenamenti = '';
-        if(!soloGare){
-          const maxA = Math.max(0, ...d.mesiAnno.map(m => a.perMese[m.chiave] || 0));
-          bloccoAllenamenti = `
-            <div class="sa-blocco"><small>Allenamenti per mese</small>
-              <div class="report-barre" style="height:56px;">${d.mesiAnno.map(m => {
-                const n = a.perMese[m.chiave] || 0;
-                return `<div class="report-barra"><span class="n">${n}</span><div class="b" style="height:${maxA ? Math.max(3, Math.round(n / maxA * 30)) : 3}px;"></div><span class="m">${escHtml(m.label)}</span></div>`;
-              }).join('')}</div>
-            </div>`;
-        }
-        const bloccoGare = `
-          <div class="sa-blocco"><small>Gare</small>
-            ${a.gare.length === 0 ? '<span class="sa-dim" style="font-size:12.5px;">Nessuna gara registrata.</span>' : a.gare.map(g => `
-              <div class="sa-gara"><span>${new Date(g.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' })} · ${escHtml(g.gara)}${g.disciplina ? ' · ' + escHtml(g.disciplina) : ''}</span><span>${rigaPiazzamento(g)}</span></div>`).join('')}
-          </div>`;
-        return `
-          <details class="storico-atleta" data-nome="${escHtml(a.nome)}"${aperti.has(a.nome) ? ' open' : ''}>
-            <summary>
-              <div class="sa-nome"><span>${escHtml(a.nome)}${a.archiviato ? '<span class="sa-ritirato">ritirato</span>' : ''}</span><span class="sa-chev" aria-hidden="true">▾</span></div>
-              <div class="sa-dati">${dati}</div>
-            </summary>
-            <div class="sa-corpo">${bloccoAllenamenti}${bloccoGare}</div>
-          </details>`;
-      }).join('');
-    }
-
-    // Nomi da controllare: presenti nelle presenze ma non collegati a nessun atleta del gruppo
-    const ncEl = document.getElementById('nomi-controllo');
-    if(!soloGare && d.nomiNonCollegati.length > 0){
-      const nNomi = d.nomiNonCollegati.length;
-      const totPres = d.nomiNonCollegati.reduce((t, x) => t + x.presenze, 0);
-      document.getElementById('nomi-controllo-titolo').textContent =
-        `Nomi da controllare: ${nNomi} nom${nNomi === 1 ? 'e' : 'i'} nelle presenze non corrispond${nNomi === 1 ? 'e' : 'ono'} a nessun atleta del gruppo (${totPres} presenze) ›`;
-      document.getElementById('nomi-controllo-corpo').innerHTML =
-        `<p class="nc-nota">Sono probabilmente scritti in modo diverso dal nome dell'atleta (per esempio nello storico importato), oppure l'atleta è stato spostato in un'altra squadra.</p>` +
-        d.nomiNonCollegati.map(x => `<div class="nc-riga"><span>${escHtml(x.nome)}</span><span>${x.presenze}</span></div>`).join('');
-      ncEl.style.display = '';
-    } else {
-      ncEl.style.display = 'none';
     }
   }
 
@@ -7766,7 +7889,9 @@
         const schedeAttive = !!(g && g.nome === 'Cadetti');
         document.getElementById('card-schede').style.display = schedeAttive ? '' : 'none';
         document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
-        document.getElementById('card-presenze').style.display = senzaAllenamenti ? 'none' : '';
+        const sezHome = sezioniGruppo(dati.gruppoId);
+        document.getElementById('card-presenze').style.display = (senzaAllenamenti || sezHome) ? 'none' : '';
+        document.getElementById('presenze-cas-cards').style.display = (sezHome && !senzaAllenamenti) ? '' : 'none';
         document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
         renderMessaggiCoach();
         showView('view-coach');
@@ -7968,12 +8093,7 @@
       <div style="padding:18px 0;">
         <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi.
-        </p>
-
-        <h3 style="margin:0 0 8px; font-size:15px;">🏅 Gara</h3>
-        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Segna chi ha partecipato. Disciplina e posizione compaiono solo dopo aver scelto l'ordine di arrivo. Lo storico risultati per atleta è in fondo alla pagina.
+          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi. Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta va assegnato a una sezione (la prima volta compare in "Da assegnare").
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📤 Condividi risultati</h3>
@@ -7990,7 +8110,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">📊 Report del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Riepilogo in una riga con atleti (e ritirati dell'anno), allenamenti e gare; i conteggi ripartono da zero ogni 1° gennaio e i dati vecchi restano salvati. Nel menu Storico per atleta vedi, per ogni atleta, allenamenti (numero e %), gare e podi: toccando un atleta si aprono gli allenamenti mese per mese e l'elenco delle sue gare. Nel menu Presenze per atleta scegli un atleta e un mese per vedere giorno per giorno se c'era.
+          Riepilogo in una riga con atleti (e ritirati dell'anno), allenamenti e gare; i conteggi ripartono da zero ogni 1° gennaio e i dati vecchi restano salvati. Nel menu Presenze per atleta scegli un atleta e un mese per vedere giorno per giorno se c'era. Con "Esporta presenze (Excel)" scegli il mese e condividi il file con il totale dei giorni di presenza di ogni atleta.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi dalla società</h3>
@@ -8058,7 +8178,12 @@
   `;
 
   // --- Navigazione Registra presenze ---
-  document.getElementById('card-presenze').addEventListener('click', apriPresenze);
+  document.getElementById('card-presenze').addEventListener('click', () => apriPresenze());
+  ['cas123','cas45'].forEach(id => {
+    const el = document.getElementById('card-presenze-' + id);
+    el.addEventListener('click', () => apriPresenze(id));
+    el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(id); } });
+  });
   const apriReportSocieta = () => { pulisciStampaSocieta(); showView('view-report-societa'); renderReportSocieta(); window.scrollTo(0, 0); };
   document.getElementById('riga-report-societa').addEventListener('click', apriReportSocieta);
   document.getElementById('riga-report-societa').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriReportSocieta(); } });
@@ -8089,7 +8214,6 @@
   });
 
   // --- Navigazione Risultati gare ---
-  document.getElementById('card-risultati').addEventListener('click', apriRisultati);
   document.getElementById('card-schede').addEventListener('click', apriSchede);
   document.getElementById('card-gestisci').addEventListener('click', () => {
     if(rosterUnsub) { rosterUnsub(); rosterUnsub = null; }
@@ -8626,7 +8750,7 @@
     const input = document.getElementById('nuovo-atleta');
     const nome = input.value.trim();
     if(!nome) return;
-    await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome, creatoIl: dataLocaleISO(new Date()) });
+    await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome, ...(sezioneCorrente ? { sezione: sezioneCorrente } : {}), creatoIl: dataLocaleISO(new Date()) });
     input.value = "";
   });
 
@@ -8651,6 +8775,7 @@
           gruppoId: currentGruppoId,
           data,
           tipo: tipoSelezionato,
+          ...(sezioneCorrente ? { sezione: sezioneCorrente } : {}),
           presenti,
           assenti,
           registratoDa: auth.currentUser.uid,
