@@ -2097,6 +2097,10 @@
       <div class="report-section" id="report-export" style="padding:14px 16px; margin-bottom:12px;">
         <div style="font-weight:600; margin-bottom:8px;">📤 Esporta presenze (Excel)</div>
         <p class="sub" style="margin:0 0 10px; font-size:12.5px;">File con, per ogni atleta, il totale dei giorni di presenza e il dettaglio giorno per giorno (presente/assente) del mese, da condividere con la società.</p>
+        <div class="fisico-campo" id="export-sezione-campo" style="margin-bottom:10px; display:none;">
+          <label for="export-sezione">File da esportare</label>
+          <select id="export-sezione"></select>
+        </div>
         <div class="fisico-campo" style="margin-bottom:10px;">
           <label for="export-mese">Mese</label>
           <select id="export-mese"></select>
@@ -4583,7 +4587,19 @@
   }
 
   // ---------- Esporta presenze in Excel (mensile, da condividere con la società) ----------
+  function popolaSezioniExport(){
+    const campo = document.getElementById('export-sezione-campo');
+    const sel = document.getElementById('export-sezione');
+    const sez = sezioniGruppo(currentGruppoId);
+    if(!campo || !sel) return;
+    if(!sez){ campo.style.display = 'none'; sel.innerHTML = ''; return; }
+    sel.innerHTML = `<option value="tutte">Entrambe (${sez.length} file separati)</option>` +
+      sez.map(z => `<option value="${z.id}">Solo ${z.nome}</option>`).join('');
+    campo.style.display = '';
+  }
+
   function popolaMesiExport(){
+    popolaSezioniExport();
     const sel = document.getElementById('export-mese');
     if(!sel || sel.dataset.pronto === '1') return;
     const oggi = new Date();
@@ -4617,84 +4633,92 @@
     btn.disabled = true; fb.textContent = 'Preparo il file…';
     try{
       await caricaXLSX();
-      const sess = reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(mese + '-'));
-      const giorniMese = Array.from(new Set(sess.map(x => x.data))).sort();
-      // nome -> Map(data -> 'P' | 'A'); se in più registrazioni dello stesso giorno, vince 'P'
-      const statoPerNome = new Map();
-      const segna = (nome, data, stato) => {
-        if(!statoPerNome.has(nome)) statoPerNome.set(nome, new Map());
-        const m = statoPerNome.get(nome);
-        if(stato === 'P' || !m.has(data)) m.set(data, stato);
-      };
-      sess.forEach(x => {
-        (x.presenti || []).forEach(n => segna(n, x.data, 'P'));
-        (x.assenti || []).forEach(n => segna(n, x.data, 'A'));
-      });
-      const contaStato = (nome, st) => {
-        const m = statoPerNome.get(nome);
-        return m ? Array.from(m.values()).filter(v => v === st).length : 0;
-      };
-
-      // Atleti attivi (anche con 0 presenze) + chi ha presenze nel mese ma ora è ritirato
-      const elenco = new Map();
-      reportAtletiDocs.forEach(a => {
-        if(!a.archiviato || contaStato(a.nome, 'P') > 0) elenco.set(a.nome, { nome: a.nome, sezione: a.sezione || '' });
-      });
-      statoPerNome.forEach((_, nome) => { if(!elenco.has(nome) && contaStato(nome, 'P') > 0) elenco.set(nome, { nome, sezione: '' }); });
-
-      const ordineSez = id => { const i = sezDef ? sezDef.findIndex(z => z.id === id) : -1; return i === -1 ? 99 : i; };
-      const righeAtleti = Array.from(elenco.values())
-        .sort((x, y) => ordineSez(x.sezione) - ordineSez(y.sezione) || x.nome.localeCompare(y.nome))
-        .map(a => {
-          const nomeSez = sezDef ? ((sezDef.find(z => z.id === a.sezione) || {}).nome || 'Da assegnare') : null;
-          const m = statoPerNome.get(a.nome);
-          const celle = giorniMese.map(d => (m && m.get(d)) || '');
-          return [a.nome, ...(sezDef ? [nomeSez] : []), contaStato(a.nome, 'P'), contaStato(a.nome, 'A'), ...celle];
-        });
-
       const [anno, mm] = mese.split('-').map(Number);
       const meseTesto = `${MESI_ESTESI[mm - 1]} ${anno}`;
       const nomeGruppo = g ? g.nome : 'Gruppo';
-      const etichettaGiorno = d => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
-      const intestazione = ['Atleta', ...(sezDef ? ['Sezione'] : []), 'Giorni di presenza', 'Giorni di assenza', ...giorniMese.map(etichettaGiorno)];
-      const dati = [
-        ['Atletica Silca Conegliano — Presenze'],
-        ['Gruppo', nomeGruppo],
-        ['Mese', meseTesto],
-        ['Allenamenti svolti nel mese', giorniMese.length],
-        ['Legenda', 'P = presente · A = assente · vuoto = non in elenco quel giorno'],
-        [],
-        intestazione,
-        ...righeAtleti
-      ];
-      const ws = XLSX.utils.aoa_to_sheet(dati);
-      ws['!cols'] = [{ wch: 30 }, ...(sezDef ? [{ wch: 14 }] : []), { wch: 18 }, { wch: 17 }, ...giorniMese.map(() => ({ wch: 6 }))];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Presenze');
-
       const pulito = nomeGruppo.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Gruppo';
-      const nomeFile = `Presenze_${pulito}_${mese}.xlsx`;
-      const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const sessMese = reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(mese + '-'));
       const tipoMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-      const blob = new Blob([out], { type: tipoMime });
-      const file = new File([blob], nomeFile, { type: tipoMime });
 
-      if(navigator.canShare && navigator.canShare({ files: [file] })){
+      // Crea un file per una sezione (z) oppure per tutto il gruppo (z = null)
+      const creaFile = z => {
+        const sess = z ? sessMese.filter(x => x.sezione === z.id) : sessMese;
+        const giorniMese = Array.from(new Set(sess.map(x => x.data))).sort();
+        // nome -> Map(data -> 'P' | 'A'); se in più registrazioni dello stesso giorno, vince 'P'
+        const statoPerNome = new Map();
+        const segna = (nome, data, stato) => {
+          if(!statoPerNome.has(nome)) statoPerNome.set(nome, new Map());
+          const m = statoPerNome.get(nome);
+          if(stato === 'P' || !m.has(data)) m.set(data, stato);
+        };
+        sess.forEach(x => {
+          (x.presenti || []).forEach(n => segna(n, x.data, 'P'));
+          (x.assenti || []).forEach(n => segna(n, x.data, 'A'));
+        });
+        const contaStato = (nome, st) => {
+          const m = statoPerNome.get(nome);
+          return m ? Array.from(m.values()).filter(v => v === st).length : 0;
+        };
+        // Atleti attivi della sezione (anche con 0 presenze) + chi ha presenze nel mese ma ora è ritirato
+        const elenco = new Map();
+        reportAtletiDocs.forEach(a => {
+          if(z && a.sezione !== z.id) return;
+          if(!a.archiviato || contaStato(a.nome, 'P') > 0) elenco.set(a.nome, a.nome);
+        });
+        statoPerNome.forEach((_, nome) => { if(!elenco.has(nome) && contaStato(nome, 'P') > 0) elenco.set(nome, nome); });
+
+        const righe = Array.from(elenco.keys()).sort((x, y) => x.localeCompare(y)).map(nome => {
+          const m = statoPerNome.get(nome);
+          return [nome, contaStato(nome, 'P'), contaStato(nome, 'A'), ...giorniMese.map(d => (m && m.get(d)) || '')];
+        });
+        const dati = [
+          ['Atletica Silca Conegliano — Presenze'],
+          ['Gruppo', z ? `${nomeGruppo} — ${z.nome}` : nomeGruppo],
+          ['Mese', meseTesto],
+          ['Allenamenti svolti nel mese', giorniMese.length],
+          ['Legenda', 'P = presente · A = assente · vuoto = non in elenco quel giorno'],
+          [],
+          ['Atleta', 'Giorni di presenza', 'Giorni di assenza', ...giorniMese.map(d => `${d.slice(8, 10)}/${d.slice(5, 7)}`)],
+          ...righe
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(dati);
+        ws['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 17 }, ...giorniMese.map(() => ({ wch: 6 }))];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, z ? z.nome : 'Presenze');
+        const suffisso = z ? '_' + z.nome.replace(/[^A-Za-z0-9-]+/g, '_') : '';
+        const nomeFile = `Presenze_${pulito}${suffisso}_${mese}.xlsx`;
+        const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([out], { type: tipoMime });
+        return { nomeFile, blob, file: new File([blob], nomeFile, { type: tipoMime }) };
+      };
+
+      let sezioni = [null];
+      if(sezDef){
+        const scelta = document.getElementById('export-sezione').value;
+        sezioni = scelta === 'tutte' ? sezDef : sezDef.filter(z => z.id === scelta);
+      }
+      const creati = sezioni.map(creaFile);
+      const titolo = `Presenze ${nomeGruppo} — ${meseTesto}`;
+
+      if(navigator.canShare && navigator.canShare({ files: creati.map(c => c.file) })){
         try{
-          await navigator.share({ files: [file], title: `Presenze ${nomeGruppo} — ${meseTesto}` });
-          fb.textContent = 'File pronto ✓';
+          await navigator.share({ files: creati.map(c => c.file), title: titolo });
+          fb.textContent = creati.length > 1 ? `${creati.length} file pronti ✓` : 'File pronto ✓';
           return;
         } catch(e){
           if(e && e.name === 'AbortError'){ fb.textContent = ''; return; }
           // altro errore di condivisione: ripiego sul download
         }
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = nomeFile;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      fb.textContent = 'File scaricato ✓ (cerca nei Download)';
+      for(let i = 0; i < creati.length; i++){
+        const url = URL.createObjectURL(creati[i].blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = creati[i].nomeFile;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        if(i < creati.length - 1) await new Promise(r => setTimeout(r, 500));
+      }
+      fb.textContent = creati.length > 1 ? `${creati.length} file scaricati ✓ (cerca nei Download)` : 'File scaricato ✓ (cerca nei Download)';
     } catch(err){
       console.error(err);
       fb.textContent = 'Errore: ' + err.message;
