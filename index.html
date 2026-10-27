@@ -1101,6 +1101,18 @@
   .card-principale .cp-titolo{font-size:17px; font-weight:700; color:var(--text);}
   .card-principale .cp-sub{font-size:12.5px; color:var(--text-dim); margin-top:2px;}
   .card-principale .cp-freccia{font-size:22px; color:var(--text-dim);}
+  /* Card sezioni CAS: colori distinti per riconoscerle al volo */
+  .card-principale.cp-cas123{--cas:#2f7de1;}
+  .card-principale.cp-cas45{--cas:#d9552b;}
+  .card-principale.cp-cas123, .card-principale.cp-cas45{
+    background:color-mix(in srgb, var(--cas) 14%, var(--surface));
+    border:1px solid color-mix(in srgb, var(--cas) 55%, var(--surface));
+    border-left:8px solid var(--cas);
+  }
+  .card-principale.cp-cas123:active, .card-principale.cp-cas45:active{background:color-mix(in srgb, var(--cas) 24%, var(--surface));}
+  .card-principale.cp-cas123 .cp-icona, .card-principale.cp-cas45 .cp-icona{stroke:var(--cas);}
+  .card-principale.cp-cas123 .cp-titolo, .card-principale.cp-cas45 .cp-titolo{color:var(--cas);}
+  .sez-chip{display:inline-block; font-size:12px; font-weight:700; color:#fff; padding:3px 10px; border-radius:999px; vertical-align:middle; margin-left:8px; font-family:'Inter',sans-serif; letter-spacing:.02em;}
   #view-coach .griglia-azioni{gap:8px; margin-bottom:0;}
   #view-coach .griglia-azioni .corsia-corpo{flex-direction:row; align-items:center; gap:10px; padding:12px;}
   #view-coach .griglia-azioni .corsia-titolo{font-size:13.5px;}
@@ -1901,7 +1913,7 @@
       </div>
 
       <div id="presenze-cas-cards" style="display:none;">
-        <div class="card-principale" id="card-presenze-cas123" role="button" tabindex="0">
+        <div class="card-principale cp-cas123" id="card-presenze-cas123" role="button" tabindex="0">
           <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
           <div class="cp-testi">
             <div class="cp-titolo">Presenze CAS 1-2-3</div>
@@ -1909,7 +1921,7 @@
           </div>
           <span class="cp-freccia" aria-hidden="true">›</span>
         </div>
-        <div class="card-principale" id="card-presenze-cas45" role="button" tabindex="0">
+        <div class="card-principale cp-cas45" id="card-presenze-cas45" role="button" tabindex="0">
           <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
           <div class="cp-testi">
             <div class="cp-titolo">Presenze CAS 4-5</div>
@@ -2084,7 +2096,7 @@
 
       <div class="report-section" id="report-export" style="padding:14px 16px; margin-bottom:12px;">
         <div style="font-weight:600; margin-bottom:8px;">📤 Esporta presenze (Excel)</div>
-        <p class="sub" style="margin:0 0 10px; font-size:12.5px;">File con il totale dei giorni di presenza di ogni atleta nel mese, da condividere con la società.</p>
+        <p class="sub" style="margin:0 0 10px; font-size:12.5px;">File con, per ogni atleta, il totale dei giorni di presenza e il dettaglio giorno per giorno (presente/assente) del mese, da condividere con la società.</p>
         <div class="fisico-campo" style="margin-bottom:10px;">
           <label for="export-mese">Mese</label>
           <select id="export-mese"></select>
@@ -4170,7 +4182,7 @@
 
   // Gruppi con presenze divise in sezioni (menu separati). Chiave = ID documento del gruppo.
   const SEZIONI_PER_GRUPPO = {
-    'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3' }, { id:'cas45', nome:'CAS 4-5' } ]   // gruppo cas123
+    'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3', colore:'#2f7de1' }, { id:'cas45', nome:'CAS 4-5', colore:'#d9552b' } ]   // gruppo cas123
   };
   function sezioniGruppo(gid){ return SEZIONI_PER_GRUPPO[gid] || null; }
   let sezioneCorrente = null;          // id sezione aperta in Registra presenze (null = gruppo senza sezioni)
@@ -4511,7 +4523,8 @@
     const sezInfo = (typeof sezId === 'string' && sezDefA) ? sezDefA.find(z => z.id === sezId) : null;
     sezioneCorrente = sezInfo ? sezInfo.id : null;
     atletiSenzaSezione = [];
-    document.getElementById('presenze-group-name').textContent = (g ? g.nome : "Il tuo gruppo") + (sezInfo ? ' · ' + sezInfo.nome : '');
+    document.getElementById('presenze-group-name').innerHTML = escHtml(g ? g.nome : "Il tuo gruppo") +
+      (sezInfo ? `<span class="sez-chip" style="background:${sezInfo.colore};">${sezInfo.nome}</span>` : '');
     document.getElementById('presenze-data').value = new Date().toISOString().slice(0,10);
     document.getElementById('save-feedback').textContent = "";
     presenzeDocIdAttuale = null;
@@ -4605,44 +4618,57 @@
     try{
       await caricaXLSX();
       const sess = reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(mese + '-'));
-      const giorniMese = new Set(sess.map(x => x.data));
-      const giorniPerNome = new Map();   // nome -> Set(date di presenza)
-      sess.forEach(x => (x.presenti || []).forEach(n => {
-        if(!giorniPerNome.has(n)) giorniPerNome.set(n, new Set());
-        giorniPerNome.get(n).add(x.data);
-      }));
+      const giorniMese = Array.from(new Set(sess.map(x => x.data))).sort();
+      // nome -> Map(data -> 'P' | 'A'); se in più registrazioni dello stesso giorno, vince 'P'
+      const statoPerNome = new Map();
+      const segna = (nome, data, stato) => {
+        if(!statoPerNome.has(nome)) statoPerNome.set(nome, new Map());
+        const m = statoPerNome.get(nome);
+        if(stato === 'P' || !m.has(data)) m.set(data, stato);
+      };
+      sess.forEach(x => {
+        (x.presenti || []).forEach(n => segna(n, x.data, 'P'));
+        (x.assenti || []).forEach(n => segna(n, x.data, 'A'));
+      });
+      const contaStato = (nome, st) => {
+        const m = statoPerNome.get(nome);
+        return m ? Array.from(m.values()).filter(v => v === st).length : 0;
+      };
 
       // Atleti attivi (anche con 0 presenze) + chi ha presenze nel mese ma ora è ritirato
       const elenco = new Map();
       reportAtletiDocs.forEach(a => {
-        if(!a.archiviato || giorniPerNome.has(a.nome)) elenco.set(a.nome, { nome: a.nome, sezione: a.sezione || '' });
+        if(!a.archiviato || contaStato(a.nome, 'P') > 0) elenco.set(a.nome, { nome: a.nome, sezione: a.sezione || '' });
       });
-      giorniPerNome.forEach((_, nome) => { if(!elenco.has(nome)) elenco.set(nome, { nome, sezione: '' }); });
+      statoPerNome.forEach((_, nome) => { if(!elenco.has(nome) && contaStato(nome, 'P') > 0) elenco.set(nome, { nome, sezione: '' }); });
 
       const ordineSez = id => { const i = sezDef ? sezDef.findIndex(z => z.id === id) : -1; return i === -1 ? 99 : i; };
       const righeAtleti = Array.from(elenco.values())
         .sort((x, y) => ordineSez(x.sezione) - ordineSez(y.sezione) || x.nome.localeCompare(y.nome))
         .map(a => {
-          const n = giorniPerNome.has(a.nome) ? giorniPerNome.get(a.nome).size : 0;
           const nomeSez = sezDef ? ((sezDef.find(z => z.id === a.sezione) || {}).nome || 'Da assegnare') : null;
-          return sezDef ? [a.nome, nomeSez, n] : [a.nome, n];
+          const m = statoPerNome.get(a.nome);
+          const celle = giorniMese.map(d => (m && m.get(d)) || '');
+          return [a.nome, ...(sezDef ? [nomeSez] : []), contaStato(a.nome, 'P'), contaStato(a.nome, 'A'), ...celle];
         });
 
       const [anno, mm] = mese.split('-').map(Number);
       const meseTesto = `${MESI_ESTESI[mm - 1]} ${anno}`;
       const nomeGruppo = g ? g.nome : 'Gruppo';
-      const intestazione = sezDef ? ['Atleta', 'Sezione', 'Giorni di presenza'] : ['Atleta', 'Giorni di presenza'];
+      const etichettaGiorno = d => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+      const intestazione = ['Atleta', ...(sezDef ? ['Sezione'] : []), 'Giorni di presenza', 'Giorni di assenza', ...giorniMese.map(etichettaGiorno)];
       const dati = [
         ['Atletica Silca Conegliano — Presenze'],
         ['Gruppo', nomeGruppo],
         ['Mese', meseTesto],
-        ['Allenamenti svolti nel mese', giorniMese.size],
+        ['Allenamenti svolti nel mese', giorniMese.length],
+        ['Legenda', 'P = presente · A = assente · vuoto = non in elenco quel giorno'],
         [],
         intestazione,
         ...righeAtleti
       ];
       const ws = XLSX.utils.aoa_to_sheet(dati);
-      ws['!cols'] = sezDef ? [{ wch: 30 }, { wch: 14 }, { wch: 20 }] : [{ wch: 30 }, { wch: 20 }];
+      ws['!cols'] = [{ wch: 30 }, ...(sezDef ? [{ wch: 14 }] : []), { wch: 18 }, { wch: 17 }, ...giorniMese.map(() => ({ wch: 6 }))];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Presenze');
 
