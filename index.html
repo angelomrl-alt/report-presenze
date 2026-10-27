@@ -3522,6 +3522,8 @@
 
   // ---------- Report della società (riepilogo di stagione + confronto tra i gruppi) ----------
   let datiReportSocieta = null;
+  // Squadre escluse dal grafico "Presenza media per mese" (restano nel resto del report). Qui: cas123
+  const ESCLUSI_PRESENZA_MESE = ['YyErRLw5vg8HgOukeQCU'];
 
   function costruisciReportSocieta(ctx){
     const anno = annoConteggio();
@@ -3536,9 +3538,11 @@
       const presenti = x.presenti || [], assenti = x.assenti || [];
       const g = paGruppo[x.gruppoId] || (paGruppo[x.gruppoId] = { P:0, A:0 });
       g.P += presenti.length; g.A += assenti.length;
-      const mese = x.data.slice(0, 7);
-      const m = paMese[mese] || (paMese[mese] = { P:0, A:0 });
-      m.P += presenti.length; m.A += assenti.length;
+      if(!ESCLUSI_PRESENZA_MESE.includes(x.gruppoId)){
+        const mese = x.data.slice(0, 7);
+        const m = paMese[mese] || (paMese[mese] = { P:0, A:0 });
+        m.P += presenti.length; m.A += assenti.length;
+      }
       const mappa = paAtleta[x.gruppoId] || (paAtleta[x.gruppoId] = new Map());
       presenti.forEach(n => { const r = mappa.get(n) || { P:0, A:0 }; r.P++; mappa.set(n, r); });
       assenti.forEach(n => { const r = mappa.get(n) || { P:0, A:0 }; r.A++; mappa.set(n, r); });
@@ -3667,7 +3671,7 @@
     el('rs-presenza-mese').innerHTML = d.mesiPresenza.length === 0
       ? '<span class="empty-note">Nessun dato ancora.</span>'
       : `<div class="rs-barre">${d.mesiPresenza.map(m => `<div class="rs-barra"><span class="n">${m.perc}%</span><div class="b" style="height:${Math.max(3, Math.round(m.perc * 0.62))}px;"></div><span class="m">${escHtml(m.label)}</span></div>`).join('')}</div>
-         <p class="sub" style="font-size:11.5px; margin:8px 0 0;">Percentuale di presenti sul totale degli atleti segnati agli allenamenti (presenti + assenti).</p>`;
+         <p class="sub" style="font-size:11.5px; margin:8px 0 0;">Percentuale di presenti sul totale degli atleti segnati agli allenamenti (presenti + assenti).${ESCLUSI_PRESENZA_MESE.some(id => GRUPPI[id]) ? ' Esclusa la squadra ' + ESCLUSI_PRESENZA_MESE.filter(id => GRUPPI[id]).map(id => escHtml(GRUPPI[id].nome)).join(', ') + '.' : ''}</p>`;
 
     const totPodi = d.oro + d.argento + d.bronzo;
     el('rs-medagliere').innerHTML = `<p style="margin:0;"><strong>${totPodi === 0 ? 'Nessun podio ancora' : `🥇${d.oro} 🥈${d.argento} 🥉${d.bronzo}`}</strong> in ${d.gare} gar${d.gare === 1 ? 'a' : 'e'}.</p>` +
