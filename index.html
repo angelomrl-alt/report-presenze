@@ -2023,7 +2023,7 @@
       </div>
 
       <div id="presenze-esistente-banner" class="info-banner" style="display:none;">
-        📋 Per questo giorno esiste già una registrazione: la stai modificando, non duplicando.
+        📋 Per questo giorno esiste già una registrazione: la stai modificando, non duplicando. Se è stata inserita per errore puoi eliminarla col bottone in fondo.
       </div>
 
       <div id="cert-avviso-banner" class="info-banner cert-banner" style="display:none;"></div>
@@ -2042,6 +2042,7 @@
       <div class="save-bar">
         <button id="salva-presenze-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva presenze</button>
         <button type="button" id="nuova-registrazione-btn" class="btn-secondary">Nuova registrazione</button>
+        <button type="button" id="elimina-presenze-btn" class="btn-secondary" style="display:none; color:var(--danger); border-color:var(--danger);">Elimina registrazione</button>
         <span id="save-feedback" class="save-feedback"></span>
       </div>
 
@@ -4335,6 +4336,8 @@
 
   function renderRoster(){
     const list = document.getElementById('roster-list');
+    const btnElimina = document.getElementById('elimina-presenze-btn');
+    if(btnElimina) btnElimina.style.display = presenzeDocIdAttuale ? '' : 'none';
 
     renderBannerCertificati('cert-avviso-banner', rosterDocs);
 
@@ -8143,7 +8146,7 @@
       <div style="padding:18px 0;">
         <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi. Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta va assegnato a una sezione (la prima volta compare in "Da assegnare").
+          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi; se hai registrato un giorno per errore usa "Elimina registrazione". Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta va assegnato a una sezione (la prima volta compare in "Da assegnare").
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📤 Condividi risultati</h3>
@@ -8834,10 +8837,36 @@
         presenzeDocIdAttuale = nuovoDoc.id;
         document.getElementById('presenze-esistente-banner').style.display = 'block';
       }
+      document.getElementById('elimina-presenze-btn').style.display = '';
       feedback.textContent = `Presenze salvate ✓ (${assenti.length} assenti su ${rosterDocs.length})`;
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore nel salvataggio, riprova.";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // --- Elimina una registrazione inserita per errore ---
+  document.getElementById('elimina-presenze-btn').addEventListener('click', async function(){
+    if(!presenzeDocIdAttuale) return;
+    const feedback = document.getElementById('save-feedback');
+    const data = document.getElementById('presenze-data').value;
+    const dataTesto = data ? new Date(data + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' }) : 'questo giorno';
+    const sezInfo = sezioneCorrente ? (sezioniGruppo(currentGruppoId) || []).find(z => z.id === sezioneCorrente) : null;
+    if(!confirm(`Eliminare la registrazione di ${dataTesto}${sezInfo ? ' (' + sezInfo.nome + ')' : ''}?\n\nLe presenze di quel giorno verranno cancellate e non contano più nei report e nell'Excel. Non si può annullare.`)) return;
+    const btn = this;
+    btn.disabled = true;
+    try{
+      await deleteDoc(doc(db,'presenze', presenzeDocIdAttuale));
+      presenzeDocIdAttuale = null;
+      presenzaMap.clear();
+      document.getElementById('presenze-esistente-banner').style.display = 'none';
+      renderRoster();
+      feedback.textContent = 'Registrazione eliminata ✓';
+    } catch(err){
+      console.error(err);
+      feedback.textContent = 'Errore: non riesco a eliminare (' + err.message + ')';
     } finally {
       btn.disabled = false;
     }
