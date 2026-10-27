@@ -3522,7 +3522,7 @@
 
   // ---------- Report della società (riepilogo di stagione + confronto tra i gruppi) ----------
   let datiReportSocieta = null;
-  // Squadre escluse da tutte le cifre di presenza del report società (tabella, media, mese per mese, spunti). Qui: cas123
+  // Squadre escluse dagli allenamenti e dalle presenze del report società (tabella, totali, grafici, spunti). Qui: cas123
   const ESCLUSI_PRESENZA_MESE = ['YyErRLw5vg8HgOukeQCU'];
 
   function costruisciReportSocieta(ctx){
@@ -3562,7 +3562,7 @@
         attivi: atleti.filter(a => !a.archiviato).length,
         ritirati: atleti.filter(a => a.archiviato && a.archiviatoIl && a.archiviatoIl >= anno.inizio && a.archiviatoIl <= anno.fine).length,
         senzaAllenamenti: senza,
-        allenamenti: senza ? null : (ctx.conteggiAllenamenti[gid] || 0),
+        allenamenti: (senza || ESCLUSI_PRESENZA_MESE.includes(gid)) ? null : (ctx.conteggiAllenamenti[gid] || 0),
         presenza: senza ? null : perc(paGruppo[gid]),
         gare: ctx.conteggiGare[gid] || 0,
         oro: med.oro, argento: med.argento, bronzo: med.bronzo
@@ -3668,7 +3668,7 @@
         <td>${q.allenamenti === null ? '—' : q.allenamenti}</td>
         <td>${q.presenza === null ? '—' : q.presenza + '%'}</td>
         <td>${q.gare}</td><td>${podi(q)}</td></tr>`).join('')}</tbody></table>` +
-      (ESCLUSI_PRESENZA_MESE.some(id => GRUPPI[id]) ? `<p class="sub" style="font-size:11.5px; margin:8px 0 0;">Presenza non conteggiata per: ${ESCLUSI_PRESENZA_MESE.filter(id => GRUPPI[id]).map(id => escHtml(GRUPPI[id].nome)).join(', ')}.</p>` : '');
+      (ESCLUSI_PRESENZA_MESE.some(id => GRUPPI[id]) ? `<p class="sub" style="font-size:11.5px; margin:8px 0 0;">Allenamenti e presenza non conteggiati per: ${ESCLUSI_PRESENZA_MESE.filter(id => GRUPPI[id]).map(id => escHtml(GRUPPI[id].nome)).join(', ')}.</p>` : '');
 
     el('rs-presenza-mese').innerHTML = d.mesiPresenza.length === 0
       ? '<span class="empty-note">Nessun dato ancora.</span>'
@@ -3809,7 +3809,7 @@
     // Giorni di allenamento totali a livello società = somma di tutti gli allenamenti di tutti i gruppi
     // (a differenza delle gare, qui NON si deduplica per data: ogni gruppo che si allena in un giorno
     // conta come una sessione a sé, anche se altri gruppi si allenano lo stesso giorno)
-    const totaleGiorniAllenamento = Object.values(conteggiAllenamenti).reduce((somma, n) => somma + n, 0);
+    const totaleGiorniAllenamento = Object.entries(conteggiAllenamenti).filter(([gid]) => !ESCLUSI_PRESENZA_MESE.includes(gid)).reduce((somma, [, n]) => somma + n, 0);
 
     // Atleti totali = solo attivi (chi si è ritirato non deve gonfiare il numero);
     // separatamente, quanti si sono ritirati nella stagione sportiva corrente (visibilità sull'abbandono).
@@ -3937,6 +3937,7 @@
       if(!p.data || !p.gruppoId) return;
       const mese = p.data.slice(0,7);
       if(p.tipo === 'allenamento'){
+        if(ESCLUSI_PRESENZA_MESE.includes(p.gruppoId)) return;
         if(!mensileAllenamentiPerGruppo[p.gruppoId]) mensileAllenamentiPerGruppo[p.gruppoId] = new Map();
         const m = mensileAllenamentiPerGruppo[p.gruppoId];
         m.set(mese, (m.get(mese)||0)+1);
@@ -3981,7 +3982,7 @@
       return `${MESI[parseInt(mese,10)-1]} '${anno.slice(2)}`;
     });
 
-    function renderGraficoConfronto(datiPerGruppo){
+    function renderGraficoConfronto(datiPerGruppo, esclusi){
       if(mesiConfronto.length === 0){
         return '<p class="empty-note">Nessun dato ancora.</p>';
       }
@@ -3991,7 +3992,7 @@
       Object.values(datiPerGruppo).forEach(m => {
         mesiConfronto.forEach(k => { maxVal = Math.max(maxVal, m.get(k) || 0); });
       });
-      const gruppiIds = Object.keys(GRUPPI);
+      const gruppiIds = Object.keys(GRUPPI).filter(id => !(esclusi || []).includes(id));
       const nGruppi = Math.max(gruppiIds.length, 1);
       const barGap = 2;
       const barWidth = Math.max(3, (colWidth - barGap*(nGruppi+1)) / nGruppi);
@@ -4014,15 +4015,15 @@
       return `<svg class="chart-confronto-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${barre}${etichetteX}</svg>`;
     }
     const legendaGruppi = `<div class="chart-confronto-legenda">${Object.entries(GRUPPI).map(([gid,g]) => `<span><span class="dot" style="background:${g.colore}"></span>${g.nome}</span>`).join('')}</div>`;
-    const legendaGruppiConTotaliAllenamenti = `<div class="chart-confronto-legenda">${Object.entries(GRUPPI).map(([gid,g]) => `<span><span class="dot" style="background:${g.colore}"></span>${g.nome} (${conteggiAllenamenti[gid] || 0})</span>`).join('')}</div>`;
+    const legendaGruppiConTotaliAllenamenti = `<div class="chart-confronto-legenda">${Object.entries(GRUPPI).filter(([gid]) => !ESCLUSI_PRESENZA_MESE.includes(gid)).map(([gid,g]) => `<span><span class="dot" style="background:${g.colore}"></span>${g.nome} (${conteggiAllenamenti[gid] || 0})</span>`).join('')}</div>`;
 
-    function impostaGraficoConfronto(elId, dati, legenda){
+    function impostaGraficoConfronto(elId, dati, legenda, esclusi){
       const cont = document.getElementById(elId);
-      cont.innerHTML = `<div class="chart-confronto-scroll">${renderGraficoConfronto(dati)}</div>` + (legenda || legendaGruppi);
+      cont.innerHTML = `<div class="chart-confronto-scroll">${renderGraficoConfronto(dati, esclusi)}</div>` + (legenda || legendaGruppi);
       const scrollBox = cont.querySelector('.chart-confronto-scroll');
       if(scrollBox) scrollBox.scrollLeft = scrollBox.scrollWidth;
     }
-    impostaGraficoConfronto('chart-confronto-allenamenti', mensileAllenamentiPerGruppo, legendaGruppiConTotaliAllenamenti);
+    impostaGraficoConfronto('chart-confronto-allenamenti', mensileAllenamentiPerGruppo, legendaGruppiConTotaliAllenamenti, ESCLUSI_PRESENZA_MESE);
     impostaGraficoConfronto('chart-confronto-gare', mensileGareContiPerGruppo);
 
     costruisciReportSocieta({
