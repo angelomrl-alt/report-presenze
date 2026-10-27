@@ -3522,7 +3522,7 @@
 
   // ---------- Report della società (riepilogo di stagione + confronto tra i gruppi) ----------
   let datiReportSocieta = null;
-  // Squadre escluse dal grafico "Presenza media per mese" (restano nel resto del report). Qui: cas123
+  // Squadre escluse da tutte le cifre di presenza del report società (tabella, media, mese per mese, spunti). Qui: cas123
   const ESCLUSI_PRESENZA_MESE = ['YyErRLw5vg8HgOukeQCU'];
 
   function costruisciReportSocieta(ctx){
@@ -3535,6 +3535,7 @@
       const x = d.data();
       if(x.tipo !== 'allenamento' || !x.gruppoId || !GRUPPI[x.gruppoId] || typeof x.data !== 'string') return;
       if(gruppoSenzaAllenamenti(GRUPPI[x.gruppoId])) return;
+      if(ESCLUSI_PRESENZA_MESE.includes(x.gruppoId)) return;   // squadra esclusa da tutte le cifre di presenza
       const presenti = x.presenti || [], assenti = x.assenti || [];
       const g = paGruppo[x.gruppoId] || (paGruppo[x.gruppoId] = { P:0, A:0 });
       g.P += presenti.length; g.A += assenti.length;
@@ -3666,7 +3667,8 @@
         <td>${q.attivi}</td><td>${q.ritirati}</td>
         <td>${q.allenamenti === null ? '—' : q.allenamenti}</td>
         <td>${q.presenza === null ? '—' : q.presenza + '%'}</td>
-        <td>${q.gare}</td><td>${podi(q)}</td></tr>`).join('')}</tbody></table>`;
+        <td>${q.gare}</td><td>${podi(q)}</td></tr>`).join('')}</tbody></table>` +
+      (ESCLUSI_PRESENZA_MESE.some(id => GRUPPI[id]) ? `<p class="sub" style="font-size:11.5px; margin:8px 0 0;">Presenza non conteggiata per: ${ESCLUSI_PRESENZA_MESE.filter(id => GRUPPI[id]).map(id => escHtml(GRUPPI[id].nome)).join(', ')}.</p>` : '');
 
     el('rs-presenza-mese').innerHTML = d.mesiPresenza.length === 0
       ? '<span class="empty-note">Nessun dato ancora.</span>'
