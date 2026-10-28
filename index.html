@@ -1936,6 +1936,17 @@
       </div>
 
       <div class="foglio-batteria griglia-azioni">
+        <div class="corsia c-gara" id="card-risultati">
+          <div class="corsia-riga"></div>
+          <div class="corsia-corpo">
+            <div class="corsia-icona"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2 4l2 4H5"/></svg></div>
+            <div class="corsia-testi">
+              <div class="corsia-titolo">Registra gara</div>
+              </div>
+          </div>
+          <div class="corsia-freccia">›</div>
+        </div>
+
         <div class="corsia c-report" id="card-report">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
@@ -7737,6 +7748,7 @@
         document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
         const sezHome = sezioniGruppo(dati.gruppoId);
         document.getElementById('card-presenze').style.display = (senzaAllenamenti || sezHome) ? 'none' : '';
+        document.getElementById('card-risultati').style.display = sezHome ? 'none' : '';   // CAS: niente gare
         document.getElementById('presenze-cas-cards').style.display = (sezHome && !senzaAllenamenti) ? '' : 'none';
         document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
         renderMessaggiCoach();
@@ -7932,6 +7944,11 @@
           Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi; se hai registrato un giorno per errore usa "Elimina registrazione". Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta appartiene a una sezione: se è nuovo compare in "Da assegnare", e per cambiargli sezione si usa il menu in Gestisci atleti (non nelle presenze).
         </p>
 
+        <h3 style="margin:0 0 8px; font-size:15px;">🏅 Gara</h3>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
+          Segna chi ha partecipato. Disciplina e posizione compaiono solo dopo aver scelto l'ordine di arrivo. Lo storico risultati per atleta è in fondo alla pagina.
+        </p>
+
         <h3 style="margin:0 0 8px; font-size:15px;">📤 Condividi risultati</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
           Prepara il messaggio con i risultati del giorno, pronto per WhatsApp. Puoi allegare anche delle foto (facoltativo) con il link sotto al bottone.
@@ -8001,6 +8018,7 @@
   `;
 
   // --- Navigazione Registra presenze ---
+  document.getElementById('card-risultati').addEventListener('click', apriRisultati);
   document.getElementById('card-presenze').addEventListener('click', () => apriPresenze());
   ['cas123','cas45'].forEach(id => {
     const el = document.getElementById('card-presenze-' + id);
