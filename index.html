@@ -4048,6 +4048,42 @@
         a.archiviato && a.archiviatoIl && a.archiviatoIl >= rangeStagioneGruppo.inizio && a.archiviatoIl <= rangeStagioneGruppo.fine
       ).length;
 
+      // Gruppo a sezioni (CAS): solo numero di atleti per sezione + Gestisci atleti (niente allenamenti, gare, certificati, presenze, podi)
+      const sezioniDettaglio = sezioniGruppo(id);
+      if(sezioniDettaglio){
+        const chip = nome => `<span style="font-size:12.5px; padding:4px 10px; border-radius:14px; border:1.5px solid var(--border-strong); background:var(--surface-2); color:var(--text);">${escHtml(nome)}</span>`;
+        const blocchi = sezioniDettaglio.map(z => {
+          const lista = atletiGruppo.filter(a => a.sezione === z.id);
+          return `
+            <div style="background:var(--surface); border:1px solid var(--border); border-left:6px solid ${z.colore}; border-radius:var(--radius); padding:14px 16px;">
+              <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">
+                👤 ${z.nome} · ${lista.length} atlet${lista.length === 1 ? 'a' : 'i'}
+              </p>
+              ${lista.length === 0 ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta in questa sezione.</p>` : `<div style="display:flex; flex-wrap:wrap; gap:6px;">${lista.map(a => chip(a.nome)).join('')}</div>`}
+            </div>`;
+        }).join('');
+        const daAssegnare = atletiGruppo.filter(a => !sezioniDettaglio.some(z => z.id === a.sezione));
+        const blocco3 = daAssegnare.length === 0 ? '' : `
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+              <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">👤 Da assegnare a una sezione · ${daAssegnare.length}</p>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">${daAssegnare.map(a => chip(a.nome)).join('')}</div>
+            </div>`;
+        detailCont.innerHTML = `
+          <div style="display:grid; gap:12px; margin:16px 0;">
+            <p style="font-size:14px; margin:0;"><strong>${atletiGruppo.length}</strong> <span style="color:var(--text-dim);">atleti in totale</span></p>
+            ${blocchi}${blocco3}
+          </div>
+          ${isSocietaConScrittura() ? `
+            <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-bottom:16px;">
+              👥 Gestisci atleti ${g.nome}
+            </button>
+          ` : ''}
+        `;
+        const btnG = detailCont.querySelector('.gruppo-gestisci-btn');
+        if(btnG) btnG.addEventListener('click', () => apriAdminRoster(btnG.dataset.gruppo));
+        return;
+      }
+
       const totaliHtml = `
         <div style="display:flex; gap:20px; margin:16px 0 0;">
           <span style="font-size:14px;"><strong>${conteggiAllenamenti[id] || 0}</strong> <span style="color:var(--text-dim);">allenamenti</span></span>
