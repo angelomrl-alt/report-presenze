@@ -2616,6 +2616,11 @@
         <div class="roster-empty">Nessun atleta ancora.</div>
       </div>
 
+      <div id="admin-sezione-nuovi-box" class="fisico-campo" style="display:none; margin-bottom:10px;">
+        <label for="admin-sezione-nuovi">Sezione dei nuovi atleti</label>
+        <select id="admin-sezione-nuovi"></select>
+      </div>
+
       <form id="admin-add-atleta-form" class="add-atleta-form">
         <input type="text" id="admin-nuovo-atleta" placeholder="Nome e cognome nuovo atleta" required>
         <input type="date" id="admin-nuovo-atleta-nascita" title="Data di nascita (facoltativa)">
@@ -4158,6 +4163,21 @@
     'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3', colore:'#2f7de1' }, { id:'cas45', nome:'CAS 4-5', colore:'#d9552b' } ]   // gruppo cas123
   };
   function sezioniGruppo(gid){ return SEZIONI_PER_GRUPPO[gid] || null; }
+  // Menu a tendina per scegliere/cambiare la sezione di un atleta (solo in "Gestisci atleti")
+  function selectSezioneHtml(a, gid){
+    const sez = sezioniGruppo(gid);
+    if(!sez) return '';
+    return `<select class="sel-sezione" data-id="${a.id}" aria-label="Sezione di ${escHtml(a.nome)}" style="padding:6px 8px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text); font-size:13px; font-weight:600;">` +
+      (a.sezione ? '' : '<option value="" selected>Da assegnare</option>') +
+      sez.map(z => `<option value="${z.id}" ${a.sezione === z.id ? 'selected' : ''}>${z.nome}</option>`).join('') + '</select>';
+  }
+  function collegaSelectSezione(cont){
+    cont.querySelectorAll('.sel-sezione').forEach(sel => sel.addEventListener('change', async () => {
+      if(!sel.value) return;
+      try{ await updateDoc(doc(db,'atleti', sel.dataset.id), { sezione: sel.value }); }
+      catch(err){ console.error(err); alert('Errore nel cambio di sezione: ' + err.message); }
+    }));
+  }
   let sezioneCorrente = null;          // id sezione aperta in Registra presenze (null = gruppo senza sezioni)
   let atletiSenzaSezione = [];         // atleti del gruppo non ancora assegnati a una sezione
   let sezioniRegistratePerData = new Map(); // data -> Set(id sezione già registrate)
@@ -4314,7 +4334,6 @@
         <div class="roster-item">
           <span class="nome">${a.nome}</span>
           <span style="display:flex; gap:8px; align-items:center;">
-            ${sezDefR ? (() => { const altra = sezDefR.find(z => z.id !== sezioneCorrente); return altra ? `<button type="button" class="btn-archivia-testo btn-sez-sposta" data-id="${a.id}" data-sez="${altra.id}">→ ${altra.nome}</button>` : ''; })() : ''}
             <button type="button" class="presence-pill ${presente ? 'presente' : 'assente'}" data-id="${a.id}">
               ${presente ? 'Presente' : 'Assente'}
             </button>
@@ -4322,11 +4341,6 @@
         </div>
       `;
     }).join('');
-
-    list.querySelectorAll('.btn-sez-sposta').forEach(btn => btn.addEventListener('click', async () => {
-      try{ await updateDoc(doc(db,'atleti', btn.dataset.id), { sezione: btn.dataset.sez }); }
-      catch(err){ console.error(err); alert('Errore nello spostamento: ' + err.message); }
-    }));
 
     list.querySelectorAll('.presence-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -4349,7 +4363,7 @@
     if(gestisciAtletiUnsub) gestisciAtletiUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     gestisciAtletiUnsub = onSnapshot(q, snap => {
-      gestisciAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] }))
+      gestisciAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] }))
         .sort((a,b)=>a.nome.localeCompare(b.nome));
       renderGestisciAtletiListe();
     });
@@ -4369,7 +4383,7 @@
           <div class="roster-item">
             <span class="nome">${a.nome}</span>
             <span style="display:flex; gap:8px; align-items:center;">
-              <button type="button" class="btn-sposta" data-id="${a.id}" aria-label="Sposta ${escHtml(a.nome)} in un altro gruppo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10h13l-3-3"/><path d="M17 14H4l3 3"/></svg> Sposta</button>
+              ${sezioniGruppo(currentGruppoId) ? selectSezioneHtml(a, currentGruppoId) : `<button type=\"button\" class=\"btn-sposta\" data-id=\"${a.id}\" aria-label=\"Sposta ${escHtml(a.nome)} in un altro gruppo\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 10h13l-3-3\"/><path d=\"M17 14H4l3 3\"/></svg> Sposta</button>`}
               <button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Ritira</button>
             </span>
           </div>
@@ -4378,6 +4392,7 @@
     listaCont.querySelectorAll('.btn-sposta').forEach(btn => {
       btn.addEventListener('click', () => apriSpostaDaAllenatore(btn.dataset.id));
     });
+    collegaSelectSezione(listaCont);
 
     listaCont.querySelectorAll('.btn-archivia-testo').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -4825,11 +4840,14 @@
     document.getElementById('admin-roster-group-sub').textContent = g ? g.coach : "";
     document.getElementById('admin-bulk-feedback').textContent = "";
     document.getElementById('admin-bulk-atleti').value = "";
+    const sezAdmin = sezioniGruppo(gruppoId);
+    document.getElementById('admin-sezione-nuovi-box').style.display = sezAdmin ? '' : 'none';
+    document.getElementById('admin-sezione-nuovi').innerHTML = sezAdmin ? sezAdmin.map(z => `<option value="${z.id}">${z.nome}</option>`).join('') : '';
 
     if(adminRosterUnsub) adminRosterUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
     adminRosterUnsub = onSnapshot(q, snap => {
-      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, dataNascita: d.data().dataNascita || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, dataNascita: d.data().dataNascita || '', sezione: d.data().sezione || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderAdminRosterList();
     });
 
@@ -4853,7 +4871,7 @@
               <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Nascita</label>
               <input type="date" class="nascita-input" data-id="${a.id}" value="${a.dataNascita || ''}" title="Data di nascita">
             </span>
-            <button type="button" class="btn-sposta" data-id="${a.id}" title="Sposta in un altro gruppo" aria-label="Sposta ${escHtml(a.nome)} in un altro gruppo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10h13l-3-3"/><path d="M17 14H4l3 3"/></svg> Sposta</button>
+            ${sezioniGruppo(adminRosterGruppoId) ? selectSezioneHtml(a, adminRosterGruppoId) : `<button type=\"button\" class=\"btn-sposta\" data-id=\"${a.id}\" title=\"Sposta in un altro gruppo\" aria-label=\"Sposta ${escHtml(a.nome)} in un altro gruppo\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 10h13l-3-3\"/><path d=\"M17 14H4l3 3\"/></svg> Sposta</button>`}
             <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
           </span>
         </div>
@@ -4882,6 +4900,7 @@
     list.querySelectorAll('.btn-sposta').forEach(btn => {
       btn.addEventListener('click', () => apriSpostaAtleta(btn.dataset.id));
     });
+    collegaSelectSezione(list);
 
     list.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -7910,7 +7929,7 @@
       <div style="padding:18px 0;">
         <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi; se hai registrato un giorno per errore usa "Elimina registrazione". Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta va assegnato a una sezione (la prima volta compare in "Da assegnare").
+          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi; se hai registrato un giorno per errore usa "Elimina registrazione". Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta appartiene a una sezione: se è nuovo compare in "Da assegnare", e per cambiargli sezione si usa il menu in Gestisci atleti (non nelle presenze).
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📤 Condividi risultati</h3>
@@ -8252,6 +8271,7 @@
     const nome = input.value.trim();
     if(!nome) return;
     const dati = { gruppoId: adminRosterGruppoId, nome };
+    if(sezioniGruppo(adminRosterGruppoId)) dati.sezione = document.getElementById('admin-sezione-nuovi').value;
     if(inputNascita.value) dati.dataNascita = inputNascita.value;
     await addDoc(collection(db,'atleti'), { ...dati, creatoIl: dataLocaleISO(new Date()) });
     input.value = "";
@@ -8270,7 +8290,7 @@
     btn.disabled = true;
     feedback.textContent = "Aggiunta in corso…";
     try{
-      await Promise.all(nomi.map(nome => addDoc(collection(db,'atleti'), { gruppoId: adminRosterGruppoId, nome, creatoIl: dataLocaleISO(new Date()) })));
+      await Promise.all(nomi.map(nome => addDoc(collection(db,'atleti'), { gruppoId: adminRosterGruppoId, nome, ...(sezioniGruppo(adminRosterGruppoId) ? { sezione: document.getElementById('admin-sezione-nuovi').value } : {}), creatoIl: dataLocaleISO(new Date()) })));
       feedback.textContent = `${nomi.length} atleti aggiunti ✓`;
       textarea.value = "";
     } catch(err){
