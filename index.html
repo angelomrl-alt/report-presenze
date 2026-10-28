@@ -1899,7 +1899,6 @@
         <p class="sub" id="coach-group-sub">—</p>
       </div>
 
-      <div id="cert-avviso-banner-home" class="info-banner cert-banner" style="display:none; margin-bottom:18px;"></div>
       <div id="avviso-presenze" class="avviso-presenze" style="display:none;"></div>
 
       <div class="msg-strip" id="msg-strip-coach" style="display:none;">
@@ -2031,7 +2030,6 @@
         📋 Per questo giorno esiste già una registrazione: la stai modificando, non duplicando. Se è stata inserita per errore puoi eliminarla col bottone in fondo.
       </div>
 
-      <div id="cert-avviso-banner" class="info-banner cert-banner" style="display:none;"></div>
 
       <div id="roster-da-assegnare"></div>
 
@@ -2167,7 +2165,6 @@
         📋 Per questo giorno esiste già una gara registrata: la stai modificando, non duplicando.
       </div>
 
-      <div id="cert-avviso-banner-gara" class="info-banner cert-banner" style="display:none;"></div>
 
       <div id="gara-roster" class="gara-roster">
         <div class="roster-empty">Nessun atleta ancora.</div>
@@ -2444,19 +2441,6 @@
           <div class="corsia-details-corpo" id="ultima-giornata-gare"></div>
         </details>
 
-        <details class="corsia-details">
-          <summary class="corsia-summary">
-            <span class="corsia-riga" style="background:#a78bfa;"></span>
-            <span class="corsia-icona" style="background:color-mix(in srgb, #a78bfa 14%, var(--surface));">⚕️</span>
-            <span class="corsia-testi">
-              <span class="corsia-titolo">Certificati da controllare</span>
-              <span class="corsia-anteprima" id="anteprima-certificati">—</span>
-            </span>
-            <span class="corsia-freccia-details">›</span>
-          </summary>
-          <div class="corsia-details-corpo" id="certificati-societa-list"></div>
-        </details>
-
         <details class="corsia-details" id="eventi-details-societa">
           <summary class="corsia-summary">
             <span class="corsia-riga" id="eventi-riga-societa" style="background:var(--accent-lane);"></span>
@@ -2698,62 +2682,6 @@
     </main>
   </section>
 
-  <!-- ===================== IMPORTA CERTIFICATI (Società) ===================== -->
-  <section id="view-importa-certificati" class="view">
-    <header class="topbar">
-      <div class="brand-mini">
-        <button class="btn-back" id="back-to-admin-from-importa-cert" aria-label="Torna alla home">←</button>
-        🏃 Atletica Silca <span class="role-tag">Importa certificati</span>
-      </div>
-      <button class="btn-logout" data-logout>Esci</button>
-    </header>
-    <main>
-      <h2>Importa scadenze certificati</h2>
-      <p class="sub">
-        Dal tuo Google Sheet, seleziona le colonne <strong>Cognome</strong>, <strong>Nome</strong> ed eventualmente <strong>Data di nascita</strong>, e <strong>Scadenza</strong> (in questo ordine, formato gg/mm/aaaa), copia (Ctrl+C) e incolla qui sotto.
-        Vanno bene sia 3 colonne (Cognome, Nome, Scadenza) sia 4 (Cognome, Nome, Data di nascita, Scadenza).
-        L'app abbina automaticamente ogni riga all'atleta già presente, in qualsiasi gruppo.
-      </p>
-
-      <textarea id="importa-cert-testo" placeholder="Incolla qui le righe copiate da Google Sheet..." style="width:100%; min-height:160px; padding:12px; border:1.5px solid var(--border-strong); border-radius:10px; background:var(--surface-2); color:var(--text); font-family:'Inter',sans-serif; font-size:13.5px; resize:vertical;"></textarea>
-
-      <div class="save-bar" style="margin-top:14px;">
-        <button type="button" id="importa-cert-analizza-btn" class="btn-secondary">Analizza</button>
-      </div>
-
-      <div id="importa-cert-anteprima" style="margin-top:20px;"></div>
-
-      <div class="save-bar" style="margin-top:16px;">
-        <button type="button" id="importa-cert-confirm-btn" class="btn-primary" style="width:auto; padding:13px 28px; display:none;">Conferma e aggiorna</button>
-        <span id="importa-cert-feedback" class="save-feedback"></span>
-      </div>
-    </main>
-  </section>
-
-  <!-- ===================== IMPOSTAZIONI (Società) ===================== -->
-  <section id="view-impostazioni" class="view">
-    <header class="topbar">
-      <div class="brand-mini">
-        <button class="btn-back" id="back-to-admin-from-impostazioni" aria-label="Torna alla home">←</button>
-        🏃 Atletica Silca <span class="role-tag">Impostazioni</span>
-      </div>
-      <button class="btn-logout" data-logout>Esci</button>
-    </header>
-    <main>
-      <h2>Impostazioni</h2>
-      <p class="sub">Valori generali dell'app, validi per tutti i gruppi.</p>
-
-      <div class="field-inline" style="max-width:280px;">
-        <label for="impostazioni-giorni-cert">Giorni di anticipo avviso certificato medico</label>
-        <input type="number" id="impostazioni-giorni-cert" min="1" max="180">
-      </div>
-      <div class="save-bar" style="margin-top:16px;">
-        <button type="button" id="impostazioni-salva-btn" class="btn-primary" style="width:auto; padding:13px 28px;">Salva</button>
-        <span id="impostazioni-feedback" class="save-feedback"></span>
-      </div>
-    </main>
-  </section>
-
   <!-- ===================== CREA EVENTO (Società) ===================== -->
   <section id="view-crea-evento" class="view">
     <header class="topbar">
@@ -2974,17 +2902,6 @@
 
   const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
-  let giorniAvvisoCertificato = 15;
-  let impostazioniListenerAvviato = false;
-  function avviaListenerImpostazioni(){
-    if(impostazioniListenerAvviato) return;
-    impostazioniListenerAvviato = true;
-    onSnapshot(doc(db,'impostazioni','generali'), snap => {
-      if(snap.exists() && snap.data().giorniAvvisoCertificato){
-        giorniAvvisoCertificato = snap.data().giorniAvvisoCertificato;
-      }
-    });
-  }
 
   // --- Eventi della società: mostrati inline nella Home (società e allenatori) ---
   let eventiDocs = [];
@@ -3369,16 +3286,6 @@
     }
   });
 
-  function statoCertificato(dataStr){
-    if(!dataStr) return { stato: 'mancante', testo: '' };
-    const oggi = new Date(); oggi.setHours(0,0,0,0);
-    const scadenza = new Date(dataStr + 'T00:00:00');
-    const giorni = Math.round((scadenza - oggi) / 86400000);
-    const testo = scadenza.toLocaleDateString('it-IT');
-    if(giorni < 0) return { stato:'scaduto', testo, giorni };
-    if(giorni <= giorniAvvisoCertificato) return { stato:'avviso', testo, giorni };
-    return { stato:'ok', testo, giorni };
-  }
 
   function showView(id){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -3591,15 +3498,12 @@
     });
     topMedaglie.sort((a, b) => b.tot - a.tot || b.oro - a.oro || a.nome.localeCompare(b.nome));
 
-    // Atleti con presenza molto bassa (almeno 5 allenamenti segnati) e certificati
-    const sotto30 = [], scaduti = [], inScadenza = [];
+    // Atleti con presenza molto bassa (almeno 5 allenamenti segnati)
+    const sotto30 = [];
     gruppiIds.forEach(gid => {
       (ctx.atletiPerGruppo[gid] || []).filter(a => !a.archiviato).forEach(a => {
         const r = paAtleta[gid] && paAtleta[gid].get(a.nome);
         if(r && (r.P + r.A) >= 5 && perc(r) < 30) sotto30.push({ nome: a.nome, gruppo: GRUPPI[gid].nome, perc: perc(r) });
-        const st = statoCertificato(a.scadenzaCertificato);
-        if(st.stato === 'scaduto') scaduti.push({ nome: a.nome, gruppo: GRUPPI[gid].nome });
-        else if(st.stato === 'avviso') inScadenza.push({ nome: a.nome, gruppo: GRUPPI[gid].nome, testo: st.testo });
       });
     });
 
@@ -3623,12 +3527,6 @@
     }
     const maxRit = squadre.reduce((b, q) => q.ritirati > b.ritirati ? q : b, { ritirati: 0 });
     if(maxRit.ritirati > 0) spunti.push({ testo: ctx.ritirati === 1 ? `1 ritirato nell'anno, in ${maxRit.nome}.` : `${ctx.ritirati} ritirati nell'anno, il numero più alto in ${maxRit.nome} (${maxRit.ritirati}).` });
-    if(scaduti.length + inScadenza.length > 0){
-      spunti.push({
-        testo: `${scaduti.length} certificat${scaduti.length === 1 ? 'o' : 'i'} medic${scaduti.length === 1 ? 'o scaduto' : 'i scaduti'} e ${inScadenza.length} in scadenza.`,
-        nomi: [...scaduti.map(x => `${x.nome} (${x.gruppo}, scaduto)`), ...inScadenza.map(x => `${x.nome} (${x.gruppo}, ${x.testo})`)].join(' · ')
-      });
-    }
     if(sotto30.length > 0){
       spunti.push({
         testo: `${sotto30.length} atlet${sotto30.length === 1 ? 'a' : 'i'} sotto il 30% di presenza (con almeno 5 allenamenti segnati).`,
@@ -4177,21 +4075,6 @@
         </div>
       `;
 
-      // Certificati in scadenza/scaduti
-      let scaduti = 0, inAvviso = 0;
-      atletiGruppo.forEach(a => {
-        const stato = statoCertificato(a.scadenzaCertificato).stato;
-        if(stato === 'scaduto') scaduti++;
-        else if(stato === 'avviso') inAvviso++;
-      });
-      const certHtml = (scaduti + inAvviso) === 0
-        ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun certificato scaduto o in scadenza ✓</p>`
-        : `<p style="font-size:13px; margin:0;">
-            ${scaduti ? `<span style="color:var(--danger); font-weight:600;">${scaduti} scadut${scaduti===1?'o':'i'}</span>` : ''}
-            ${scaduti && inAvviso ? ' · ' : ''}
-            ${inAvviso ? `<span style="color:var(--accent-lane); font-weight:600;">${inAvviso} in scadenza</span>` : ''}
-          </p>`;
-
       // Mini-podio presenze allenamenti
       const podio = top3(contiAllenamentiAtleta[id]);
       const podioHtml = podio.length === 0
@@ -4222,10 +4105,7 @@
         ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta in questo gruppo.</p>`
         : `<div style="display:flex; flex-wrap:wrap; gap:6px;">
             ${atletiGruppo.map(a => {
-              const stato = statoCertificato(a.scadenzaCertificato).stato;
-              let stile = `border:1.5px solid var(--border-strong); background:var(--surface-2); color:var(--text);`;
-              if(stato === 'scaduto') stile = `border:2.5px solid #f4574a; background:rgba(244,87,74,.16); color:var(--text); font-weight:700;`;
-              else if(stato === 'avviso') stile = `border:2.5px solid #f5a623; background:rgba(245,166,35,.18); color:var(--text); font-weight:700;`;
+              const stile = `border:1.5px solid var(--border-strong); background:var(--surface-2); color:var(--text);`;
               return `<span style="font-size:12.5px; padding:4px 10px; border-radius:14px; ${stile}">${a.nome}</span>`;
             }).join('')}
           </div>`;
@@ -4233,10 +4113,6 @@
       detailCont.innerHTML = `
         ${totaliHtml}
         <div style="display:grid; gap:12px; margin:16px 0;">
-          <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
-            <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">⚕️ Certificati</p>
-            ${certHtml}
-          </div>
           <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
             <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">🏆 Più presenti agli allenamenti</p>
             ${podioHtml}
@@ -4263,45 +4139,8 @@
     }
     renderDettaglioGruppo();
     renderSquadreFoglio();
-    renderCertificatiSocieta(snapAtleti.docs);
   }
 
-  // Certificati scaduti o in scadenza di tutti i gruppi insieme, senza dover aprire una squadra alla volta
-  function renderCertificatiSocieta(atletiDocs){
-    const anteprima = document.getElementById('anteprima-certificati');
-    const cont = document.getElementById('certificati-societa-list');
-    if(!anteprima || !cont) return;
-
-    const daControllare = atletiDocs
-      .map(d => ({ ...d.data() }))
-      .filter(a => !a.archiviato)
-      .map(a => ({ nome: a.nome, gruppoNome: (GRUPPI[a.gruppoId] && GRUPPI[a.gruppoId].nome) || '—', stato: statoCertificato(a.scadenzaCertificato) }))
-      .filter(a => a.stato.stato === 'scaduto' || a.stato.stato === 'avviso')
-      .sort((a,b) => (a.stato.giorni||0) - (b.stato.giorni||0)); // prima i più urgenti (scaduti da più tempo, poi in scadenza)
-
-    const scaduti = daControllare.filter(a => a.stato.stato === 'scaduto').length;
-    const inAvviso = daControllare.filter(a => a.stato.stato === 'avviso').length;
-
-    anteprima.textContent = daControllare.length === 0
-      ? 'Tutto in regola ✓'
-      : `${scaduti ? scaduti + ' scaduti' : ''}${scaduti && inAvviso ? ' · ' : ''}${inAvviso ? inAvviso + ' in scadenza' : ''}`;
-
-    cont.innerHTML = daControllare.length === 0
-      ? '<p class="empty-note">Nessun certificato scaduto o in scadenza in tutta la società.</p>'
-      : daControllare.map(a => `
-          <div class="msg-row">
-            <div class="meta">
-              <span class="msg-dest">${a.gruppoNome}</span>
-              <span class="msg-data" style="color:${a.stato.stato === 'scaduto' ? 'var(--danger)' : 'var(--accent-lane)'}; font-weight:600;">
-                ${a.stato.stato === 'scaduto' ? '⚠️ Scaduto' : '⏳ ' + a.stato.testo}
-              </span>
-            </div>
-            <div class="msg-testo">${a.nome}</div>
-          </div>
-        `).join('');
-  }
-
-  // Banner avviso certificati, riusabile in più schermate (presenze, gara, home allenatore)
   // Gruppi che non fanno registrazione degli allenamenti (es. Mezzofondo): solo gare.
   // Si riconosce dal nome, oppure aggiungendo sul gruppo (Firestore) il campo senzaAllenamenti = true.
   function gruppoSenzaAllenamenti(g){
@@ -4436,39 +4275,10 @@
     }, () => { el.textContent = ''; });
   }
 
-  function renderBannerCertificati(elementId, listaAtleti, compatto = false){
-    const banner = document.getElementById(elementId);
-    if(!banner) return;
-    const inAvviso = (listaAtleti || []).filter(a => {
-      const s = statoCertificato(a.scadenzaCertificato).stato;
-      return s === 'avviso' || s === 'scaduto';
-    });
-    if(inAvviso.length === 0){
-      banner.style.display = 'none';
-    } else {
-      banner.style.display = 'block';
-      if(compatto){
-        const n = inAvviso.length;
-        const nomi = inAvviso.map(a => {
-          const st = statoCertificato(a.scadenzaCertificato);
-          return `${escHtml(a.nome)} (${st.stato === 'scaduto' ? 'scaduto' : st.testo})`;
-        }).join(', ');
-        banner.innerHTML = `<details class="cert-compatto"><summary><span>⚕️ ${n} certificat${n === 1 ? 'o' : 'i'} da verificare</span><span aria-hidden="true">▾</span></summary><p class="cert-lista">${nomi}. Verifica con la società.</p></details>`;
-        return;
-      }
-      banner.innerHTML = `⚕️ <strong>${inAvviso.length}</strong> certificato/i medico/i scaduto/i o in scadenza: ${inAvviso.map(a => {
-        const s = statoCertificato(a.scadenzaCertificato);
-        return `${a.nome} (${s.stato === 'scaduto' ? 'scaduto' : s.testo})`;
-      }).join(', ')}. Verifica con la società.`;
-    }
-  }
-
   function renderRoster(){
     const list = document.getElementById('roster-list');
     const btnElimina = document.getElementById('elimina-presenze-btn');
     if(btnElimina) btnElimina.style.display = presenzeDocIdAttuale ? '' : 'none';
-
-    renderBannerCertificati('cert-avviso-banner', rosterDocs);
 
     // Gruppi a sezioni: atleti non ancora assegnati + spostamento tra sezioni
     const sezDefR = sezioneCorrente ? sezioniGruppo(currentGruppoId) : null;
@@ -4500,12 +4310,9 @@
     }
     list.innerHTML = rosterDocs.map(a => {
       const presente = presenzaMap.get(a.id) !== false; // di default presente, finché non viene toccato
-      const cert = statoCertificato(a.scadenzaCertificato);
-      const certHtml = cert.stato === 'mancante' ? '' :
-        `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : (cert.stato === 'avviso' ? `⚠️ ${cert.testo}` : cert.testo)}</span>`;
       return `
         <div class="roster-item">
-          <span class="nome">${a.nome}${certHtml}</span>
+          <span class="nome">${a.nome}</span>
           <span style="display:flex; gap:8px; align-items:center;">
             ${sezDefR ? (() => { const altra = sezDefR.find(z => z.id !== sezioneCorrente); return altra ? `<button type="button" class="btn-archivia-testo btn-sez-sposta" data-id="${a.id}" data-sez="${altra.id}">→ ${altra.nome}</button>` : ''; })() : ''}
             <button type="button" class="presence-pill ${presente ? 'presente' : 'assente'}" data-id="${a.id}">
@@ -4671,7 +4478,7 @@
 
     const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     rosterUnsub = onSnapshot(q, snap => {
-      const tuttiAttivi = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id: d.id, nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', sezione: d.data().sezione || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      const tuttiAttivi = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id: d.id, nome: d.data().nome, sezione: d.data().sezione || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
       atletiSenzaSezione = sezioneCorrente ? tuttiAttivi.filter(a => !a.sezione) : [];
       rosterDocs = sezioneCorrente ? tuttiAttivi.filter(a => a.sezione === sezioneCorrente) : tuttiAttivi;
       controllaRegistrazioneEsistente();
@@ -5022,7 +4829,7 @@
     if(adminRosterUnsub) adminRosterUnsub();
     const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
     adminRosterUnsub = onSnapshot(q, snap => {
-      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '', dataNascita: d.data().dataNascita || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] })).sort((a,b)=>a.nome.localeCompare(b.nome));
+      adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, dataNascita: d.data().dataNascita || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderAdminRosterList();
     });
 
@@ -5038,18 +4845,13 @@
       list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungili qui sotto.</div>';
     } else {
       list.innerHTML = attivi.map(a => {
-        const cert = statoCertificato(a.scadenzaCertificato);
         return `
         <div class="roster-item">
-          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${cert.stato !== 'mancante' ? `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : cert.testo}</span>` : ''}${(a.storicoGruppi || []).length > 0 ? (() => { const sp = a.storicoGruppi[a.storicoGruppi.length - 1]; return `<span class="sposta-nota">Da ${escHtml(sp.daNome || '—')} · ${sp.data ? new Date(sp.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}</span>`; })() : ''}</span>
+          <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${(a.storicoGruppi || []).length > 0 ? (() => { const sp = a.storicoGruppi[a.storicoGruppi.length - 1]; return `<span class="sposta-nota">Da ${escHtml(sp.daNome || '—')} · ${sp.data ? new Date(sp.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}</span>`; })() : ''}</span>
           <span style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
             <span style="display:flex; flex-direction:column; gap:3px;">
               <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Nascita</label>
               <input type="date" class="nascita-input" data-id="${a.id}" value="${a.dataNascita || ''}" title="Data di nascita">
-            </span>
-            <span style="display:flex; flex-direction:column; gap:3px;">
-              <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Scadenza certificato</label>
-              <input type="date" class="cert-input" data-id="${a.id}" value="${a.scadenzaCertificato || ''}" title="Scadenza certificato medico">
             </span>
             <button type="button" class="btn-sposta" data-id="${a.id}" title="Sposta in un altro gruppo" aria-label="Sposta ${escHtml(a.nome)} in un altro gruppo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10h13l-3-3"/><path d="M17 14H4l3 3"/></svg> Sposta</button>
             <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
@@ -5062,12 +4864,6 @@
     list.querySelectorAll('.nascita-input').forEach(input => {
       input.addEventListener('change', async (e) => {
         await updateDoc(doc(db,'atleti', input.dataset.id), { dataNascita: e.target.value });
-      });
-    });
-
-    list.querySelectorAll('.cert-input').forEach(input => {
-      input.addEventListener('change', async (e) => {
-        await updateDoc(doc(db,'atleti', input.dataset.id), { scadenzaCertificato: e.target.value });
       });
     });
 
@@ -5345,10 +5141,6 @@
   let importaRisultatiParse = [];
   const DATA_PATTERN = /^\d{2}\/\d{2}\/\d{4}$/;
 
-  // ===================== IMPORTA CERTIFICATI IN BLOCCO =====================
-
-  let importaCertMatch = []; // [{nomeSheet, atletaId, gruppoNome, dataIso, trovato, giaUguale}]
-
   // Racchiude un valore tra virgolette CSV, raddoppiando eventuali virgolette interne
   function csvEscape(valore){
     const testo = String(valore ?? '');
@@ -5360,17 +5152,15 @@
     const righe = snap.docs.map(d => {
       const a = d.data();
       const gruppo = GRUPPI[a.gruppoId];
-      const scadenzaFmt = a.scadenzaCertificato ? new Date(a.scadenzaCertificato + 'T00:00:00').toLocaleDateString('it-IT') : '';
       return {
         nome: a.nome || '',
         gruppo: gruppo ? gruppo.nome : '—',
-        scadenza: scadenzaFmt,
         stato: a.archiviato ? 'Ritirato' : 'Attivo'
       };
     }).sort((x,y) => x.gruppo.localeCompare(y.gruppo) || x.nome.localeCompare(y.nome));
 
-    const intestazione = ['Nome', 'Squadra', 'Scadenza certificato', 'Stato'];
-    const corpo = righe.map(r => [r.nome, r.gruppo, r.scadenza, r.stato].map(csvEscape).join(','));
+    const intestazione = ['Nome', 'Squadra', 'Stato'];
+    const corpo = righe.map(r => [r.nome, r.gruppo, r.stato].map(csvEscape).join(','));
     const csv = '\uFEFF' + [intestazione.map(csvEscape).join(','), ...corpo].join('\r\n');
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -5480,146 +5270,6 @@
   document.getElementById('esporta-presenze-annulla').addEventListener('click', chiudiEsportaPresenze);
   document.getElementById('esporta-presenze-conferma').addEventListener('click', esportaPresenzeCSV);
   document.getElementById('esporta-presenze-overlay').addEventListener('click', e => { if(e.target.id === 'esporta-presenze-overlay') chiudiEsportaPresenze(); });
-
-  function apriImportaCertificati(){
-    document.getElementById('importa-cert-testo').value = '';
-    document.getElementById('importa-cert-anteprima').innerHTML = '';
-    document.getElementById('importa-cert-confirm-btn').style.display = 'none';
-    document.getElementById('importa-cert-feedback').textContent = '';
-    importaCertMatch = [];
-    showView('view-importa-certificati');
-  }
-
-  // Converte "gg/mm/aaaa" in "aaaa-mm-gg" (formato usato internamente per scadenzaCertificato)
-  function dataItalianaAIso(str){
-    const m = String(str).trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
-    if(!m) return null;
-    const [,gg,mm,aaaa] = m;
-    return `${aaaa}-${mm.padStart(2,'0')}-${gg.padStart(2,'0')}`;
-  }
-
-  async function analizzaImportaCertificati(){
-    const testo = document.getElementById('importa-cert-testo').value;
-    const righe = testo.split('\n').map(r => r.trim()).filter(Boolean);
-    if(righe.length === 0){
-      document.getElementById('importa-cert-anteprima').innerHTML = '<p class="empty-note">Incolla prima qualche riga.</p>';
-      return;
-    }
-
-    // Tutti gli atleti di tutti i gruppi, per abbinare indipendentemente da quale squadra
-    const snapTutti = await getDocs(collection(db,'atleti'));
-    const atletiTutti = snapTutti.docs.map(d => ({ id:d.id, ...d.data() }));
-    const trovaAtleta = nomeCercato => atletiTutti.find(a => a.nome.trim().toLowerCase() === nomeCercato.trim().toLowerCase());
-
-    importaCertMatch = righe.map(riga => {
-      // Riconosce: tab veri, virgole, o 2+ spazi consecutivi (il copia-incolla da Sheets su mobile
-      // a volte converte il tab tra colonne in semplici spazi). Un singolo spazio non separa colonne,
-      // così i nomi composti (es. "LORENZO NICOLO'") restano interi in un'unica colonna.
-      const colonne = riga.split(/\t+|,\s*|\s{2,}/).map(c => c.trim()).filter(c => c !== '');
-      if(colonne.length < 3){
-        return { nomeSheet: riga, dataIso: null, trovato: false, motivo: 'Riga non riconosciuta (servono almeno 3 colonne: Cognome, Nome, Scadenza — oppure 4 con anche la Data di nascita)' };
-      }
-      // 3 colonne: Cognome, Nome, Scadenza. 4 colonne: Cognome, Nome, Data di nascita, Scadenza.
-      const haDataNascita = colonne.length >= 4;
-      const [cognome, nome, terza, quarta] = colonne;
-      const dataStr = haDataNascita ? quarta : terza;
-      const dataNascitaStr = haDataNascita ? terza : null;
-      const nomeSheet = `${cognome} ${nome}`;
-      const dataIso = dataItalianaAIso(dataStr);
-      if(!dataIso){
-        return { nomeSheet, dataIso: null, trovato: false, motivo: `Data non riconosciuta ("${dataStr}", serve gg/mm/aaaa)` };
-      }
-      let dataNascitaIso = null;
-      if(dataNascitaStr){
-        dataNascitaIso = dataItalianaAIso(dataNascitaStr);
-        if(!dataNascitaIso){
-          return { nomeSheet, dataIso: null, trovato: false, motivo: `Data di nascita non riconosciuta ("${dataNascitaStr}", serve gg/mm/aaaa)` };
-        }
-      }
-      const atleta = trovaAtleta(nomeSheet);
-      if(!atleta){
-        return { nomeSheet, dataIso, trovato: false, motivo: 'Nessun atleta corrispondente trovato in nessun gruppo' };
-      }
-      const gruppo = GRUPPI[atleta.gruppoId];
-      return {
-        nomeSheet, atletaId: atleta.id, dataIso, dataNascitaIso,
-        trovato: true,
-        gruppoNome: gruppo ? gruppo.nome : '—',
-        dataAttuale: atleta.scadenzaCertificato || '',
-        dataNascitaAttuale: atleta.dataNascita || '',
-        giaUguale: atleta.scadenzaCertificato === dataIso && (!dataNascitaIso || atleta.dataNascita === dataNascitaIso)
-      };
-    });
-
-    renderAnteprimaImportaCertificati();
-  }
-
-  function renderAnteprimaImportaCertificati(){
-    const cont = document.getElementById('importa-cert-anteprima');
-    const trovati = importaCertMatch.filter(r => r.trovato && !r.giaUguale);
-    const giaAggiornati = importaCertMatch.filter(r => r.trovato && r.giaUguale);
-    const nonTrovati = importaCertMatch.filter(r => !r.trovato);
-
-    cont.innerHTML = `
-      <p style="font-size:13.5px; margin:0 0 14px;">
-        <strong style="color:var(--primary);">${trovati.length} da aggiornare</strong>
-        ${giaAggiornati.length > 0 ? ` · ${giaAggiornati.length} già corretti` : ''}
-        ${nonTrovati.length > 0 ? ` · <strong style="color:var(--danger);">${nonTrovati.length} non trovati</strong>` : ''}
-      </p>
-      ${trovati.length > 0 ? `
-        <p class="section-eyebrow">Verranno aggiornati</p>
-        ${trovati.map(r => `
-          <div class="risultato-row" style="margin-bottom:6px;">
-            <span class="principale">${r.nomeSheet} <span style="color:var(--text-dim); font-weight:400;">(${r.gruppoNome})</span></span>
-            <span style="font-size:12.5px; color:var(--text-dim);">
-              ${r.dataAttuale ? new Date(r.dataAttuale+'T00:00:00').toLocaleDateString('it-IT') : '—'} → <strong style="color:var(--text);">${new Date(r.dataIso+'T00:00:00').toLocaleDateString('it-IT')}</strong>
-              ${r.dataNascitaIso ? `<br>Nascita: ${r.dataNascitaAttuale ? new Date(r.dataNascitaAttuale+'T00:00:00').toLocaleDateString('it-IT') : '—'} → <strong style="color:var(--text);">${new Date(r.dataNascitaIso+'T00:00:00').toLocaleDateString('it-IT')}</strong>` : ''}
-            </span>
-          </div>
-        `).join('')}
-      ` : ''}
-      ${nonTrovati.length > 0 ? `
-        <p class="section-eyebrow" style="margin-top:18px; color:var(--danger);">Da controllare a mano</p>
-        ${nonTrovati.map(r => `
-          <div class="risultato-row" style="margin-bottom:6px;">
-            <span class="principale">${r.nomeSheet}</span>
-            <span style="font-size:12.5px; color:var(--danger);">${r.motivo}</span>
-          </div>
-        `).join('')}
-      ` : ''}
-    `;
-
-    document.getElementById('importa-cert-confirm-btn').style.display = trovati.length > 0 ? '' : 'none';
-  }
-
-  document.getElementById('importa-cert-analizza-btn').addEventListener('click', analizzaImportaCertificati);
-
-  document.getElementById('importa-cert-confirm-btn').addEventListener('click', async function(){
-    const btn = this;
-    const feedback = document.getElementById('importa-cert-feedback');
-    const daAggiornare = importaCertMatch.filter(r => r.trovato && !r.giaUguale);
-    if(daAggiornare.length === 0) return;
-    btn.disabled = true;
-    feedback.textContent = 'Aggiornamento in corso…';
-    try{
-      await Promise.all(daAggiornare.map(r => {
-        const dati = { scadenzaCertificato: r.dataIso };
-        if(r.dataNascitaIso) dati.dataNascita = r.dataNascitaIso;
-        return updateDoc(doc(db,'atleti', r.atletaId), dati);
-      }));
-      feedback.textContent = `✓ Aggiornati ${daAggiornare.length} certificati.`;
-      btn.style.display = 'none';
-    } catch(err){
-      console.error(err);
-      feedback.textContent = 'Errore durante l\'aggiornamento: ' + err.message;
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  document.getElementById('back-to-admin-from-importa-cert').addEventListener('click', () => {
-    showView('view-admin');
-  });
 
   function apriImporta(){
     const select = document.getElementById('importa-gruppo');
@@ -5813,13 +5463,10 @@
     cont.innerHTML = risultatiAtletiDocs.map(a => {
       const righe = garaPartecipanti.get(a.id);
       const partecipa = righe !== undefined;
-      const cert = statoCertificato(a.scadenzaCertificato);
-      const certHtml = cert.stato === 'mancante' ? '' :
-        `<span class="cert-badge cert-${cert.stato}">${cert.stato === 'scaduto' ? '⚠️ Scaduto' : (cert.stato === 'avviso' ? `⚠️ ${cert.testo}` : cert.testo)}</span>`;
       return `
         <div class="gara-atleta-block">
           <div class="gara-atleta-header">
-            <span class="nome">${a.nome}${certHtml}</span>
+            <span class="nome">${a.nome}</span>
             <button type="button" class="partecipa-pill ${partecipa ? 'partecipa' : ''}" data-id="${a.id}">
               ${partecipa ? 'Partecipa' : 'Non partecipa'}
             </button>
@@ -5971,8 +5618,7 @@
 
     const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
     risultatiAtletiUnsub = onSnapshot(qAtleti, snap => {
-      risultatiAtletiDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
-      renderBannerCertificati('cert-avviso-banner-gara', risultatiAtletiDocs);
+      risultatiAtletiDocs = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id:d.id, nome:d.data().nome })).sort((a,b)=>a.nome.localeCompare(b.nome));
       controllaGaraEsistente();
     });
 
@@ -8038,7 +7684,6 @@
       return;
     }
     avviaListenerGruppi();
-    avviaListenerImpostazioni();
     avviaListenerEventi();
     avviaListenerAttivitaSocieta();
     avviaListenerMessaggi();
@@ -8063,9 +7708,8 @@
         document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
         const qConteggio = query(collection(db,'atleti'), where('gruppoId','==', dati.gruppoId));
         const snapConteggio = await getDocs(qConteggio);
-        const atletiAttiviHome = snapConteggio.docs.filter(d => !d.data().archiviato).map(d => ({ nome: d.data().nome, scadenzaCertificato: d.data().scadenzaCertificato || '' }));
+        const atletiAttiviHome = snapConteggio.docs.filter(d => !d.data().archiviato).map(d => ({ nome: d.data().nome }));
         document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${atletiAttiviHome.length} atleti` : "";
-        renderBannerCertificati('cert-avviso-banner-home', atletiAttiviHome, true);
         const senzaAllenamenti = gruppoSenzaAllenamenti(g);
         if(!senzaAllenamenti) avviaUltimoAllenamento(dati.gruppoId);
         // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
@@ -8135,7 +7779,6 @@
       squadreGruppoSelezionato = '';
       GRUPPI = {};
       gruppiListenerAvviato = false;
-      impostazioniListenerAvviato = false;
       eventiListenerAvviato = false;
       primaVoltaGruppi = true;
 
@@ -8197,11 +7840,9 @@
         <button type="button" class="side-panel-btn" id="sp-gestisci-gruppi">🗂️ Gestisci gruppi</button>
         <button type="button" class="side-panel-btn" id="sp-gestisci-discipline">⚙️ Gestisci discipline gara</button>
         <button type="button" class="side-panel-btn" id="sp-importa-storico">📥 Importa storico (CSV)</button>
-        <button type="button" class="side-panel-btn" id="sp-importa-certificati">🩺 Importa certificati (in blocco)</button>
         <button type="button" class="side-panel-btn" id="sp-esporta-atleti">📤 Esporta atleti (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-esporta-presenze">📤 Esporta presenze (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-crea-evento">📅 Crea evento</button>
-        <button type="button" class="side-panel-btn" id="sp-impostazioni">🔧 Impostazioni</button>
       </div>`;
     }
 
@@ -8233,7 +7874,6 @@
       document.getElementById('sp-gestisci-gruppi')?.addEventListener('click', () => { chiudiPannello(); apriAdminGruppi(); });
       document.getElementById('sp-gestisci-discipline')?.addEventListener('click', () => { chiudiPannello(); apriAdminDiscipline(); });
       document.getElementById('sp-importa-storico')?.addEventListener('click', () => { chiudiPannello(); apriImporta(); });
-      document.getElementById('sp-importa-certificati')?.addEventListener('click', () => { chiudiPannello(); apriImportaCertificati(); });
       document.getElementById('sp-esporta-atleti')?.addEventListener('click', () => { chiudiPannello(); esportaAtletiCSV(); });
       document.getElementById('sp-esporta-presenze')?.addEventListener('click', () => { chiudiPannello(); apriEsportaPresenze(); });
       document.getElementById('sp-crea-evento')?.addEventListener('click', () => {
@@ -8243,12 +7883,6 @@
         document.getElementById('evento-nuovo-luogo').value = '';
         document.getElementById('evento-crea-feedback').textContent = '';
         showView('view-crea-evento');
-      });
-      document.getElementById('sp-impostazioni')?.addEventListener('click', () => {
-        chiudiPannello();
-        document.getElementById('impostazioni-giorni-cert').value = giorniAvvisoCertificato;
-        document.getElementById('impostazioni-feedback').textContent = '';
-        showView('view-impostazioni');
       });
     }
   }
@@ -8306,10 +7940,6 @@
           Dalla home, tocca Gestisci atleti: puoi segnare come ritirato un atleta che non fa più parte del gruppo (i suoi dati restano salvati, recuperabili in ogni momento) oppure spostarlo in un'altra squadra.
         </p>
 
-        <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificato medico</h3>
-        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
-          Se un atleta ha il certificato scaduto o in scadenza, lo vedi subito in home, in Registra presenze e in Gara — non serve controllare nulla a parte.
-        </p>
       </div>
     </div>
   `;
@@ -8319,12 +7949,7 @@
       <div style="padding:18px 0;">
         <h3 style="margin:0 0 8px; font-size:15px;">🏠 Home "Andamento"</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          I 4 numeri in alto sono i totali di tutta la società (con i ritirati dell'anno in corso, se ce ne sono). "Squadre" apre il dettaglio di un gruppo; "Attività e strumenti" raccoglie gare, eventi, messaggi, certificati e confronto tra i gruppi.
-        </p>
-
-        <h3 style="margin:0 0 8px; font-size:15px;">⚕️ Certificati da controllare</h3>
-        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          In "Attività e strumenti": tutti gli atleti scaduti o in scadenza, di tutti i gruppi insieme, senza dover aprire una squadra alla volta.
+          I 4 numeri in alto sono i totali di tutta la società (con i ritirati dell'anno in corso, se ce ne sono). "Squadre" apre il dettaglio di un gruppo; "Attività e strumenti" raccoglie gare, eventi, messaggi e confronto tra i gruppi.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi alle squadre</h3>
@@ -8339,7 +7964,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Aggiungi, correggi, archivia atleti; data di nascita e certificato medico per ciascuno. "Importa certificati" li aggiorna in blocco incollando da Google Sheet; "Esporta atleti" scarica tutto in Excel.
+          Aggiungi, correggi, archivia atleti; data di nascita per ciascuno; "Esporta atleti" scarica tutto in Excel.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">⚙️ Gestisci discipline gara</h3>
@@ -8352,10 +7977,6 @@
           Per dirigenti o revisori: vede tutto come la società, ma non può modificare nulla. Si crea da Firebase, ruolo "societa_lettura".
         </p>
 
-        <h3 style="margin:0 0 8px; font-size:15px;">🔧 Impostazioni</h3>
-        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0;">
-          Imposta da quanti giorni prima avvisare per un certificato in scadenza.
-        </p>
       </div>
     </div>
   `;
@@ -8700,31 +8321,10 @@
     showView('view-admin');
   });
 
-  // --- Navigazione Impostazioni (Società) ---
-  document.getElementById('back-to-admin-from-impostazioni').addEventListener('click', () => {
-    showView('view-admin');
-  });
-
   // --- Navigazione Crea evento (Società) ---
   document.getElementById('back-to-admin-from-evento').addEventListener('click', () => {
     showView('view-admin');
   });
-  document.getElementById('impostazioni-salva-btn').addEventListener('click', async function(){
-    const feedback = document.getElementById('impostazioni-feedback');
-    const valore = parseInt(document.getElementById('impostazioni-giorni-cert').value, 10);
-    if(isNaN(valore) || valore < 1){
-      feedback.textContent = "Inserisci un numero di giorni valido.";
-      return;
-    }
-    try{
-      await setDoc(doc(db,'impostazioni','generali'), { giorniAvvisoCertificato: valore }, { merge: true });
-      feedback.textContent = "Salvato ✓";
-    } catch(err){
-      console.error(err);
-      feedback.textContent = "Errore nel salvataggio: " + err.message;
-    }
-  });
-
   document.querySelectorAll('.importa-modo-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.importa-modo-btn').forEach(b => b.classList.remove('active'));
