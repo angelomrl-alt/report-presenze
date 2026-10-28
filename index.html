@@ -2541,8 +2541,11 @@
       <div class="rs-azioni">
         <button type="button" class="btn-secondary" id="rs-pdf-nomi">📄 PDF con nomi</button>
         <button type="button" class="btn-secondary" id="rs-pdf-numeri">📄 PDF solo numeri</button>
+        <button type="button" class="btn-secondary" id="rs-web-nomi">📱 Pagina web con nomi</button>
+        <button type="button" class="btn-secondary" id="rs-web-numeri">📱 Pagina web solo numeri</button>
       </div>
-      <p class="sub" style="font-size:12px;">Si apre la stampa del telefono: scegli "Salva come PDF" e poi condividi il file.</p>
+      <p class="sub" style="font-size:12px;">PDF: si apre la stampa del telefono, scegli "Salva come PDF" e poi condividi il file. Pagina web: un file .html da aprire direttamente dallo smartphone, con i dati di questo momento.</p>
+      <p class="save-feedback rs-feedback-web" id="rs-web-feedback" style="min-height:18px;"></p>
     </main>
   </section>
 
@@ -3702,6 +3705,84 @@
     window.print();
   }
   window.addEventListener('afterprint', pulisciStampaSocieta);
+
+  // ---------- Report società come pagina web (file .html da guardare dallo smartphone) ----------
+  async function condividiReportSocietaWeb(conNomi){
+    const fb = document.getElementById('rs-web-feedback');
+    const bottoni = [document.getElementById('rs-web-nomi'), document.getElementById('rs-web-numeri')];
+    bottoni.forEach(b => b.disabled = true);
+    fb.textContent = 'Preparo la pagina…';
+    try{
+      const vista = document.getElementById('view-report-societa');
+      const main = vista.querySelector('main').cloneNode(true);
+      main.querySelectorAll('.rs-azioni, .rs-feedback-web').forEach(el => el.remove());
+      // elimina il testo di aiuto sotto i bottoni (ultimo paragrafo .sub di main)
+      const subs = main.querySelectorAll(':scope > p.sub');
+      if(subs.length) subs[subs.length - 1].remove();
+      if(!conNomi) main.querySelectorAll('.rs-solo-nomi').forEach(el => el.remove());
+
+      const titolo = (document.getElementById('rs-titolo').textContent || 'Report').trim();
+      const oggi = new Date();
+      const dataTesto = oggi.toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' });
+      const stili = Array.from(document.querySelectorAll('style')).filter(st => st.id !== 'cf-page-style').map(st => st.textContent).join('\n');
+      const fonts = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.outerHTML).join('\n');
+
+      const html = `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atletica Silca — Report ${escHtml(titolo)}</title>
+${fonts}
+<style>
+${stili}
+/* Pagina condivisa: sempre tema chiaro, nessuna interazione */
+html, body{background:#f3f1ea !important; color:#1a1f29; margin:0;}
+#view-report-societa{display:block !important; background:#f3f1ea; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; min-height:100vh;}
+#view-report-societa main{max-width:760px; margin:0 auto; padding:18px 16px 40px;}
+.pagina-nota{font-size:12px; color:#5c6057; margin:0 0 14px;}
+</style>
+</head>
+<body>
+<div id="app">
+<section id="view-report-societa" class="view active">
+<main>
+<p class="pagina-nota">Atletica Silca Conegliano · dati aggiornati al ${escHtml(dataTesto)}${conNomi ? '' : ' · versione senza nomi'}</p>
+${main.innerHTML}
+</main>
+</section>
+</div>
+<script>document.querySelectorAll('.chart-confronto-scroll').forEach(function(b){ b.scrollLeft = b.scrollWidth; });<\/script>
+</body>
+</html>`;
+
+      const pulito = titolo.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Report';
+      const nomeFile = `Report_Societa_${pulito}_${conNomi ? 'con_nomi' : 'solo_numeri'}.html`;
+      const blob = new Blob([html], { type: 'text/html' });
+      const file = new File([blob], nomeFile, { type: 'text/html' });
+
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        try{
+          await navigator.share({ files: [file], title: `Atletica Silca — Report ${titolo}` });
+          fb.textContent = 'Pagina pronta ✓';
+          return;
+        } catch(e){
+          if(e && e.name === 'AbortError'){ fb.textContent = ''; return; }
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = nomeFile;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      fb.textContent = 'File scaricato ✓ (cerca nei Download)';
+    } catch(err){
+      console.error(err);
+      fb.textContent = 'Errore: ' + err.message;
+    } finally {
+      bottoni.forEach(b => b.disabled = false);
+    }
+  }
 
   async function renderGroupsGrid(){
     const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
@@ -8286,6 +8367,8 @@
   document.getElementById('back-from-report-societa').addEventListener('click', () => { pulisciStampaSocieta(); showView('view-admin'); });
   document.getElementById('rs-pdf-nomi').addEventListener('click', () => stampaReportSocieta(true));
   document.getElementById('rs-pdf-numeri').addEventListener('click', () => stampaReportSocieta(false));
+  document.getElementById('rs-web-nomi').addEventListener('click', () => condividiReportSocietaWeb(true));
+  document.getElementById('rs-web-numeri').addEventListener('click', () => condividiReportSocietaWeb(false));
   document.getElementById('card-presenze').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(); } });
 
   // --- Navigazione Guida (Allenatore) ---
