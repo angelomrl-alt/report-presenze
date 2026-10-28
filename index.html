@@ -1207,6 +1207,11 @@
   body.stampa-societa #view-report-societa{display:block !important; background:#fff; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   body.stampa-societa #view-report-societa .topbar, body.stampa-societa .rs-azioni, body.stampa-societa #view-report-societa .sub:last-child{display:none !important;}
   body.senza-nomi .rs-solo-nomi{display:none !important;}
+  /* Report aperto da link condiviso: tema chiaro, niente barra superiore */
+  body.report-condiviso{background:#f3f1ea !important;}
+  body.report-condiviso #view-report-societa{background:#f3f1ea; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; min-height:100vh;}
+  body.report-condiviso #view-report-societa .topbar{display:none !important;}
+  body.report-condiviso #view-report-societa main{max-width:760px; margin:0 auto; padding:18px 16px 40px;}
   body.stampa-societa .chart-confronto-svg{width:100% !important; height:auto !important;}
   body.stampa-societa .chart-confronto-scroll{overflow:visible;}
   .cf-segmenti{display:flex; gap:6px; margin:10px 0;}
@@ -2539,12 +2544,10 @@
       <div class="rs-box" id="rs-spunti"></div>
 
       <div class="rs-azioni">
-        <button type="button" class="btn-secondary" id="rs-pdf-nomi">📄 PDF con nomi</button>
-        <button type="button" class="btn-secondary" id="rs-pdf-numeri">📄 PDF solo numeri</button>
-        <button type="button" class="btn-secondary" id="rs-web-nomi">📱 Pagina web con nomi</button>
-        <button type="button" class="btn-secondary" id="rs-web-numeri">📱 Pagina web solo numeri</button>
+        <button type="button" class="btn-secondary" id="rs-pdf-nomi">📄 PDF</button>
+        <button type="button" class="btn-secondary" id="rs-web-nomi">🔗 Condividi link</button>
       </div>
-      <p class="sub" style="font-size:12px;">PDF: si apre la stampa del telefono, scegli "Salva come PDF" e poi condividi il file. Pagina web: un file .html da aprire direttamente dallo smartphone, con i dati di questo momento.</p>
+      <p class="sub" style="font-size:12px;">PDF: si apre la stampa del telefono, scegli "Salva come PDF" e poi condividi il file. Link: una pagina web con i dati di questo momento, visibile senza accesso a chi riceve il link per 30 giorni.</p>
       <p class="save-feedback rs-feedback-web" id="rs-web-feedback" style="min-height:18px;"></p>
     </main>
   </section>
@@ -3706,83 +3709,85 @@
   }
   window.addEventListener('afterprint', pulisciStampaSocieta);
 
-  // ---------- Report società come pagina web (file .html da guardare dallo smartphone) ----------
-  async function condividiReportSocietaWeb(conNomi){
+  // ---------- Report società come link (pagina web visibile senza login, valida 30 giorni) ----------
+  async function condividiLinkReportSocieta(){
     const fb = document.getElementById('rs-web-feedback');
-    const bottoni = [document.getElementById('rs-web-nomi'), document.getElementById('rs-web-numeri')];
-    bottoni.forEach(b => b.disabled = true);
-    fb.textContent = 'Preparo la pagina…';
+    const btn = document.getElementById('rs-web-nomi');
+    btn.disabled = true;
+    fb.textContent = 'Creo il link…';
     try{
-      const vista = document.getElementById('view-report-societa');
-      const main = vista.querySelector('main').cloneNode(true);
+      if(!auth.currentUser) throw new Error('Sessione scaduta: rientra e riprova.');
+      const main = document.querySelector('#view-report-societa main').cloneNode(true);
       main.querySelectorAll('.rs-azioni, .rs-feedback-web').forEach(el => el.remove());
-      // elimina il testo di aiuto sotto i bottoni (ultimo paragrafo .sub di main)
       const subs = main.querySelectorAll(':scope > p.sub');
-      if(subs.length) subs[subs.length - 1].remove();
-      if(!conNomi) main.querySelectorAll('.rs-solo-nomi').forEach(el => el.remove());
+      if(subs.length) subs[subs.length - 1].remove();   // testo di aiuto sotto i bottoni
 
       const titolo = (document.getElementById('rs-titolo').textContent || 'Report').trim();
+      const GIORNI = 30;
       const oggi = new Date();
-      const dataTesto = oggi.toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' });
-      const stili = Array.from(document.querySelectorAll('style')).filter(st => st.id !== 'cf-page-style').map(st => st.textContent).join('\n');
-      const fonts = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.outerHTML).join('\n');
+      const scade = new Date(oggi.getTime() + GIORNI * 86400000);
+      const fmt = d => d.toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' });
+      const html = `<p class="pagina-nota" style="font-size:12px; color:#5c6057; margin:0 0 14px;">Atletica Silca Conegliano · dati aggiornati al ${escHtml(fmt(oggi))} · link valido fino al ${escHtml(fmt(scade))}</p>` + main.innerHTML;
+      if(html.length > 900000) throw new Error('Il report è troppo grande per essere condiviso come link.');
 
-      const html = `<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Atletica Silca — Report ${escHtml(titolo)}</title>
-${fonts}
-<style>
-${stili}
-/* Pagina condivisa: sempre tema chiaro, nessuna interazione */
-html, body{background:#f3f1ea !important; color:#1a1f29; margin:0;}
-#view-report-societa{display:block !important; background:#f3f1ea; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; min-height:100vh;}
-#view-report-societa main{max-width:760px; margin:0 auto; padding:18px 16px 40px;}
-.pagina-nota{font-size:12px; color:#5c6057; margin:0 0 14px;}
-</style>
-</head>
-<body>
-<div id="app">
-<section id="view-report-societa" class="view active">
-<main>
-<p class="pagina-nota">Atletica Silca Conegliano · dati aggiornati al ${escHtml(dataTesto)}${conNomi ? '' : ' · versione senza nomi'}</p>
-${main.innerHTML}
-</main>
-</section>
-</div>
-<script>document.querySelectorAll('.chart-confronto-scroll').forEach(function(b){ b.scrollLeft = b.scrollWidth; });<\/script>
-</body>
-</html>`;
+      const arr = new Uint8Array(16); crypto.getRandomValues(arr);
+      const token = btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      await setDoc(doc(db, 'reportCondivisi', token), {
+        titolo, html, creatoDa: auth.currentUser.uid, creatoIl: oggi, scadeIl: scade
+      });
 
-      const pulito = titolo.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Report';
-      const nomeFile = `Report_Societa_${pulito}_${conNomi ? 'con_nomi' : 'solo_numeri'}.html`;
-      const blob = new Blob([html], { type: 'text/html' });
-      const file = new File([blob], nomeFile, { type: 'text/html' });
-
-      if(navigator.canShare && navigator.canShare({ files: [file] })){
+      const url = `${location.origin}${location.pathname}?r=${token}`;
+      const testo = `Atletica Silca — Report ${titolo}`;
+      if(navigator.share){
         try{
-          await navigator.share({ files: [file], title: `Atletica Silca — Report ${titolo}` });
-          fb.textContent = 'Pagina pronta ✓';
+          await navigator.share({ title: testo, text: testo, url });
+          fb.textContent = 'Link creato ✓ (valido 30 giorni)';
           return;
         } catch(e){
-          if(e && e.name === 'AbortError'){ fb.textContent = ''; return; }
+          if(e && e.name === 'AbortError'){ fb.textContent = 'Link creato, non condiviso. Premi di nuovo per condividere.'; return; }
         }
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = nomeFile;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      fb.textContent = 'File scaricato ✓ (cerca nei Download)';
+      try{ await navigator.clipboard.writeText(url); fb.textContent = 'Link copiato negli appunti ✓ ' + url; }
+      catch(e){ fb.textContent = 'Link: ' + url; }
     } catch(err){
       console.error(err);
-      fb.textContent = 'Errore: ' + err.message;
+      const permesso = err && (err.code === 'permission-denied' || /permission/i.test(err.message || ''));
+      fb.textContent = permesso
+        ? 'Errore: mancano i permessi su Firestore per la collezione reportCondivisi (vedi regole).'
+        : 'Errore: ' + err.message;
     } finally {
-      bottoni.forEach(b => b.disabled = false);
+      btn.disabled = false;
     }
   }
+
+  // Apertura del link ricevuto: mostra il report senza login
+  const tokenReportCondiviso = new URLSearchParams(location.search).get('r');
+  async function mostraReportCondiviso(token){
+    document.body.classList.add('report-condiviso');
+    const main = document.querySelector('#view-report-societa main');
+    showView('view-report-societa');
+    main.innerHTML = '<p class="sub" style="padding:24px 0;">Caricamento del report…</p>';
+    try{
+      const snap = await getDoc(doc(db, 'reportCondivisi', token));
+      if(!snap.exists()) throw new Error('non trovato');
+      const d = snap.data();
+      if(d.scadeIl && d.scadeIl.toDate && d.scadeIl.toDate() < new Date()) throw new Error('scaduto');
+      // Pulizia di sicurezza: il report è solo testo/tabelle/grafici, mai script
+      const parsed = new DOMParser().parseFromString('<div>' + d.html + '</div>', 'text/html');
+      parsed.querySelectorAll('script, iframe, object, embed, link, meta, base, form').forEach(e => e.remove());
+      parsed.querySelectorAll('*').forEach(e => Array.from(e.attributes).forEach(a => {
+        const n = a.name.toLowerCase();
+        if(n.startsWith('on') || ((n === 'href' || n === 'src' || n === 'xlink:href') && /^\s*javascript:/i.test(a.value))) e.removeAttribute(a.name);
+      }));
+      main.innerHTML = parsed.body.firstChild.innerHTML;
+      document.title = 'Atletica Silca — Report ' + (d.titolo || '');
+      main.querySelectorAll('.chart-confronto-scroll').forEach(b => { b.scrollLeft = b.scrollWidth; });
+    } catch(err){
+      console.error(err);
+      main.innerHTML = '<h2 style="margin:24px 0 6px;">Link non valido o scaduto</h2><p class="sub">Chiedi alla società di inviarti un nuovo link.</p>';
+    }
+  }
+  if(tokenReportCondiviso) mostraReportCondiviso(tokenReportCondiviso);
 
   async function renderGroupsGrid(){
     const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
@@ -8027,6 +8032,7 @@ ${main.innerHTML}
 
 
   onAuthStateChanged(auth, async (user) => {
+    if(tokenReportCondiviso) return;   // pagina aperta da link condiviso: nessun login
     if(!user){
       showView('view-login');
       return;
@@ -8366,9 +8372,7 @@ ${main.innerHTML}
   document.getElementById('riga-report-societa').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriReportSocieta(); } });
   document.getElementById('back-from-report-societa').addEventListener('click', () => { pulisciStampaSocieta(); showView('view-admin'); });
   document.getElementById('rs-pdf-nomi').addEventListener('click', () => stampaReportSocieta(true));
-  document.getElementById('rs-pdf-numeri').addEventListener('click', () => stampaReportSocieta(false));
-  document.getElementById('rs-web-nomi').addEventListener('click', () => condividiReportSocietaWeb(true));
-  document.getElementById('rs-web-numeri').addEventListener('click', () => condividiReportSocietaWeb(false));
+  document.getElementById('rs-web-nomi').addEventListener('click', condividiLinkReportSocieta);
   document.getElementById('card-presenze').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(); } });
 
   // --- Navigazione Guida (Allenatore) ---
