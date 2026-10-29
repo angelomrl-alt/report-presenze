@@ -2277,7 +2277,7 @@
       <button type="button" class="btn-logout btn-hamburger">☰</button>
       <div class="sa-menu" id="scheda-menu" style="display:none;">
         <button type="button" id="scheda-menu-condividi">📤 Condividi scheda</button>
-        <button type="button" id="scheda-menu-pdf">🖨️ Report stagione PDF</button>
+        <button type="button" id="scheda-menu-pdf">🖨️ Report annuale PDF</button>
       </div>
     </header>
     <main>
@@ -2408,12 +2408,12 @@
           <span>Condividi scheda</span>
         </button>
         <div class="scheda-azione scheda-azione-stagione">
-          <label for="report-stagione-select">Stagione del report</label>
+          <label for="report-stagione-select">Anno del report</label>
           <select id="report-stagione-select"></select>
         </div>
         <button type="button" id="report-stagione-btn" class="btn-secondary scheda-azione">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="5" y="9" width="14" height="8" rx="2"/><path d="M7 14h10v6H7z"/></svg>
-          <span>Report stagione PDF</span>
+          <span>Report annuale PDF</span>
         </button>
       </div>
       <button type="button" id="scheda-fab" class="sa-fab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span id="scheda-fab-testo">Rilevazione</span></button>
@@ -2879,8 +2879,7 @@
     return `${inizio}/${String(inizio+1).slice(-2)}`;
   }
 
-  // Periodo dei report. Di default l'anno solare in corso (gen-dic); si può scegliere un anno precedente
-  // oppure una stagione sportiva (set-ago). I dati non vengono mai cancellati: cambia solo cosa si vede.
+  // Periodo dei report. Di default l'anno solare in corso (gen-dic); si può scegliere un anno precedente. I dati non vengono mai cancellati: cambia solo cosa si vede.
   let periodoReport = 'anno:' + new Date().getFullYear();
   function annoConteggio(){
     const [tipo, val] = periodoReport.split(':');
@@ -2898,12 +2897,7 @@
   function opzioniPeriodo(){
     const cy = new Date().getFullYear();
     const out = [];
-    for(let a = cy; a >= cy - 2; a--) out.push({ v: 'anno:' + a, t: `${a} (gen-dic)` });
-    const sc = parseInt(stagioneCorrente().split('/')[0], 10);
-    for(let a = sc; a >= sc - 2; a--){
-      const st = `${a}/${String(a + 1).slice(-2)}`;
-      out.push({ v: 'stagione:' + st, t: `Stagione ${st} (set-ago)` });
-    }
+    for(let a = cy; a >= cy - 2; a--) out.push({ v: 'anno:' + a, t: `${a} (gennaio-dicembre)` });
     return out;
   }
   function popolaPeriodoSelect(){
@@ -7350,28 +7344,25 @@
   function renderReportStagioneSelect(){
     const select = document.getElementById('report-stagione-select');
     if(!select || !schedaDatiCorrenti) return;
-    const stagioni = new Set([stagioneCorrente()]);
-    const inizioCorr = parseInt(stagioneCorrente().split('/')[0], 10);
-    for(let k = 1; k <= 2; k++) stagioni.add(`${inizioCorr - k}/${String(inizioCorr - k + 1).slice(-2)}`);
-    (schedaDatiCorrenti.obiettivi || []).forEach(o => { if(o.stagione) stagioni.add(o.stagione); });
-    const elenco = Array.from(stagioni).sort().reverse();
+    const cy = new Date().getFullYear();
+    const elenco = [String(cy), String(cy - 1), String(cy - 2)];
     const selezionataPrima = select.value;
-    select.innerHTML = elenco.map(s => `<option value="${s}">${s}</option>`).join('');
-    select.value = elenco.includes(selezionataPrima) ? selezionataPrima : stagioneCorrente();
+    select.innerHTML = elenco.map(a => `<option value="${a}">${a} (gennaio-dicembre)</option>`).join('');
+    select.value = elenco.includes(selezionataPrima) ? selezionataPrima : String(cy);
   }
 
   function generaReportStagione(){
     if(!schedaDatiCorrenti) return;
     const selStagione = document.getElementById('report-stagione-select');
-    const stagioneScelta = (selStagione && selStagione.value) ? selStagione.value : stagioneCorrente();
-    const { inizio, fine } = rangeStagione(stagioneScelta);
+    const annoScelto = (selStagione && selStagione.value) ? selStagione.value : String(new Date().getFullYear());
+    const inizio = `${annoScelto}-01-01`, fine = `${annoScelto}-12-31`;
     const dentroStagione = data => data && data >= inizio && data <= fine;
 
     // Intestazione
     document.getElementById('stampa-nome-atleta').textContent = schedaAtletaNome;
     const g = GRUPPI[currentGruppoId];
     document.getElementById('stampa-gruppo-atleta').textContent = (g ? g.nome : '—') + ' — Atletica Silca';
-    document.getElementById('stampa-stagione-label').textContent = `Stagione ${stagioneScelta}`;
+    document.getElementById('stampa-stagione-label').textContent = `Anno ${annoScelto}`;
     document.getElementById('stampa-intervallo-date').textContent =
       `${new Date(inizio + 'T00:00:00').toLocaleDateString('it-IT')} – ${new Date(fine + 'T00:00:00').toLocaleDateString('it-IT')}`;
     document.getElementById('stampa-data-generazione').textContent = `Report generato il ${new Date().toLocaleDateString('it-IT')}`;
@@ -7386,7 +7377,7 @@
       badge.style.display = 'none';
     }
 
-    // Dati fisici attuali (età, lato dominante, altezza/torace/peso con variazione nella stagione)
+    // Dati fisici attuali (età, lato dominante, altezza/torace/peso con variazione nell'anno)
     const eta = calcolaEta(schedaAtletaDataNascita);
     const fisiciRighe = [];
     fisiciRighe.push(`<div><span>Età</span>${eta !== null ? eta + ' anni' : '—'}</div>`);
@@ -7402,20 +7393,20 @@
       let variazioneTxt = '';
       if(inStagione.length > 1){
         const diff = parseFloat(String(inStagione[inStagione.length-1].valore).replace(',','.')) - parseFloat(String(inStagione[0].valore).replace(',','.'));
-        if(!isNaN(diff)) variazioneTxt = ` (${diff >= 0 ? '+' : ''}${diff.toFixed(1)} ${CRESCITA_ETICHETTE[tipo].unita} nella stagione)`;
+        if(!isNaN(diff)) variazioneTxt = ` (${diff >= 0 ? '+' : ''}${diff.toFixed(1)} ${CRESCITA_ETICHETTE[tipo].unita} nell'anno)`;
       }
       fisiciRighe.push(`<div><span>${CRESCITA_ETICHETTE[tipo].nome}</span>${attuale.valore} ${CRESCITA_ETICHETTE[tipo].unita}${variazioneTxt}</div>`);
     });
     document.getElementById('stampa-dati-fisici').innerHTML = fisiciRighe.join('');
 
-    // Grafici crescita nella stagione
+    // Grafici crescita nell'anno
     const graficiCrescita = ['altezza','torace','peso'].map(tipo => {
       const inStagione = (schedaDatiCorrenti.crescita || [])
         .filter(m => m.tipo === tipo && dentroStagione(m.data))
         .sort((a,b) => (a.data||'').localeCompare(b.data||''));
       const contenuto = inStagione.length >= 2
         ? renderGraficoProgressione(inStagione)
-        : `<p class="empty-note-report">Nessuna misurazione sufficiente nella stagione.</p>`;
+        : `<p class="empty-note-report">Nessuna misurazione sufficiente nell'anno.</p>`;
       return `
         <div class="mini-grafico-report">
           <div class="titolo-mini-report">${CRESCITA_ETICHETTE[tipo].nome} (${CRESCITA_ETICHETTE[tipo].unita})</div>
@@ -7425,7 +7416,7 @@
     }).join('');
     document.getElementById('stampa-grafici-crescita').innerHTML = graficiCrescita;
 
-    // Record personali nella stagione, un blocco per disciplina
+    // Record personali nell'anno, un blocco per disciplina
     const disciplineConRecord = new Map();
     (schedaDatiCorrenti.record || []).forEach(r => {
       if(!dentroStagione(r.data)) return;
@@ -7433,7 +7424,7 @@
       disciplineConRecord.get(r.disciplina).push(r);
     });
     if(disciplineConRecord.size === 0){
-      document.getElementById('stampa-record-personali').innerHTML = '<p class="empty-note-report">Nessun risultato registrato in questa stagione.</p>';
+      document.getElementById('stampa-record-personali').innerHTML = '<p class="empty-note-report">Nessun risultato registrato in questo anno.</p>';
     } else {
       document.getElementById('stampa-record-personali').innerHTML = Array.from(disciplineConRecord.entries()).map(([disciplina, righe]) => {
         const ordinati = righe.slice().sort((a,b) => (a.data||'').localeCompare(b.data||''));
@@ -7457,7 +7448,7 @@
       ? `<thead><tr><th>Data</th><th>Specialità</th><th>Dato rilevato</th></tr></thead><tbody>${prestazioniPdf.map(pr => `<tr><td>${escHtml(pr.data || '—')}</td><td>${escHtml(pr.specialita)}</td><td>${escHtml(pr.valore)}</td></tr>`).join('')}</tbody>`
       : '<tbody><tr><td class="empty-note-report">Nessuna prestazione registrata.</td></tr></tbody>';
 
-    // Note dell'allenatore nella stagione
+    // Note dell'allenatore nell'anno
     const noteStagione = (schedaDatiCorrenti.note || [])
       .filter(n => dentroStagione(n.data))
       .sort((a,b) => (b.data||'').localeCompare(a.data||''));
@@ -7468,7 +7459,7 @@
             ${n.testo}
           </div>
         `).join('')
-      : '<p class="empty-note-report">Nessuna nota registrata in questa stagione.</p>';
+      : '<p class="empty-note-report">Nessuna nota registrata in questo anno.</p>';
 
     // Cadetti: niente dati fisici/crescita/record, al loro posto la tabella Test motori
     const cadReport = schedaModelloCadetti();
