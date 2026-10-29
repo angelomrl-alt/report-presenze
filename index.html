@@ -1209,11 +1209,7 @@
   body.stampa-societa #view-report-societa{display:block !important; background:#fff; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
   body.stampa-societa #view-report-societa .topbar, body.stampa-societa .rs-azioni, body.stampa-societa #view-report-societa .sub:last-child{display:none !important;}
   body.senza-nomi .rs-solo-nomi{display:none !important;}
-  /* Report aperto da link condiviso: tema chiaro, niente barra superiore */
-  body.report-condiviso{background:#f3f1ea !important;}
-  body.report-condiviso #view-report-societa{background:#f3f1ea; color:#1a1f29; --text:#1a1f29; --text-dim:#5c6057; --surface:#fff; --surface-2:#f4f2ec; --border:#dcd8cc; --border-strong:#cfc9ba; --bg-track:#f3f1ea; min-height:100vh;}
-  body.report-condiviso #view-report-societa .topbar{display:none !important;}
-  body.report-condiviso #view-report-societa main{max-width:760px; margin:0 auto; padding:18px 16px 40px;}
+  body.stampa-societa .periodo-box{display:none !important;}
   body.stampa-societa .chart-confronto-svg{width:100% !important; height:auto !important;}
   body.stampa-societa .chart-confronto-scroll{overflow:visible;}
   .cf-segmenti{display:flex; gap:6px; margin:10px 0;}
@@ -2102,6 +2098,7 @@
     </header>
     <main>
       <span class="categoria-badge" id="report-categoria">—</span>
+      <div class="fisico-campo periodo-box" style="margin:10px 0;"><label>Periodo</label><select class="periodo-select" aria-label="Periodo del report"></select></div>
       <h2 id="report-group-name" style="margin-top:10px;">—</h2>
       <p class="sub" id="report-sub">Dati calcolati dalle presenze registrate nell'app.</p>
 
@@ -2410,6 +2407,10 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>
           <span>Condividi scheda</span>
         </button>
+        <div class="scheda-azione scheda-azione-stagione">
+          <label for="report-stagione-select">Stagione del report</label>
+          <select id="report-stagione-select"></select>
+        </div>
         <button type="button" id="report-stagione-btn" class="btn-secondary scheda-azione">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="5" y="9" width="14" height="8" rx="2"/><path d="M7 14h10v6H7z"/></svg>
           <span>Report stagione PDF</span>
@@ -2520,6 +2521,7 @@
       <p class="rs-eyebrow">Atletica Silca · Report generale</p>
       <h2 id="rs-titolo" style="margin:2px 0 0;">Stagione</h2>
       <p class="sub" id="rs-sub" style="margin:2px 0 0;"></p>
+      <div class="fisico-campo periodo-box" style="margin:10px 0 0;"><label>Periodo</label><select class="periodo-select" aria-label="Periodo del report"></select></div>
       <div class="rs-kpi" id="rs-kpi"></div>
 
       <h3 class="section-title">Squadre a confronto</h3>
@@ -2542,10 +2544,8 @@
 
       <div class="rs-azioni">
         <button type="button" class="btn-secondary" id="rs-pdf-nomi">📄 PDF</button>
-        <button type="button" class="btn-secondary" id="rs-web-nomi">🔗 Condividi link</button>
       </div>
-      <p class="sub" style="font-size:12px;">PDF: si apre la stampa del telefono, scegli "Salva come PDF" e poi condividi il file. Link: una pagina web con i dati di questo momento, visibile senza accesso a chi riceve il link per 30 giorni.</p>
-      <p class="save-feedback rs-feedback-web" id="rs-web-feedback" style="min-height:18px;"></p>
+      <p class="sub" style="font-size:12px;">Si apre la stampa del telefono: scegli "Salva come PDF" e poi condividi il file.</p>
     </main>
   </section>
 
@@ -2879,11 +2879,38 @@
     return `${inizio}/${String(inizio+1).slice(-2)}`;
   }
 
-  // Conteggi (presenze, gare, podi): contano solo l'anno in corso, dal 1° gennaio al 31 dicembre.
-  // I dati degli anni precedenti restano salvati, semplicemente non entrano nei totali.
+  // Periodo dei report. Di default l'anno solare in corso (gen-dic); si può scegliere un anno precedente
+  // oppure una stagione sportiva (set-ago). I dati non vengono mai cancellati: cambia solo cosa si vede.
+  let periodoReport = 'anno:' + new Date().getFullYear();
   function annoConteggio(){
-    const a = new Date().getFullYear();
-    return { anno: String(a), inizio: `${a}-01-01`, fine: `${a}-12-31` };
+    const [tipo, val] = periodoReport.split(':');
+    if(tipo === 'stagione'){
+      const r = rangeStagione(val);
+      return { anno: val, inizio: r.inizio, fine: r.fine, tipo: 'stagione' };
+    }
+    return { anno: val, inizio: `${val}-01-01`, fine: `${val}-12-31`, tipo: 'anno' };
+  }
+  function descrizionePeriodo(){
+    const r = annoConteggio();
+    const f = iso => new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' });
+    return `dal ${f(r.inizio)} al ${f(r.fine)}`;
+  }
+  function opzioniPeriodo(){
+    const cy = new Date().getFullYear();
+    const out = [];
+    for(let a = cy; a >= cy - 2; a--) out.push({ v: 'anno:' + a, t: `${a} (gen-dic)` });
+    const sc = parseInt(stagioneCorrente().split('/')[0], 10);
+    for(let a = sc; a >= sc - 2; a--){
+      const st = `${a}/${String(a + 1).slice(-2)}`;
+      out.push({ v: 'stagione:' + st, t: `Stagione ${st} (set-ago)` });
+    }
+    return out;
+  }
+  function popolaPeriodoSelect(){
+    document.querySelectorAll('.periodo-select').forEach(sel => {
+      sel.innerHTML = opzioniPeriodo().map(o => `<option value="${o.v}">${o.t}</option>`).join('');
+      sel.value = periodoReport;
+    });
   }
   function inAnnoCorrente(data){
     if(!data) return false;
@@ -3569,7 +3596,7 @@
     const el = id => document.getElementById(id);
     if(!d){ el('rs-sub').textContent = 'Dati in caricamento…'; return; }
     el('rs-titolo').textContent = `Stagione ${d.anno}`;
-    el('rs-sub').textContent = `Dal 1° gennaio al 31 dicembre ${d.anno}`;
+    el('rs-sub').textContent = descrizionePeriodo().charAt(0).toUpperCase() + descrizionePeriodo().slice(1);
 
     const kpi = [
       { n: d.atletiAttivi, l: 'atleti attivi' },
@@ -3624,86 +3651,6 @@
     window.print();
   }
   window.addEventListener('afterprint', pulisciStampaSocieta);
-
-  // ---------- Report società come link (pagina web visibile senza login, valida 30 giorni) ----------
-  async function condividiLinkReportSocieta(){
-    const fb = document.getElementById('rs-web-feedback');
-    const btn = document.getElementById('rs-web-nomi');
-    btn.disabled = true;
-    fb.textContent = 'Creo il link…';
-    try{
-      if(!auth.currentUser) throw new Error('Sessione scaduta: rientra e riprova.');
-      const main = document.querySelector('#view-report-societa main').cloneNode(true);
-      main.querySelectorAll('.rs-azioni, .rs-feedback-web').forEach(el => el.remove());
-      const subs = main.querySelectorAll(':scope > p.sub');
-      if(subs.length) subs[subs.length - 1].remove();   // testo di aiuto sotto i bottoni
-
-      const titolo = (document.getElementById('rs-titolo').textContent || 'Report').trim();
-      const GIORNI = 30;
-      const oggi = new Date();
-      const scade = new Date(oggi.getTime() + GIORNI * 86400000);
-      const fmt = d => d.toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' });
-      const html = `<p class="pagina-nota" style="font-size:12px; color:#5c6057; margin:0 0 14px;">Atletica Silca Conegliano · dati aggiornati al ${escHtml(fmt(oggi))} · link valido fino al ${escHtml(fmt(scade))}</p>` + main.innerHTML;
-      if(html.length > 900000) throw new Error('Il report è troppo grande per essere condiviso come link.');
-
-      const arr = new Uint8Array(16); crypto.getRandomValues(arr);
-      const token = btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-      await setDoc(doc(db, 'reportCondivisi', token), {
-        titolo, html, creatoDa: auth.currentUser.uid, creatoIl: oggi, scadeIl: scade
-      });
-
-      const url = `${location.origin}${location.pathname}?r=${token}`;
-      const testo = `Atletica Silca — Report ${titolo}`;
-      if(navigator.share){
-        try{
-          await navigator.share({ title: testo, text: testo, url });
-          fb.textContent = 'Link creato ✓ (valido 30 giorni)';
-          return;
-        } catch(e){
-          if(e && e.name === 'AbortError'){ fb.textContent = 'Link creato, non condiviso. Premi di nuovo per condividere.'; return; }
-        }
-      }
-      try{ await navigator.clipboard.writeText(url); fb.textContent = 'Link copiato negli appunti ✓ ' + url; }
-      catch(e){ fb.textContent = 'Link: ' + url; }
-    } catch(err){
-      console.error(err);
-      const permesso = err && (err.code === 'permission-denied' || /permission/i.test(err.message || ''));
-      fb.textContent = permesso
-        ? 'Errore: mancano i permessi su Firestore per la collezione reportCondivisi (vedi regole).'
-        : 'Errore: ' + err.message;
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  // Apertura del link ricevuto: mostra il report senza login
-  const tokenReportCondiviso = new URLSearchParams(location.search).get('r');
-  async function mostraReportCondiviso(token){
-    document.body.classList.add('report-condiviso');
-    const main = document.querySelector('#view-report-societa main');
-    showView('view-report-societa');
-    main.innerHTML = '<p class="sub" style="padding:24px 0;">Caricamento del report…</p>';
-    try{
-      const snap = await getDoc(doc(db, 'reportCondivisi', token));
-      if(!snap.exists()) throw new Error('non trovato');
-      const d = snap.data();
-      if(d.scadeIl && d.scadeIl.toDate && d.scadeIl.toDate() < new Date()) throw new Error('scaduto');
-      // Pulizia di sicurezza: il report è solo testo/tabelle/grafici, mai script
-      const parsed = new DOMParser().parseFromString('<div>' + d.html + '</div>', 'text/html');
-      parsed.querySelectorAll('script, iframe, object, embed, link, meta, base, form').forEach(e => e.remove());
-      parsed.querySelectorAll('*').forEach(e => Array.from(e.attributes).forEach(a => {
-        const n = a.name.toLowerCase();
-        if(n.startsWith('on') || ((n === 'href' || n === 'src' || n === 'xlink:href') && /^\s*javascript:/i.test(a.value))) e.removeAttribute(a.name);
-      }));
-      main.innerHTML = parsed.body.firstChild.innerHTML;
-      document.title = 'Atletica Silca — Report ' + (d.titolo || '');
-      main.querySelectorAll('.chart-confronto-scroll').forEach(b => { b.scrollLeft = b.scrollWidth; });
-    } catch(err){
-      console.error(err);
-      main.innerHTML = '<h2 style="margin:24px 0 6px;">Link non valido o scaduto</h2><p class="sub">Chiedi alla società di inviarti un nuovo link.</p>';
-    }
-  }
-  if(tokenReportCondiviso) mostraReportCondiviso(tokenReportCondiviso);
 
   async function renderGroupsGrid(){
     const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
@@ -3845,7 +3792,7 @@
     `;
 
     document.getElementById('admin-kpi-grid').insertAdjacentHTML('beforeend',
-      `<p style="grid-column:1 / -1; margin:0; font-size:11.5px; color:var(--text-dim);">Conteggi dal 1° gennaio ${annoConteggio().anno}.${risultatiStorico.length > 0 ? ' Inclusi i podi importati dallo storico (senza data).' : ''}</p>`);
+      `<p style="grid-column:1 / -1; margin:0; font-size:11.5px; color:var(--text-dim);">Conteggi ${descrizionePeriodo()}.${risultatiStorico.length > 0 ? ' Inclusi i podi importati dallo storico (senza data).' : ''}</p>`);
 
     // Riepilogo ultima giornata di gare
 
@@ -4550,6 +4497,7 @@
       renderReport();
     });
 
+    popolaPeriodoSelect();
     popolaMesiExport();
     caricaXLSX().catch(() => {});   // precarica la libreria Excel, così la condivisione è immediata
     showView('view-report');
@@ -7403,6 +7351,8 @@
     const select = document.getElementById('report-stagione-select');
     if(!select || !schedaDatiCorrenti) return;
     const stagioni = new Set([stagioneCorrente()]);
+    const inizioCorr = parseInt(stagioneCorrente().split('/')[0], 10);
+    for(let k = 1; k <= 2; k++) stagioni.add(`${inizioCorr - k}/${String(inizioCorr - k + 1).slice(-2)}`);
     (schedaDatiCorrenti.obiettivi || []).forEach(o => { if(o.stagione) stagioni.add(o.stagione); });
     const elenco = Array.from(stagioni).sort().reverse();
     const selezionataPrima = select.value;
@@ -7412,7 +7362,8 @@
 
   function generaReportStagione(){
     if(!schedaDatiCorrenti) return;
-    const stagioneScelta = stagioneCorrente();
+    const selStagione = document.getElementById('report-stagione-select');
+    const stagioneScelta = (selStagione && selStagione.value) ? selStagione.value : stagioneCorrente();
     const { inizio, fine } = rangeStagione(stagioneScelta);
     const dentroStagione = data => data && data >= inizio && data <= fine;
 
@@ -7695,7 +7646,7 @@
     document.querySelector('.report-riepilogo').style.gridTemplateColumns = soloGare ? '1.2fr 1fr' : '';
     document.getElementById('report-export').style.display = soloGare ? 'none' : '';
     renderPresenzeAtleta();
-    document.getElementById('report-sub').textContent = `Dati del ${annoConteggio().anno} (dal 1° gennaio), calcolati dalle presenze registrate nell'app.`;
+    document.getElementById('report-sub').textContent = `Dati ${descrizionePeriodo()}, calcolati dalle presenze registrate nell'app.`;
 
     // Riepilogo in una riga
     document.getElementById('kpi-allenamenti').textContent = d.kpi.allenamenti;
@@ -7712,7 +7663,6 @@
 
 
   onAuthStateChanged(auth, async (user) => {
-    if(tokenReportCondiviso) return;   // pagina aperta da link condiviso: nessun login
     if(!user){
       showView('view-login');
       return;
@@ -8029,12 +7979,21 @@
     el.addEventListener('click', () => apriPresenze(id));
     el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(id); } });
   });
-  const apriReportSocieta = () => { pulisciStampaSocieta(); showView('view-report-societa'); renderReportSocieta(); window.scrollTo(0, 0); };
+  const apriReportSocieta = () => { pulisciStampaSocieta(); popolaPeriodoSelect(); showView('view-report-societa'); renderReportSocieta(); window.scrollTo(0, 0); };
   document.getElementById('riga-report-societa').addEventListener('click', apriReportSocieta);
   document.getElementById('riga-report-societa').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriReportSocieta(); } });
   document.getElementById('back-from-report-societa').addEventListener('click', () => { pulisciStampaSocieta(); showView('view-admin'); });
+  document.querySelectorAll('.periodo-select').forEach(sel => sel.addEventListener('change', () => {
+    periodoReport = sel.value;
+    popolaPeriodoSelect();
+    if(document.getElementById('view-report').classList.contains('active')) renderReport();
+    if(document.getElementById('view-report-societa').classList.contains('active')){
+      document.getElementById('rs-sub').textContent = 'Aggiornamento…';
+      renderGroupsGrid();
+    }
+  }));
+
   document.getElementById('rs-pdf-nomi').addEventListener('click', () => stampaReportSocieta(true));
-  document.getElementById('rs-web-nomi').addEventListener('click', condividiLinkReportSocieta);
   document.getElementById('card-presenze').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(); } });
 
   // --- Navigazione Guida (Allenatore) ---
