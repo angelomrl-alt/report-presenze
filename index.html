@@ -262,6 +262,8 @@
   }
   .btn-primary:hover{background:#34bf80;}
   .btn-primary:disabled{opacity:.6; cursor:default;}
+  /* Conferma visiva dopo il salvataggio: verde scuro con testo bianco finché non si modifica qualcosa */
+  .btn-primary.salvato, .btn-primary.salvato:hover{background:#17794a; color:#fff;}
   .btn-primary:focus-visible{outline:3px solid #1a1f29; outline-offset:2px;}
 
   .btn-secondary{
@@ -4310,6 +4312,8 @@
     const list = document.getElementById('roster-list');
     const btnElimina = document.getElementById('elimina-presenze-btn');
     if(btnElimina) btnElimina.style.display = presenzeDocIdAttuale ? '' : 'none';
+    const btnSalva = document.getElementById('salva-presenze-btn');
+    if(btnSalva && !btnSalva.classList.contains('salvato')) btnSalva.textContent = presenzeDocIdAttuale ? 'Aggiorna presenze' : 'Salva presenze';
 
     // Gruppi a sezioni: atleti non ancora assegnati + spostamento tra sezioni
     const sezDefR = sezioneCorrente ? sezioniGruppo(currentGruppoId) : null;
@@ -8138,6 +8142,7 @@
       await Promise.all(scritture);
 
       feedback.textContent = `Gara salvata ✓ (${partecipantiNomi.length} partecipanti)`;
+      mostraSalvato(this, '✓ Gara salvata');
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore nel salvataggio, riprova.";
@@ -8607,12 +8612,28 @@
       }
       document.getElementById('elimina-presenze-btn').style.display = '';
       feedback.textContent = `Presenze salvate ✓ (${assenti.length} assenti su ${rosterDocs.length})`;
+      mostraSalvato(btn, '✓ Salvato');
     } catch(err){
       console.error(err);
       feedback.textContent = "Errore nel salvataggio, riprova.";
     } finally {
       btn.disabled = false;
     }
+  });
+
+  // --- Conferma visiva del salvataggio (tasto verde scuro "✓ Salvato" finché non si cambia qualcosa) ---
+  function mostraSalvato(btn, testo){ btn.classList.add('salvato'); btn.textContent = testo; }
+  function azzeraSalvato(btn, testo){ if(btn.classList.contains('salvato')){ btn.classList.remove('salvato'); btn.textContent = testo; } }
+  const testoSalvaPresenze = () => presenzeDocIdAttuale ? 'Aggiorna presenze' : 'Salva presenze';
+  ['click','input','change'].forEach(ev => {
+    document.getElementById('view-presenze').addEventListener(ev, e => {
+      if(e.target.closest('#salva-presenze-btn')) return;
+      azzeraSalvato(document.getElementById('salva-presenze-btn'), testoSalvaPresenze());
+    });
+    document.getElementById('view-risultati').addEventListener(ev, e => {
+      if(e.target.closest('#salva-gara-btn')) return;
+      azzeraSalvato(document.getElementById('salva-gara-btn'), 'Salva gara');
+    });
   });
 
   // --- Elimina una registrazione inserita per errore ---
