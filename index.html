@@ -3229,6 +3229,7 @@
       cont.innerHTML = '<p class="empty-note">Nessun evento in programma al momento.</p>';
       return;
     }
+    const apertiPrima = new Set(Array.from(cont.querySelectorAll('details[data-ev][open]')).map(d => d.dataset.ev));
     cont.innerHTML = eventiDocs.map(ev => {
       const dataLabel = ev.data ? new Date(ev.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' }) : 'Data da definire';
 
@@ -3256,15 +3257,35 @@
         ? '<p class="empty-note">Nessuna voce nel programma ancora.</p>'
         : programma.map((r,i) => `
             <div class="risultato-row" style="margin-bottom:6px;">
-              <span class="principale"><strong>${r.orario || '—'}</strong> · ${r.testo}</span>
+              <span class="principale"><strong>${r.orario || '—'}</strong> · ${escHtml(r.testo || '')}</span>
               ${modificabile ? `<button type="button" class="btn-remove evento-prog-remove" data-ev="${ev.id}" data-idx="${i}">Rimuovi</button>` : ''}
             </div>
           `).join('');
-      const eliminaBtn = modificabile ? `
-        <button type="button" class="btn-remove evento-elimina-btn" data-ev="${ev.id}" data-nome="${ev.nome || ''}" style="margin-top:10px;">🗑️ Elimina evento</button>
+      const azioniTop = modificabile ? `
+        <div style="display:flex; gap:8px; margin:4px 0 10px;">
+          <button type="button" class="btn-secondary evento-modifica-btn" data-ev="${ev.id}" style="flex:1; padding:10px;">✏️ Modifica evento</button>
+          <button type="button" class="btn-remove evento-elimina-btn" data-ev="${ev.id}" data-nome="${escHtml(ev.nome || '')}" style="flex:1; padding:10px;">🗑️ Elimina evento</button>
+        </div>
+        <div class="evento-modifica-form" data-ev="${ev.id}" style="display:none; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:12px;">
+          <div class="fisico-campo" style="margin-bottom:8px;"><label>Nome evento</label><input type="text" class="ev-edit-nome" value="${escHtml(ev.nome || '')}"></div>
+          <div class="fisico-campo" style="margin-bottom:8px;"><label>Data</label><input type="date" class="ev-edit-data" value="${escHtml(ev.data || '')}"></div>
+          <div class="fisico-campo" style="margin-bottom:10px;"><label>Luogo</label><input type="text" class="ev-edit-luogo" value="${escHtml(ev.luogo || '')}"></div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" class="btn-primary evento-salva-modifica" data-ev="${ev.id}" style="width:auto; padding:10px 20px;">Salva modifiche</button>
+            <button type="button" class="btn-secondary evento-annulla-modifica" data-ev="${ev.id}" style="padding:10px 16px;">Annulla</button>
+            <span class="save-feedback ev-edit-feedback"></span>
+          </div>
+        </div>
+      ` : '';
+      const aggiungiVoce = modificabile ? `
+        <div style="display:flex; gap:6px; margin-top:10px; align-items:center;">
+          <input type="time" class="ev-voce-orario" style="flex:none; width:110px;" aria-label="Orario">
+          <input type="text" class="ev-voce-testo" placeholder="es. Ritrovo atleti" style="flex:1; min-width:0;" aria-label="Voce del programma">
+          <button type="button" class="btn-secondary evento-voce-aggiungi" data-ev="${ev.id}" style="padding:10px 14px;">+ Aggiungi</button>
+        </div>
       ` : '';
       return `
-        <details class="report-section${classeEvidenza}" style="margin-bottom:10px;">
+        <details class="report-section${classeEvidenza}" data-ev="${ev.id}" ${apertiPrima.has(ev.id) ? 'open' : ''} style="margin-bottom:10px;">
           <summary>
             ${ev.nome || 'Evento senza nome'}
             <span style="display:block; font-size:12px; color:var(--text-dim); font-weight:400; margin-top:2px;">
@@ -3273,8 +3294,9 @@
             ${badgeGiorni}
           </summary>
           <div style="padding-bottom:10px;">
+            ${azioniTop}
             ${programmaHtml}
-            ${eliminaBtn}
+            ${aggiungiVoce}
           </div>
         </details>
       `;
@@ -3290,10 +3312,53 @@
       });
     });
 
+    // Modifica nome / data / luogo
+    const formDi = id => cont.querySelector(`.evento-modifica-form[data-ev="${id}"]`);
+    cont.querySelectorAll('.evento-modifica-btn').forEach(btn => btn.addEventListener('click', () => {
+      const f = formDi(btn.dataset.ev);
+      if(f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }));
+    cont.querySelectorAll('.evento-annulla-modifica').forEach(btn => btn.addEventListener('click', () => {
+      const f = formDi(btn.dataset.ev);
+      if(f) f.style.display = 'none';
+    }));
+    cont.querySelectorAll('.evento-salva-modifica').forEach(btn => btn.addEventListener('click', async () => {
+      const f = formDi(btn.dataset.ev);
+      const fb = f.querySelector('.ev-edit-feedback');
+      const nome = f.querySelector('.ev-edit-nome').value.trim();
+      const data = f.querySelector('.ev-edit-data').value;
+      const luogo = f.querySelector('.ev-edit-luogo').value.trim();
+      if(!nome){ fb.textContent = "Scrivi il nome dell'evento."; return; }
+      btn.disabled = true; fb.textContent = 'Salvo…';
+      try{
+        await updateDoc(doc(db,'eventi', btn.dataset.ev), { nome, data, luogo });
+        fb.textContent = 'Salvato ✓';
+      } catch(err){
+        console.error(err);
+        fb.textContent = 'Errore: ' + err.message;
+      } finally { btn.disabled = false; }
+    }));
+
+    // Aggiungi una voce al programma
+    cont.querySelectorAll('.evento-voce-aggiungi').forEach(btn => btn.addEventListener('click', async () => {
+      const riga = btn.parentElement;
+      const orario = riga.querySelector('.ev-voce-orario').value;
+      const testo = riga.querySelector('.ev-voce-testo').value.trim();
+      if(!testo) return;
+      const ev = eventiDocs.find(e => e.id === btn.dataset.ev);
+      if(!ev) return;
+      btn.disabled = true;
+      try{
+        await updateDoc(doc(db,'eventi', ev.id), { programma: [...(ev.programma || []), { orario, testo }] });
+      } catch(err){ console.error(err); alert('Errore: ' + err.message); }
+      finally { btn.disabled = false; }
+    }));
+
     cont.querySelectorAll('.evento-elimina-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if(!confirm(`Eliminare l'evento "${btn.dataset.nome}" e tutto il suo programma? Non si può annullare.`)) return;
-        await deleteDoc(doc(db,'eventi', btn.dataset.ev));
+        try{ await deleteDoc(doc(db,'eventi', btn.dataset.ev)); }
+        catch(err){ console.error(err); alert('Non riesco a eliminare l\'evento: ' + err.message); }
       });
     });
   }
