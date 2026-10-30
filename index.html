@@ -1919,6 +1919,7 @@
           <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
           <div class="cp-testi">
             <div class="cp-titolo">Presenze CAS 1-2-3</div>
+            <div class="cp-sub" id="cas-coach-cas123" style="font-weight:600; color:var(--text);"></div>
             <div class="cp-sub" id="presenze-ultimo-cas123">Ultimo allenamento: —</div>
           </div>
           <span class="cp-freccia" aria-hidden="true">›</span>
@@ -1927,6 +1928,7 @@
           <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
           <div class="cp-testi">
             <div class="cp-titolo">Presenze CAS 4-5</div>
+            <div class="cp-sub" id="cas-coach-cas45" style="font-weight:600; color:var(--text);"></div>
             <div class="cp-sub" id="presenze-ultimo-cas45">Ultimo allenamento: —</div>
           </div>
           <span class="cp-freccia" aria-hidden="true">›</span>
@@ -2824,9 +2826,11 @@
     if(currentGruppoId && GRUPPI[currentGruppoId]){
       const g = GRUPPI[currentGruppoId];
       ['coach-group-name','presenze-group-name','risultati-group-name','report-group-name'].forEach(id => {
+        if(id === 'presenze-group-name' && sezioneCorrente) return;   // qui c'è anche l'etichetta della sezione
         const el = document.getElementById(id);
         if(el) el.textContent = g.nome;
       });
+      aggiornaCoachCardCas();
       const reportCat = document.getElementById('report-categoria');
       if(reportCat) reportCat.textContent = g.categoria || "—";
       aggiornaAvvisoPresenze();
@@ -4084,6 +4088,7 @@
               <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 10px;">
                 👤 ${z.nome} · ${lista.length} atlet${lista.length === 1 ? 'a' : 'i'}
               </p>
+              ${isSocietaConScrittura() ? `<div style="display:flex; gap:6px; align-items:center; margin:0 0 10px;"><input type="text" class="sez-coach-input" data-sez="${z.id}" value="${escHtml(coachSezione(id, z))}" placeholder="Nome allenatore" aria-label="Allenatore ${z.nome}" style="flex:1; min-width:0;"><button type="button" class="btn-secondary sez-coach-salva" data-sez="${z.id}" style="padding:8px 14px;">Salva</button></div>` : (coachSezione(id, z) ? `<p style="font-size:13px; margin:0 0 10px;">Allenatore: <strong>${escHtml(coachSezione(id, z))}</strong></p>` : '')}
               ${lista.length === 0 ? `<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta in questa sezione.</p>` : `<div style="display:flex; flex-wrap:wrap; gap:6px;">${lista.map(a => chip(a.nome)).join('')}</div>`}
             </div>`;
         }).join('');
@@ -4106,6 +4111,19 @@
         `;
         const btnG = detailCont.querySelector('.gruppo-gestisci-btn');
         if(btnG) btnG.addEventListener('click', () => apriAdminRoster(btnG.dataset.gruppo));
+        detailCont.querySelectorAll('.sez-coach-salva').forEach(bt => bt.addEventListener('click', async () => {
+          const inp = detailCont.querySelector(`.sez-coach-input[data-sez="${bt.dataset.sez}"]`);
+          const nuovo = inp.value.trim();
+          bt.disabled = true;
+          try{
+            await updateDoc(doc(db,'gruppi', id), { sezioniCoach: { ...((GRUPPI[id] && GRUPPI[id].sezioniCoach) || {}), [bt.dataset.sez]: nuovo } });
+            bt.textContent = 'Salvato ✓';
+            setTimeout(() => { bt.textContent = 'Salva'; }, 1800);
+          } catch(err){
+            console.error(err);
+            alert("Non riesco a salvare il nome: " + err.message);
+          } finally { bt.disabled = false; }
+        }));
         return;
       }
 
@@ -4196,9 +4214,24 @@
 
   // Gruppi con presenze divise in sezioni (menu separati). Chiave = ID documento del gruppo.
   const SEZIONI_PER_GRUPPO = {
-    'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3', colore:'#2f7de1' }, { id:'cas45', nome:'CAS 4-5', colore:'#d9552b' } ]   // gruppo cas123
+    'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3', colore:'#2f7de1', coach:'Capraro' }, { id:'cas45', nome:'CAS 4-5', colore:'#d9552b', coach:'Barbisan' } ]   // gruppo cas123
   };
   function sezioniGruppo(gid){ return SEZIONI_PER_GRUPPO[gid] || null; }
+  // Allenatore di una sezione: se modificato dall'app (campo sezioniCoach del gruppo) vale quello, altrimenti il valore predefinito qui sopra
+  function coachSezione(gid, z){
+    const g = GRUPPI[gid];
+    const mod = g && g.sezioniCoach && g.sezioniCoach[z.id];
+    return (mod !== undefined && mod !== null) ? mod : (z.coach || '');
+  }
+  function aggiornaCoachCardCas(){
+    (sezioniGruppo(currentGruppoId) || []).forEach(z => {
+      const el = document.getElementById('cas-coach-' + z.id);
+      if(!el) return;
+      const nome = coachSezione(currentGruppoId, z);
+      el.textContent = nome ? 'Allenatore: ' + nome : '';
+      el.style.display = nome ? '' : 'none';
+    });
+  }
   // Menu a tendina per scegliere/cambiare la sezione di un atleta (solo in "Gestisci atleti")
   function selectSezioneHtml(a, gid){
     const sez = sezioniGruppo(gid);
@@ -7782,6 +7815,7 @@
         document.getElementById('card-presenze').style.display = (senzaAllenamenti || sezHome) ? 'none' : '';
         document.getElementById('card-risultati').style.display = sezHome ? 'none' : '';   // CAS: niente gare
         document.getElementById('presenze-cas-cards').style.display = (sezHome && !senzaAllenamenti) ? '' : 'none';
+        aggiornaCoachCardCas();
         document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
         renderMessaggiCoach();
         showView('view-coach');
