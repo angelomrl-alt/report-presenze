@@ -2028,7 +2028,7 @@
     </header>
     <main>
       <h2 id="presenze-group-name">—</h2>
-      <p class="sub">Per gli allenamenti. Tutti partono "Presente": tocca solo chi non c'è oggi, poi salva.</p>
+      <p class="sub" id="presenze-help">Per gli allenamenti. Tutti partono "Presente": tocca solo chi non c'è oggi, poi salva.</p>
 
       <div class="presenze-controls">
         <div class="field-inline">
@@ -2850,6 +2850,8 @@
   let gestisciAtletiUnsub = null;
   let gestisciAtletiDocs = [];   // [{id, nome, archiviato}] — TUTTI, attivi e archiviati
   let presenzaMap = new Map();   // atletaId -> bool (presente)
+  // Gruppi comuni: di default tutti presenti (si tocca chi manca). Gruppo CAS: di default tutti assenti (si tocca chi c'è).
+  const isPresenteAtleta = id => sezioneCorrente ? presenzaMap.get(id) === true : presenzaMap.get(id) !== false;
   let rosterUnsub = null;
   let tipoSelezionato = "allenamento";
   let presenzeDocIdAttuale = null; // se non-null, il Salva aggiorna questo documento invece di crearne uno nuovo
@@ -4400,7 +4402,7 @@
       return;
     }
     list.innerHTML = rosterDocs.map(a => {
-      const presente = presenzaMap.get(a.id) !== false; // di default presente, finché non viene toccato
+      const presente = isPresenteAtleta(a.id);
       return `
         <div class="roster-item">
           <span class="nome">${a.nome}</span>
@@ -4416,7 +4418,7 @@
     list.querySelectorAll('.presence-pill').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        const eraPresente = presenzaMap.get(id) !== false;
+        const eraPresente = isPresenteAtleta(id);
         presenzaMap.set(id, !eraPresente);
         renderRoster();
       });
@@ -4529,10 +4531,18 @@
         const docSnap = snap.docs[0];
         presenzeDocIdAttuale = docSnap.id;
         const dati = docSnap.data();
-        (dati.assenti || []).forEach(nome => {
-          const atleta = rosterDocs.find(a => a.nome === nome);
-          if(atleta) presenzaMap.set(atleta.id, false);
-        });
+        if(sezioneCorrente){
+          // Gruppo CAS: di base tutti assenti, segno presenti quelli salvati
+          (dati.presenti || []).forEach(nome => {
+            const atleta = rosterDocs.find(a => a.nome === nome);
+            if(atleta) presenzaMap.set(atleta.id, true);
+          });
+        } else {
+          (dati.assenti || []).forEach(nome => {
+            const atleta = rosterDocs.find(a => a.nome === nome);
+            if(atleta) presenzaMap.set(atleta.id, false);
+          });
+        }
         banner.style.display = 'block';
       } else {
         presenzeDocIdAttuale = null;
@@ -4552,6 +4562,8 @@
     const sezInfo = (typeof sezId === 'string' && sezDefA) ? sezDefA.find(z => z.id === sezId) : null;
     sezioneCorrente = sezInfo ? sezInfo.id : null;
     atletiSenzaSezione = [];
+    const helpP = document.getElementById('presenze-help');
+    if(helpP) helpP.textContent = sezInfo ? 'Per gli allenamenti. Tutti partono "Assente": tocca chi è presente oggi, poi salva.' : 'Per gli allenamenti. Tutti partono "Presente": tocca solo chi non c\'è oggi, poi salva.';
     document.getElementById('presenze-group-name').innerHTML = escHtml(g ? g.nome : "Il tuo gruppo") +
       (sezInfo ? `<span class="sez-chip" style="background:${sezInfo.colore};">${sezInfo.nome}</span>` : '');
     document.getElementById('presenze-data').value = new Date().toISOString().slice(0,10);
@@ -8007,7 +8019,7 @@
       <div style="padding:18px 0;">
         <h3 style="margin:0 0 8px; font-size:15px;">📋 Registra presenze</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Riaprendo lo stesso giorno correggi, non duplichi; se hai registrato un giorno per errore usa "Elimina registrazione". Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta appartiene a una sezione: se è nuovo compare in "Da assegnare", e per cambiargli sezione si usa il menu in Gestisci atleti (non nelle presenze).
+          Tutti partono "Presente" — tocca solo chi non c'è, poi salva. Nel gruppo CAS è il contrario: tutti partono "Assente" e tocchi chi è presente. Riaprendo lo stesso giorno correggi, non duplichi; se hai registrato un giorno per errore usa "Elimina registrazione". Nel gruppo CAS ci sono due menu separati, CAS 1-2-3 e CAS 4-5: ogni atleta appartiene a una sezione: se è nuovo compare in "Da assegnare", e per cambiargli sezione si usa il menu in Gestisci atleti (non nelle presenze).
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">🏅 Gara</h3>
@@ -8658,8 +8670,8 @@
       feedback.textContent = "Aggiungi almeno un atleta prima di salvare.";
       return;
     }
-    const presenti = rosterDocs.filter(a => presenzaMap.get(a.id) !== false).map(a => a.nome);
-    const assenti  = rosterDocs.filter(a => presenzaMap.get(a.id) === false).map(a => a.nome);
+    const presenti = rosterDocs.filter(a => isPresenteAtleta(a.id)).map(a => a.nome);
+    const assenti  = rosterDocs.filter(a => !isPresenteAtleta(a.id)).map(a => a.nome);
     const data = document.getElementById('presenze-data').value;
 
     const btn = this;
