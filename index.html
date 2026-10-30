@@ -2726,6 +2726,14 @@
           <label for="evento-nuovo-luogo">Luogo</label>
           <input type="text" id="evento-nuovo-luogo" placeholder="es. Campo scuola Conegliano">
         </div>
+        <div class="field-inline" style="flex:1 1 100%;">
+          <label for="evento-nuovo-orario">Orario (facoltativo)</label>
+          <input type="time" id="evento-nuovo-orario">
+        </div>
+        <div class="field-inline" style="flex:1 1 100%;">
+          <label for="evento-nuova-nota">Nota (facoltativa)</label>
+          <input type="text" id="evento-nuova-nota" placeholder='es. Tutti presenti'>
+        </div>
       </div>
       <div class="save-bar">
         <button type="button" id="evento-crea-btn" class="btn-primary" style="width:auto; padding:13px 28px;">+ Crea evento</button>
@@ -2984,12 +2992,12 @@
           quanto = giorniProssimo === 0 ? 'oggi' : (giorniProssimo === 1 ? 'domani' : `tra ${giorniProssimo} giorni`);
         }
         const icona = urgente ? '🔴 ' : (entroSoglia ? '⏳ ' : '');
-        testoAnteprimaEventi = `${icona}${dataLunga}${quanto ? ' · ' + quanto : ''}`;
+        testoAnteprimaEventi = `${icona}${dataLunga}${prossimo.orario ? ' · ore ' + prossimo.orario : ''}${quanto ? ' · ' + quanto : ''}` + (prossimo.nota ? '\n' + prossimo.nota : '');
       }
       if(titoloEventiEl) titoloEventiEl.textContent = titoloEventi;
       if(titoloEventiCoachEl) titoloEventiCoachEl.textContent = titoloEventi;
-      if(anteprimaEventiEl) anteprimaEventiEl.textContent = testoAnteprimaEventi;
-      if(anteprimaEventiCoachEl) anteprimaEventiCoachEl.textContent = testoAnteprimaEventi;
+      if(anteprimaEventiEl){ anteprimaEventiEl.textContent = testoAnteprimaEventi; anteprimaEventiEl.style.whiteSpace = 'pre-line'; }
+      if(anteprimaEventiCoachEl){ anteprimaEventiCoachEl.textContent = testoAnteprimaEventi; anteprimaEventiCoachEl.style.whiteSpace = 'pre-line'; }
 
       // Coloro tutta la riga "Prossimi eventi" (anche chiusa), non solo un dettaglio piccolo
       const coloreRiga = urgente ? 'var(--clay)' : 'var(--accent-lane)';
@@ -3269,7 +3277,9 @@
         <div class="evento-modifica-form" data-ev="${ev.id}" style="display:none; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:12px;">
           <div class="fisico-campo" style="margin-bottom:8px;"><label>Nome evento</label><input type="text" class="ev-edit-nome" value="${escHtml(ev.nome || '')}"></div>
           <div class="fisico-campo" style="margin-bottom:8px;"><label>Data</label><input type="date" class="ev-edit-data" value="${escHtml(ev.data || '')}"></div>
-          <div class="fisico-campo" style="margin-bottom:10px;"><label>Luogo</label><input type="text" class="ev-edit-luogo" value="${escHtml(ev.luogo || '')}"></div>
+          <div class="fisico-campo" style="margin-bottom:8px;"><label>Luogo</label><input type="text" class="ev-edit-luogo" value="${escHtml(ev.luogo || '')}"></div>
+          <div class="fisico-campo" style="margin-bottom:8px;"><label>Orario</label><input type="time" class="ev-edit-orario" value="${escHtml(ev.orario || '')}"></div>
+          <div class="fisico-campo" style="margin-bottom:10px;"><label>Nota (es. Tutti presenti)</label><input type="text" class="ev-edit-nota" value="${escHtml(ev.nota || '')}"></div>
           <div style="display:flex; gap:8px; align-items:center;">
             <button type="button" class="btn-primary evento-salva-modifica" data-ev="${ev.id}" style="width:auto; padding:10px 20px;">Salva modifiche</button>
             <button type="button" class="btn-secondary evento-annulla-modifica" data-ev="${ev.id}" style="padding:10px 16px;">Annulla</button>
@@ -3289,8 +3299,9 @@
           <summary>
             ${ev.nome || 'Evento senza nome'}
             <span style="display:block; font-size:12px; color:var(--text-dim); font-weight:400; margin-top:2px;">
-              ${dataLabel}${ev.luogo ? ' · 📍 ' + ev.luogo : ''}
+              ${dataLabel}${ev.orario ? ' · 🕒 ore ' + escHtml(ev.orario) : ''}${ev.luogo ? ' · 📍 ' + escHtml(ev.luogo) : ''}
             </span>
+            ${ev.nota ? `<span style="display:block; font-size:13px; font-weight:600; color:var(--text); margin-top:4px;">📝 ${escHtml(ev.nota)}</span>` : ''}
             ${badgeGiorni}
           </summary>
           <div style="padding-bottom:10px;">
@@ -3328,10 +3339,12 @@
       const nome = f.querySelector('.ev-edit-nome').value.trim();
       const data = f.querySelector('.ev-edit-data').value;
       const luogo = f.querySelector('.ev-edit-luogo').value.trim();
+      const orario = f.querySelector('.ev-edit-orario').value;
+      const nota = f.querySelector('.ev-edit-nota').value.trim();
       if(!nome){ fb.textContent = "Scrivi il nome dell'evento."; return; }
       btn.disabled = true; fb.textContent = 'Salvo…';
       try{
-        await updateDoc(doc(db,'eventi', btn.dataset.ev), { nome, data, luogo });
+        await updateDoc(doc(db,'eventi', btn.dataset.ev), { nome, data, luogo, orario, nota });
         fb.textContent = 'Salvato ✓';
       } catch(err){
         console.error(err);
@@ -3367,6 +3380,8 @@
     const nome = document.getElementById('evento-nuovo-nome').value.trim();
     const data = document.getElementById('evento-nuovo-data').value;
     const luogo = document.getElementById('evento-nuovo-luogo').value.trim();
+    const orario = document.getElementById('evento-nuovo-orario').value;
+    const nota = document.getElementById('evento-nuova-nota').value.trim();
     const feedback = document.getElementById('evento-crea-feedback');
     if(!nome){
       feedback.textContent = "Scrivi almeno il nome dell'evento.";
@@ -3376,10 +3391,12 @@
     btn.disabled = true;
     feedback.textContent = "Creazione in corso…";
     try{
-      await addDoc(collection(db,'eventi'), { nome, data, luogo, programma: [], creatoIl: serverTimestamp() });
+      await addDoc(collection(db,'eventi'), { nome, data, luogo, orario, nota, programma: [], creatoIl: serverTimestamp() });
       document.getElementById('evento-nuovo-nome').value = '';
       document.getElementById('evento-nuovo-data').value = '';
       document.getElementById('evento-nuovo-luogo').value = '';
+      document.getElementById('evento-nuovo-orario').value = '';
+      document.getElementById('evento-nuova-nota').value = '';
       feedback.textContent = "Evento creato ✓";
       setTimeout(() => { feedback.textContent = ''; }, 2000);
     } catch(err){
