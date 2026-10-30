@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -7736,6 +7736,11 @@
       }
       const dati = snap.data();
       currentRuolo = dati.ruolo;
+      // Ora che il ruolo è noto, ridisegno gli elenchi che dipendono dai permessi
+      // (i dati possono arrivare prima del ruolo: senza questo mancavano i bottoni Modifica/Elimina)
+      renderEventiInline('admin-eventi-list', isSocietaConScrittura());
+      renderEventiInline('coach-eventi-list', false);
+      if(isRuoloSocieta()) renderMessaggiSocieta();
       if(dati.ruolo === "societa" || dati.ruolo === "societa_lettura"){
         document.getElementById('admin-role-tag').textContent = dati.ruolo === "societa_lettura" ? "🔒 Sola lettura" : "Società";
         renderGroupsGrid();
