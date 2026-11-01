@@ -598,6 +598,7 @@
   .td-chip.meglio{background:rgba(23,121,74,.15); color:#17794a;}
   .td-chip.peggio{background:rgba(217,85,43,.15); color:#c2410c;}
   .td-record{font-size:12px; font-weight:700; padding:3px 8px; border-radius:10px; background:rgba(245,166,35,.2); color:#9a5b00; white-space:nowrap;}
+  .test-nuova-top{display:block; width:100%; margin:2px 0 12px; padding:14px; font-size:15.5px; font-weight:700;}
   .test-guida{background:color-mix(in srgb, var(--primary) 12%, var(--surface)); border:1px solid color-mix(in srgb, var(--primary) 40%, var(--surface)); border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.5; margin-bottom:12px;}
   .test-aggiungi{font-size:13px; font-weight:700; color:#0f5a38; border:1.5px dashed var(--primary); border-radius:10px; padding:5px 12px; background:color-mix(in srgb, var(--primary) 10%, var(--surface));}
   .test-card::after{content:'';}
@@ -6490,7 +6491,7 @@
     let html = '';
 
     if(righe.length === 0){
-      html += '<p class="empty-note">Nessuna rilevazione ancora. Tocca il bottone verde "+ Rilevazione" per inserire la prima.</p>';
+      html += '<p class="empty-note">Nessuna rilevazione ancora. Tocca il bottone verde "+ Nuova rilevazione" per inserire la prima.</p>';
     } else {
       // Miglior valore di ogni test (per il marcatore "Record") e ordine: dalla più recente
       const migliore = {};
@@ -6541,7 +6542,7 @@
       html += `<div class="test-cards">${schede}</div>`;
       html += '<div class="test-legenda"><span><span class="td-chip meglio">▲ +5</span> migliorato</span><span><span class="td-chip peggio">▼ −3</span> peggiorato</span><span><span class="td-record">★ Record</span> miglior valore</span></div>';
       html += '<p class="test-suggerimento">Il confronto è con la rilevazione precedente.</p>';
-      html = `<div class="test-guida"><strong>Come si usa</strong><br>• <b>Nuovo giorno di test:</b> bottone verde <b>+ Rilevazione</b>.<br>• <b>Completare o correggere</b> una rilevazione già salvata: tocca la sua scheda qui sotto.</div>` + html;
+      html = `<div class="test-guida"><strong>Come si usa</strong><br>• <b>Nuovo giorno di test:</b> bottone verde <b>+ Nuova rilevazione</b> qui sopra.<br>• <b>Completare o correggere</b> una rilevazione già salvata: tocca la sua scheda qui sotto.</div>` + html;
     }
 
     if(schedaTestRigaInModifica !== null){
@@ -6569,6 +6570,7 @@
           </div>
         </div>`;
     } else {
+      html = `<button type="button" class="btn-primary test-nuova-top" id="test-nuova-top-btn">+ Nuova rilevazione</button>` + html;
       html += `
         <div class="test-azioni sa-azioni-test">
           <button type="button" class="btn-secondary" id="test-nuova-btn">+ Nuova rilevazione</button>
@@ -6597,6 +6599,8 @@
 
     const nuova = document.getElementById('test-nuova-btn');
     if(nuova) nuova.addEventListener('click', () => apriFormTest('nuova'));
+    const nuovaTop = document.getElementById('test-nuova-top-btn');
+    if(nuovaTop) nuovaTop.addEventListener('click', () => apriFormTest('nuova'));
     const andBtn = document.getElementById('test-andamento-btn');
     if(andBtn) andBtn.addEventListener('click', apriAndamentoTest);
     const colBtn = document.getElementById('test-colonne-btn');
