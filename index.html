@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -579,6 +579,27 @@
   .test-delta.meglio{color:var(--primary);}
   .test-delta.peggio{color:var(--clay);}
   .test-suggerimento{font-size:12px; color:var(--text-dim); margin:0 0 4px;}
+  /* Test motori a schede: una scheda per rilevazione, valori ben leggibili, colori con un significato */
+  .test-cards{display:grid; gap:12px; margin-bottom:10px;}
+  .test-card{background:var(--surface); border:1px solid var(--border); border-left:6px solid var(--border-strong); border-radius:14px; padding:12px 14px 6px; cursor:pointer;}
+  .test-card.ultima{border-left-color:var(--primary);}
+  .test-card.in-modifica{background:var(--bg-track);}
+  .test-card-testa{display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+  .test-card-data{font-size:16px; font-weight:700; flex:1; min-width:0;}
+  .test-card-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:10px; background:color-mix(in srgb, var(--primary) 22%, var(--surface)); color:#0f5a38;}
+  .test-card .test-modifica{margin:0; display:inline-flex; align-items:center; gap:5px; padding:5px 10px; font-size:12.5px; font-weight:600; font-family:inherit; color:var(--text);}
+  .test-riga{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-top:1px solid var(--border);}
+  .test-riga-nome{font-size:13.5px; color:var(--text-dim); min-width:0;}
+  .test-riga-dx{display:flex; align-items:center; gap:8px; flex:none;}
+  .test-riga-valore{font-size:19px; font-weight:700; color:var(--text);}
+  .test-riga-valore small{font-size:12px; font-weight:500; color:var(--text-dim); margin-left:3px;}
+  .test-riga.vuota .test-riga-valore{color:var(--placeholder); font-weight:500;}
+  .td-chip{font-size:12px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap;}
+  .td-chip.meglio{background:rgba(23,121,74,.15); color:#17794a;}
+  .td-chip.peggio{background:rgba(217,85,43,.15); color:#c2410c;}
+  .td-record{font-size:12px; font-weight:700; padding:3px 8px; border-radius:10px; background:rgba(245,166,35,.2); color:#9a5b00; white-space:nowrap;}
+  .test-legenda{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--text-dim); margin:2px 0 6px;}
+  .test-legenda .td-chip, .test-legenda .td-record{font-size:11px; padding:2px 7px;}
   .test-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin-top:8px;}
   .test-azioni{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
   .test-colonna-riga{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;}
@@ -1253,8 +1274,8 @@
   .sa-tabs{display:none;}
   #view-scheda-atleta.scheda-compatta .sa-tabs{display:flex; gap:4px; background:var(--bg-track); border-radius:12px; padding:3px; margin:0 0 12px;}
   .sa-tab{flex:1; font-family:inherit; font-size:13px; padding:9px 4px; border:none; border-radius:9px; background:transparent; color:var(--text-dim); cursor:pointer;}
-  .sa-tab.attivo{background:var(--surface); color:var(--text); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.12);}
-  .sa-cnt{font-weight:400; color:var(--text-dim);}
+  .sa-tab.attivo{background:var(--primary); color:var(--primary-ink); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.15);}
+  .sa-cnt{display:inline-block; min-width:18px; padding:0 6px; margin-left:3px; border-radius:9px; font-size:11.5px; font-weight:700; background:rgba(0,0,0,.09); color:inherit;}
   .sa-sintesi{margin:0; font-size:12px; color:var(--text-dim);}
   .sa-toolbar{display:none;}
   #view-scheda-atleta.scheda-compatta .categoria-badge{display:none;}
@@ -1268,7 +1289,7 @@
   #view-scheda-atleta #scheda-sezioni.scheda-griglia .report-section > .sa-toolbar{display:flex; align-items:center; justify-content:space-between; padding:2px 0 10px;}
   .sa-toolbar-titolo{font-size:14px; font-weight:700;}
   .sa-toolbar-azioni{display:flex; gap:6px;}
-  .sa-icona-btn{width:38px; height:34px; border-radius:10px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
+  .sa-icona-btn{min-width:38px; height:36px; padding:0 11px !important; gap:6px; font-family:inherit; font-size:13px; font-weight:600; border-radius:10px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--text); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0;}
   .sa-icona-btn svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
   #scheda-sezioni[data-tab="test"] #scheda-prestazioni-section, #scheda-sezioni[data-tab="test"] #scheda-note-section,
   #scheda-sezioni[data-tab="prestazioni"] #scheda-test-section, #scheda-sezioni[data-tab="prestazioni"] #scheda-note-section,
@@ -2301,7 +2322,7 @@
       </div>
 
       <div class="sa-tabs" id="sa-tabs">
-        <button type="button" class="sa-tab attivo" data-tab="test">Test <span class="sa-cnt" id="sa-cnt-test"></span></button>
+        <button type="button" class="sa-tab attivo" data-tab="test">Test motori <span class="sa-cnt" id="sa-cnt-test"></span></button>
         <button type="button" class="sa-tab" data-tab="prestazioni">Prestazioni <span class="sa-cnt" id="sa-cnt-prest"></span></button>
         <button type="button" class="sa-tab" data-tab="note">Note <span class="sa-cnt" id="sa-cnt-note"></span></button>
       </div>
@@ -2312,9 +2333,6 @@
         <summary>🧍 Dati fisici e crescita</summary>
         <div>
           <div class="fisico-grid">
-            <div class="fisico-campo">
-              <label for="scheda-fisico-nascita">Data di nascita</label>
-              <div id="scheda-fisico-nascita" class="fisico-valore-sola-lettura">—</div>
               <p style="font-size:10.5px; color:var(--text-dim); margin:4px 0 0;">Gestita dalla società</p>
             </div>
             <div class="fisico-campo">
@@ -2373,8 +2391,8 @@
       <details class="report-section sez-test" id="scheda-test-section" style="display:none;">
         <summary><span class="sez-icona"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 13V9"/><path d="M10 3h4"/></svg></span>Test motori</summary>
         <div class="sa-toolbar"><span class="sa-toolbar-titolo">Test motori</span><span class="sa-toolbar-azioni">
-          <button type="button" id="sa-test-andamento" class="sa-icona-btn" aria-label="Andamento"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg></button>
-          <button type="button" id="sa-test-colonne" class="sa-icona-btn" aria-label="Modifica colonne"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></button>
+          <button type="button" id="sa-test-andamento" class="sa-icona-btn" aria-label="Andamento dei test"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M4 15l4-4l3 3l5-6l4 4"/></svg>Andamento</button>
+          <button type="button" id="sa-test-colonne" class="sa-icona-btn" aria-label="Modifica i test da registrare"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Test</button>
         </span></div>
         <div id="scheda-test-corpo"></div>
       </details>
@@ -2638,7 +2656,6 @@
 
       <form id="admin-add-atleta-form" class="add-atleta-form">
         <input type="text" id="admin-nuovo-atleta" placeholder="Nome e cognome nuovo atleta" required>
-        <input type="date" id="admin-nuovo-atleta-nascita" title="Data di nascita (facoltativa)">
         <button type="submit" class="btn-secondary">+ Aggiungi</button>
       </form>
 
@@ -2762,7 +2779,7 @@
     EmailAuthProvider, reauthenticateWithCredential, updatePassword
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp
+    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp, deleteField
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Tema chiaro/scuro: applicato subito per evitare lampeggi al caricamento ---
@@ -4951,10 +4968,6 @@
         <div class="roster-item">
           <span class="nome">${a.nome} <button type="button" class="btn-edit-icon" data-id="${a.id}" data-nome="${a.nome}" title="Correggi nome" aria-label="Correggi nome">✏️</button>${(a.storicoGruppi || []).length > 0 ? (() => { const sp = a.storicoGruppi[a.storicoGruppi.length - 1]; return `<span class="sposta-nota">Da ${escHtml(sp.daNome || '—')} · ${sp.data ? new Date(sp.data + 'T00:00:00').toLocaleDateString('it-IT') : ''}</span>`; })() : ''}</span>
           <span style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
-            <span style="display:flex; flex-direction:column; gap:3px;">
-              <label for="" style="font-size:10px; color:var(--text-dim); font-weight:600;">Nascita</label>
-              <input type="date" class="nascita-input" data-id="${a.id}" value="${a.dataNascita || ''}" title="Data di nascita">
-            </span>
             ${sezioniGruppo(adminRosterGruppoId) ? selectSezioneHtml(a, adminRosterGruppoId) : `<button type=\"button\" class=\"btn-sposta\" data-id=\"${a.id}\" title=\"Sposta in un altro gruppo\" aria-label=\"Sposta ${escHtml(a.nome)} in un altro gruppo\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 10h13l-3-3\"/><path d=\"M17 14H4l3 3\"/></svg> Sposta</button>`}
             <button type="button" class="btn-remove" data-id="${a.id}">Rimuovi</button>
           </span>
@@ -4962,12 +4975,6 @@
       `;
       }).join('');
     }
-
-    list.querySelectorAll('.nascita-input').forEach(input => {
-      input.addEventListener('change', async (e) => {
-        await updateDoc(doc(db,'atleti', input.dataset.id), { dataNascita: e.target.value });
-      });
-    });
 
     list.querySelectorAll('.btn-edit-icon').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -5884,15 +5891,30 @@
     }
   }
 
-  // Se l'atleta non ha ancora una data di nascita sull'anagrafica ma la scheda (vecchio campo,
-  // di prima che la data di nascita diventasse gestita dalla società) sì, la copia lì una tantum.
-  async function tentaMigrazioneDataNascita(atletaId){
-    if(!schedaAtletaDataNascita && schedaDatiCorrenti && schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dataNascita){
-      try{
-        await updateDoc(doc(db,'atleti', atletaId), { dataNascita: schedaDatiCorrenti.fisico.dataNascita });
-      } catch(err){
-        console.error('Migrazione data di nascita non riuscita:', err);
+  // Cancella da Firestore tutte le date di nascita già inserite (anagrafica atleti e vecchio campo nella scheda)
+  async function cancellaDateNascita(){
+    if(!isSocietaConScrittura()){ alert('Operazione riservata alla società.'); return; }
+    if(!confirm("Cancellare TUTTE le date di nascita salvate di tutti gli atleti?\n\nRestano solo i nomi. Non si può annullare.")) return;
+    try{
+      const snap = await getDocs(collection(db,'atleti'));
+      let cancellate = 0;
+      for(const d of snap.docs){
+        if(d.data().dataNascita !== undefined){
+          await updateDoc(doc(db,'atleti', d.id), { dataNascita: deleteField() });
+          cancellate++;
+        }
+        try{
+          const sc = await getDoc(doc(db,'schedeAtleti', d.id));
+          if(sc.exists() && sc.data().fisico && sc.data().fisico.dataNascita !== undefined){
+            await updateDoc(doc(db,'schedeAtleti', d.id), { 'fisico.dataNascita': deleteField() });
+            cancellate++;
+          }
+        } catch(e){ console.error(e); }
       }
+      alert(cancellate === 0 ? 'Non c\'erano date di nascita salvate.' : `Fatto: cancellate ${cancellate} date di nascita.`);
+    } catch(err){
+      console.error(err);
+      alert('Errore: ' + err.message);
     }
   }
 
@@ -5915,10 +5937,9 @@
     if(schedaAtletaAnagraficaUnsub) schedaAtletaAnagraficaUnsub();
 
     schedaAtletaAnagraficaUnsub = onSnapshot(doc(db,'atleti', atletaId), snap => {
-      schedaAtletaDataNascita = (snap.exists() && snap.data().dataNascita) || '';
+      schedaAtletaDataNascita = '';   // la data di nascita non viene più usata
       renderSchedaFisico();
       renderSchedaRiepilogo();
-      tentaMigrazioneDataNascita(atletaId);
     });
 
     schedaDisciplineUnsub = onSnapshot(collection(db,'discipline'), snap => {
@@ -5975,7 +5996,6 @@
       renderSchedaNote();
       renderSchedaRiepilogo();
       renderReportStagioneSelect();
-      tentaMigrazioneDataNascita(atletaId);
     }, err => {
       console.error('Errore lettura scheda atleta:', err);
       document.getElementById('scheda-fisico-feedback').textContent =
@@ -6079,15 +6099,6 @@
 
     const righe = [];
 
-    // Età
-    const eta = calcolaEta(schedaAtletaDataNascita);
-    righe.push(`
-      <div class="riepilogo-riga">
-        <span class="riepilogo-etichetta">Età</span>
-        <span class="riepilogo-valore">${eta !== null ? eta + ' anni' : '—'}</span>
-      </div>
-    `);
-
     // Misure attuali (altezza, torace, peso) con tendenza rispetto alla misurazione precedente
     const crescitaTesto = ['altezza','torace','peso'].map(tipo => {
       const misurazioni = (schedaDatiCorrenti.crescita || []).filter(m => m.tipo === tipo).sort((a,b) => (a.data||'').localeCompare(b.data||''));
@@ -6163,8 +6174,6 @@
 
   function renderSchedaFisico(){
     const f = schedaDatiCorrenti.fisico || {};
-    document.getElementById('scheda-fisico-nascita').textContent =
-      schedaAtletaDataNascita ? new Date(schedaAtletaDataNascita + 'T00:00:00').toLocaleDateString('it-IT') : 'Non impostata (la aggiunge la società)';
     document.getElementById('scheda-fisico-dominante').value = f.dominante || '';
     document.getElementById('scheda-fisico-note').value = f.note || '';
 
@@ -6478,14 +6487,26 @@
     let html = '';
 
     if(righe.length === 0){
-      html += '<p class="empty-note">Nessuna rilevazione ancora. Tocca "+ Nuova rilevazione" per inserire la prima.</p>';
+      html += '<p class="empty-note">Nessuna rilevazione ancora. Tocca il bottone verde "+ Rilevazione" per inserire la prima.</p>';
     } else {
-      const intest = colonne.map(c => `<th>${escHtml(c.nome)}${c.unita ? `<span class="test-unita">${escHtml(c.unita)}</span>` : ''}</th>`).join('');
-      const corpoRighe = righe.map((r, i) => {
-        const celle = colonne.map(c => {
+      // Miglior valore di ogni test (per il marcatore "Record") e ordine: dalla più recente
+      const migliore = {};
+      colonne.forEach(c => {
+        const nums = righe.map(r => testNum(r.valori && r.valori[c.id])).filter(n => n !== null);
+        if(nums.length >= 2) migliore[c.id] = c.minoreMeglio ? Math.min(...nums) : Math.max(...nums);
+      });
+      // il "Record" si mostra solo sulla prima rilevazione in cui è stato raggiunto il valore migliore
+      const rigaRecord = {};
+      colonne.forEach(c => {
+        if(migliore[c.id] === undefined) return;
+        const k = righe.findIndex(r => { const n = testNum(r.valori && r.valori[c.id]); return n !== null && Math.abs(n - migliore[c.id]) < 0.0001; });
+        if(k >= 0) rigaRecord[c.id] = k;
+      });
+      const schede = righe.map((r, i) => {
+        const righeTest = colonne.map(c => {
           const v = (r.valori && r.valori[c.id]) || '';
-          if(v === '') return '<td>—</td>';
-          let delta = '';
+          if(v === '') return `<div class="test-riga vuota"><span class="test-riga-nome">${escHtml(c.nome)}</span><span class="test-riga-dx"><span class="test-riga-valore">—</span></span></div>`;
+          let chip = '', record = '';
           const n = testNum(v);
           if(n !== null){
             for(let j = i - 1; j >= 0; j--){
@@ -6494,18 +6515,29 @@
                 const d = n - pn;
                 if(Math.abs(d) > 0.0001){
                   const meglio = c.minoreMeglio ? d < 0 : d > 0;
-                  delta = `<span class="test-delta ${meglio ? 'meglio' : 'peggio'}">${d > 0 ? '+' : '−'}${testFmt(Math.abs(d))}</span>`;
+                  chip = `<span class="td-chip ${meglio ? 'meglio' : 'peggio'}">${d > 0 ? '▲ +' : '▼ −'}${testFmt(Math.abs(d))}</span>`;
                 }
                 break;
               }
             }
+            if(rigaRecord[c.id] === i) record = '<span class="td-record">★ Record</span>';
           }
-          return `<td>${escHtml(v)}${delta}</td>`;
+          return `<div class="test-riga"><span class="test-riga-nome">${escHtml(c.nome)}</span><span class="test-riga-dx">${record}${chip}<span class="test-riga-valore">${escHtml(v)}${c.unita ? `<small>${escHtml(c.unita)}</small>` : ''}</span></span></div>`;
         }).join('');
-        return `<tr data-id="${r.id}"${r.id === schedaTestRigaInModifica ? ' class="in-modifica"' : ''}><td>${escHtml(r.periodo)} <button type="button" class="test-modifica" data-id="${r.id}" aria-label="Modifica rilevazione ${escHtml(r.periodo)}"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 7l3 3"/></svg></button></td>${celle}</tr>`;
-      }).join('');
-      html += `<div class="test-tabella-wrap"><table class="test-tabella"><thead><tr><th>Data / periodo</th>${intest}</tr></thead><tbody>${corpoRighe}</tbody></table></div>`;
-      html += '<p class="test-suggerimento">Scorri di lato per vedere tutte le colonne. Tocca la matita (o la riga) per correggere una rilevazione.</p>';
+        const ultima = i === righe.length - 1;
+        const classi = 'test-card' + (ultima ? ' ultima' : '') + (r.id === schedaTestRigaInModifica ? ' in-modifica' : '');
+        return `<div class="${classi}" data-id="${r.id}">
+          <div class="test-card-testa">
+            <span class="test-card-data">${escHtml(r.periodo)}</span>
+            ${ultima ? '<span class="test-card-badge">Ultimo test</span>' : ''}
+            <button type="button" class="test-modifica" data-id="${r.id}" aria-label="Modifica rilevazione ${escHtml(r.periodo)}"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 7l3 3"/></svg>Modifica</button>
+          </div>
+          ${righeTest}
+        </div>`;
+      }).reverse().join('');
+      html += `<div class="test-cards">${schede}</div>`;
+      html += '<div class="test-legenda"><span><span class="td-chip meglio">▲ +5</span> migliorato</span><span><span class="td-chip peggio">▼ −3</span> peggiorato</span><span><span class="td-record">★ Record</span> miglior valore</span></div>';
+      html += '<p class="test-suggerimento">Il confronto è con la rilevazione precedente. Tocca una scheda per correggerla.</p>';
     }
 
     if(schedaTestRigaInModifica !== null){
@@ -6553,7 +6585,7 @@
         if(primo) primo.focus({ preventScroll:true });
       }
     };
-    corpo.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => apriFormTest(tr.dataset.id)));
+    corpo.querySelectorAll('.test-card[data-id]').forEach(el => el.addEventListener('click', () => apriFormTest(el.dataset.id)));
     corpo.querySelectorAll('.test-modifica').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
       apriFormTest(b.dataset.id);
@@ -7505,9 +7537,7 @@
     }
 
     // Dati fisici attuali (età, lato dominante, altezza/torace/peso con variazione nell'anno)
-    const eta = calcolaEta(schedaAtletaDataNascita);
     const fisiciRighe = [];
-    fisiciRighe.push(`<div><span>Età</span>${eta !== null ? eta + ' anni' : '—'}</div>`);
     fisiciRighe.push(`<div><span>Lato dominante</span>${(schedaDatiCorrenti.fisico && schedaDatiCorrenti.fisico.dominante) || '—'}</div>`);
     ['altezza','torace','peso'].forEach(tipo => {
       const tutte = (schedaDatiCorrenti.crescita || []).filter(m => m.tipo === tipo).sort((a,b) => (a.data||'').localeCompare(b.data||''));
@@ -7951,6 +7981,7 @@
         <button type="button" class="side-panel-btn" id="sp-importa-storico">📥 Importa storico (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-esporta-atleti">📤 Esporta atleti (CSV)</button>
         <button type="button" class="side-panel-btn" id="sp-esporta-presenze">📤 Esporta presenze (CSV)</button>
+        <button type="button" class="side-panel-btn" id="sp-cancella-nascite">🧹 Cancella date di nascita</button>
         <button type="button" class="side-panel-btn" id="sp-crea-evento">📅 Crea evento</button>
       </div>`;
     }
@@ -7984,6 +8015,7 @@
       document.getElementById('sp-gestisci-discipline')?.addEventListener('click', () => { chiudiPannello(); apriAdminDiscipline(); });
       document.getElementById('sp-importa-storico')?.addEventListener('click', () => { chiudiPannello(); apriImporta(); });
       document.getElementById('sp-esporta-atleti')?.addEventListener('click', () => { chiudiPannello(); esportaAtletiCSV(); });
+      document.getElementById('sp-cancella-nascite')?.addEventListener('click', () => { chiudiPannello(); cancellaDateNascita(); });
       document.getElementById('sp-esporta-presenze')?.addEventListener('click', () => { chiudiPannello(); apriEsportaPresenze(); });
       document.getElementById('sp-crea-evento')?.addEventListener('click', () => {
         chiudiPannello();
@@ -8078,7 +8110,7 @@
 
         <h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Aggiungi, correggi, archivia atleti; data di nascita per ciascuno; "Esporta atleti" scarica tutto in Excel.
+          Aggiungi, correggi, archivia atleti (si conserva solo il nome); "Esporta atleti" scarica tutto in Excel.
         </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">⚙️ Gestisci discipline gara</h3>
@@ -8373,15 +8405,12 @@
   document.getElementById('admin-add-atleta-form').addEventListener('submit', async function(e){
     e.preventDefault();
     const input = document.getElementById('admin-nuovo-atleta');
-    const inputNascita = document.getElementById('admin-nuovo-atleta-nascita');
     const nome = input.value.trim();
     if(!nome) return;
     const dati = { gruppoId: adminRosterGruppoId, nome };
     if(sezioniGruppo(adminRosterGruppoId)) dati.sezione = document.getElementById('admin-sezione-nuovi').value;
-    if(inputNascita.value) dati.dataNascita = inputNascita.value;
     await addDoc(collection(db,'atleti'), { ...dati, creatoIl: dataLocaleISO(new Date()) });
     input.value = "";
-    inputNascita.value = "";
   });
 
   document.getElementById('admin-bulk-add-btn').addEventListener('click', async function(){
