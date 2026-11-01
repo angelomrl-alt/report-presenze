@@ -598,6 +598,9 @@
   .td-chip.meglio{background:rgba(23,121,74,.15); color:#17794a;}
   .td-chip.peggio{background:rgba(217,85,43,.15); color:#c2410c;}
   .td-record{font-size:12px; font-weight:700; padding:3px 8px; border-radius:10px; background:rgba(245,166,35,.2); color:#9a5b00; white-space:nowrap;}
+  .test-guida{background:color-mix(in srgb, var(--primary) 12%, var(--surface)); border:1px solid color-mix(in srgb, var(--primary) 40%, var(--surface)); border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.5; margin-bottom:12px;}
+  .test-aggiungi{font-size:13px; font-weight:700; color:#0f5a38; border:1.5px dashed var(--primary); border-radius:10px; padding:5px 12px; background:color-mix(in srgb, var(--primary) 10%, var(--surface));}
+  .test-card::after{content:'';}
   .test-legenda{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--text-dim); margin:2px 0 6px;}
   .test-legenda .td-chip, .test-legenda .td-record{font-size:11px; padding:2px 7px;}
   .test-form{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin-top:8px;}
@@ -6505,7 +6508,7 @@
       const schede = righe.map((r, i) => {
         const righeTest = colonne.map(c => {
           const v = (r.valori && r.valori[c.id]) || '';
-          if(v === '') return `<div class="test-riga vuota"><span class="test-riga-nome">${escHtml(c.nome)}</span><span class="test-riga-dx"><span class="test-riga-valore">—</span></span></div>`;
+          if(v === '') return `<div class="test-riga vuota"><span class="test-riga-nome">${escHtml(c.nome)}</span><span class="test-riga-dx"><span class="test-aggiungi">+ Aggiungi dato</span></span></div>`;
           let chip = '', record = '';
           const n = testNum(v);
           if(n !== null){
@@ -6530,14 +6533,15 @@
           <div class="test-card-testa">
             <span class="test-card-data">${escHtml(r.periodo)}</span>
             ${ultima ? '<span class="test-card-badge">Ultimo test</span>' : ''}
-            <button type="button" class="test-modifica" data-id="${r.id}" aria-label="Modifica rilevazione ${escHtml(r.periodo)}"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 7l3 3"/></svg>Modifica</button>
+            <button type="button" class="test-modifica" data-id="${r.id}" aria-label="Modifica rilevazione ${escHtml(r.periodo)}"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14 7l3 3"/></svg>Modifica dati</button>
           </div>
           ${righeTest}
         </div>`;
       }).reverse().join('');
       html += `<div class="test-cards">${schede}</div>`;
       html += '<div class="test-legenda"><span><span class="td-chip meglio">▲ +5</span> migliorato</span><span><span class="td-chip peggio">▼ −3</span> peggiorato</span><span><span class="td-record">★ Record</span> miglior valore</span></div>';
-      html += '<p class="test-suggerimento">Il confronto è con la rilevazione precedente. Tocca una scheda per correggerla.</p>';
+      html += '<p class="test-suggerimento">Il confronto è con la rilevazione precedente.</p>';
+      html = `<div class="test-guida"><strong>Come si usa</strong><br>• <b>Nuovo giorno di test:</b> bottone verde <b>+ Rilevazione</b>.<br>• <b>Completare o correggere</b> una rilevazione già salvata: tocca la sua scheda qui sotto.</div>` + html;
     }
 
     if(schedaTestRigaInModifica !== null){
