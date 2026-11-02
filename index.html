@@ -1960,6 +1960,22 @@
         </div>
       </div>
 
+      <!-- Esporta presenze in Excel: per i gruppi a sezioni (CAS) sta qui, non nel report -->
+      <div class="report-section" id="home-export-cas" style="display:none; padding:14px 16px; margin-bottom:20px;">
+        <div style="font-weight:600; margin-bottom:8px;">📤 Esporta presenze (Excel)</div>
+        <p class="sub" style="margin:0 0 10px; font-size:12.5px;">Un file per sezione, con il totale dei giorni di presenza e il dettaglio giorno per giorno del mese, da condividere con la società.</p>
+        <div class="fisico-campo" id="home-export-sezione-campo" style="margin-bottom:10px; display:none;">
+          <label for="home-export-sezione">File da esportare</label>
+          <select id="home-export-sezione"></select>
+        </div>
+        <div class="fisico-campo" style="margin-bottom:10px;">
+          <label for="home-export-mese">Mese</label>
+          <select id="home-export-mese"></select>
+        </div>
+        <button type="button" class="btn-primary" id="home-export-excel-btn" style="width:100%;">Esporta e condividi</button>
+        <p class="save-feedback" id="home-export-feedback" style="min-height:18px; margin:8px 0 0;"></p>
+      </div>
+
       <div class="foglio-batteria griglia-azioni">
         <div class="corsia c-gara" id="card-risultati">
           <div class="corsia-riga"></div>
@@ -2337,8 +2353,6 @@
         <summary>🧍 Dati fisici e crescita</summary>
         <div>
           <div class="fisico-grid">
-              <p style="font-size:10.5px; color:var(--text-dim); margin:4px 0 0;">Gestita dalla società</p>
-            </div>
             <div class="fisico-campo">
               <label for="scheda-fisico-dominante">Lato dominante</label>
               <select id="scheda-fisico-dominante">
@@ -4646,9 +4660,10 @@
   }
 
   // ---------- Esporta presenze in Excel (mensile, da condividere con la società) ----------
-  function popolaSezioniExport(){
-    const campo = document.getElementById('export-sezione-campo');
-    const sel = document.getElementById('export-sezione');
+  // pref = '' per il report del gruppo, 'home-' per il blocco nella home (gruppo CAS)
+  function popolaSezioniExport(pref = ''){
+    const campo = document.getElementById(pref + 'export-sezione-campo');
+    const sel = document.getElementById(pref + 'export-sezione');
     const sez = sezioniGruppo(currentGruppoId);
     if(!campo || !sel) return;
     if(!sez){ campo.style.display = 'none'; sel.innerHTML = ''; return; }
@@ -4657,9 +4672,9 @@
     campo.style.display = '';
   }
 
-  function popolaMesiExport(){
-    popolaSezioniExport();
-    const sel = document.getElementById('export-mese');
+  function popolaMesiExport(pref = ''){
+    popolaSezioniExport(pref);
+    const sel = document.getElementById(pref + 'export-mese');
     if(!sel || sel.dataset.pronto === '1') return;
     const oggi = new Date();
     let html = '';
@@ -4683,20 +4698,30 @@
     });
   }
 
-  async function esportaPresenzeExcel(){
-    const fb = document.getElementById('export-feedback');
-    const btn = document.getElementById('export-excel-btn');
-    const mese = document.getElementById('export-mese').value;
+  async function esportaPresenzeExcel(pref = ''){
+    const fb = document.getElementById(pref + 'export-feedback');
+    const btn = document.getElementById(pref + 'export-excel-btn');
+    const mese = document.getElementById(pref + 'export-mese').value;
     const g = GRUPPI[currentGruppoId];
     const sezDef = sezioniGruppo(currentGruppoId);
     btn.disabled = true; fb.textContent = 'Preparo il file…';
     try{
       await caricaXLSX();
+      // Nel report i dati sono già in memoria; dalla home li leggo ora (solo al click)
+      let sessioniDati = reportSessioni, atletiDati = reportAtletiDocs;
+      if(pref){
+        const [sp, sa] = await Promise.all([
+          getDocs(query(collection(db,'presenze'), where('gruppoId','==', currentGruppoId))),
+          getDocs(query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId)))
+        ]);
+        sessioniDati = sp.docs.map(d => d.data());
+        atletiDati = sa.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato }));
+      }
       const [anno, mm] = mese.split('-').map(Number);
       const meseTesto = `${MESI_ESTESI[mm - 1]} ${anno}`;
       const nomeGruppo = g ? g.nome : 'Gruppo';
       const pulito = nomeGruppo.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Gruppo';
-      const sessMese = reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(mese + '-'));
+      const sessMese = sessioniDati.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && x.data.startsWith(mese + '-'));
       const tipoMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
       // Crea un file per una sezione (z) oppure per tutto il gruppo (z = null)
@@ -4720,7 +4745,7 @@
         };
         // Atleti attivi della sezione (anche con 0 presenze) + chi ha presenze nel mese ma ora è ritirato
         const elenco = new Map();
-        reportAtletiDocs.forEach(a => {
+        atletiDati.forEach(a => {
           if(z && a.sezione !== z.id) return;
           if(!a.archiviato || contaStato(a.nome, 'P') > 0) elenco.set(a.nome, a.nome);
         });
@@ -4753,7 +4778,7 @@
 
       let sezioni = [null];
       if(sezDef){
-        const scelta = document.getElementById('export-sezione').value;
+        const scelta = document.getElementById(pref + 'export-sezione').value;
         sezioni = scelta === 'tutte' ? sezDef : sezDef.filter(z => z.id === scelta);
       }
       const creati = sezioni.map(creaFile);
@@ -4785,7 +4810,8 @@
       btn.disabled = false;
     }
   }
-  document.getElementById('export-excel-btn').addEventListener('click', esportaPresenzeExcel);
+  document.getElementById('export-excel-btn').addEventListener('click', () => esportaPresenzeExcel(''));
+  document.getElementById('home-export-excel-btn').addEventListener('click', () => esportaPresenzeExcel('home-'));
 
   function calcolaReport(){
     const sessioni = reportSessioni.filter(x => inAnnoCorrente(x.data));
@@ -7800,7 +7826,7 @@
     document.getElementById('report-sez-atleta').style.display = soloGare ? 'none' : '';
     document.getElementById('rr-cella-allenamenti').style.display = soloGare ? 'none' : '';
     document.querySelector('.report-riepilogo').style.gridTemplateColumns = soloGare ? '1.2fr 1fr' : '';
-    document.getElementById('report-export').style.display = soloGare ? 'none' : '';
+    document.getElementById('report-export').style.display = (soloGare || sezioniGruppo(currentGruppoId)) ? 'none' : '';   // CAS: l'Excel è nella home
     renderPresenzeAtleta();
     document.getElementById('report-sub').textContent = `Dati ${descrizionePeriodo()}, calcolati dalle presenze registrate nell'app.`;
 
@@ -7866,6 +7892,9 @@
         document.getElementById('card-risultati').style.display = sezHome ? 'none' : '';   // CAS: niente gare
         document.getElementById('presenze-cas-cards').style.display = (sezHome && !senzaAllenamenti) ? '' : 'none';
         aggiornaCoachCardCas();
+        const mostraExportHome = !!(sezHome && !senzaAllenamenti);
+        document.getElementById('home-export-cas').style.display = mostraExportHome ? '' : 'none';
+        if(mostraExportHome){ popolaMesiExport('home-'); caricaXLSX().catch(() => {}); }
         document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
         renderMessaggiCoach();
         showView('view-coach');
