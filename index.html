@@ -1139,6 +1139,17 @@
   .card-principale.cp-cas123:active, .card-principale.cp-cas45:active{background:color-mix(in srgb, var(--cas) 24%, var(--surface));}
   .card-principale.cp-cas123 .cp-icona, .card-principale.cp-cas45 .cp-icona{stroke:var(--cas);}
   .card-principale.cp-cas123 .cp-titolo, .card-principale.cp-cas45 .cp-titolo{color:var(--cas);}
+  .card-principale.cp-sez{
+    background:color-mix(in srgb, var(--cas) 14%, var(--surface));
+    border:1px solid color-mix(in srgb, var(--cas) 55%, var(--surface));
+    border-left:8px solid var(--cas);
+  }
+  .card-principale.cp-sez:active{background:color-mix(in srgb, var(--cas) 24%, var(--surface));}
+  .card-principale.cp-sez .cp-icona{stroke:var(--cas);}
+  .card-principale.cp-sez .cp-titolo{color:var(--cas);}
+  .switch-gruppo{display:flex; gap:8px; margin:0 0 14px;}
+  .switch-gruppo button{flex:1; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border-strong); background:var(--surface); color:var(--text); font-weight:700; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  .switch-gruppo button.attivo{background:var(--text); color:var(--surface); border-color:var(--text);}
   .sez-chip{display:inline-block; font-size:12px; font-weight:700; color:#fff; padding:3px 10px; border-radius:999px; vertical-align:middle; margin-left:8px; font-family:'Inter',sans-serif; letter-spacing:.02em;}
   #view-coach .griglia-azioni{gap:8px; margin-bottom:0;}
   #view-coach .griglia-azioni .corsia-corpo{flex-direction:row; align-items:center; gap:10px; padding:12px;}
@@ -1916,6 +1927,7 @@
       <button type="button" class="btn-logout btn-hamburger" aria-label="Menu">☰</button>
     </header>
     <main>
+      <div class="switch-gruppo" id="coach-switch-gruppo" style="display:none;"></div>
       <div class="header-gruppo-corsie">
         <p class="eyebrow-clay">Gruppo</p>
         <h2 id="coach-group-name">—</h2>
@@ -1939,26 +1951,7 @@
         <span class="cp-freccia" aria-hidden="true">›</span>
       </div>
 
-      <div id="presenze-cas-cards" style="display:none;">
-        <div class="card-principale cp-cas123" id="card-presenze-cas123" role="button" tabindex="0">
-          <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
-          <div class="cp-testi">
-            <div class="cp-titolo">Presenze CAS 1-2-3</div>
-            <div class="cp-sub" id="cas-coach-cas123" style="font-weight:600; color:var(--text);"></div>
-            <div class="cp-sub" id="presenze-ultimo-cas123">Ultimo allenamento: —</div>
-          </div>
-          <span class="cp-freccia" aria-hidden="true">›</span>
-        </div>
-        <div class="card-principale cp-cas45" id="card-presenze-cas45" role="button" tabindex="0">
-          <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
-          <div class="cp-testi">
-            <div class="cp-titolo">Presenze CAS 4-5</div>
-            <div class="cp-sub" id="cas-coach-cas45" style="font-weight:600; color:var(--text);"></div>
-            <div class="cp-sub" id="presenze-ultimo-cas45">Ultimo allenamento: —</div>
-          </div>
-          <span class="cp-freccia" aria-hidden="true">›</span>
-        </div>
-      </div>
+      <div id="presenze-cas-cards" style="display:none;"></div>
 
       <!-- Esporta presenze in Excel: per i gruppi a sezioni (CAS) sta qui, in una tendina, non nel report -->
       <details class="report-section" id="home-export-cas" style="display:none; margin-bottom:20px;">
@@ -2125,6 +2118,7 @@
 
       <input type="text" id="gestisci-atleti-search" class="scheda-search" placeholder="🔍 Cerca atleta...">
       <p id="gestisci-atleti-feedback" class="save-feedback" style="min-height:18px;"></p>
+      <div id="gestisci-aggiungi-condiviso" style="display:none; margin-bottom:16px;"></div>
       <div id="gestisci-atleti-lista" class="roster-list"></div>
 
       <div class="sezione-archiviati">
@@ -2802,7 +2796,7 @@
     EmailAuthProvider, reauthenticateWithCredential, updatePassword
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
   import {
-    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp, deleteField
+    getFirestore, doc, getDoc, getDocs, collection, addDoc, setDoc, deleteDoc, updateDoc, query, where, onSnapshot, serverTimestamp, deleteField, arrayUnion, arrayRemove
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
   // --- Tema chiaro/scuro: applicato subito per evitare lampeggi al caricamento ---
@@ -3605,7 +3599,7 @@
   // ---------- Report della società (riepilogo di stagione + confronto tra i gruppi) ----------
   let datiReportSocieta = null;
   // Squadre escluse dagli allenamenti e dalle presenze del report società (tabella, totali, grafici, spunti). Qui: cas123
-  const ESCLUSI_PRESENZA_MESE = ['YyErRLw5vg8HgOukeQCU'];
+  const ESCLUSI_PRESENZA_MESE = ['YyErRLw5vg8HgOukeQCU', 'concorsiSalti'];   // cas123 + Concorsi salti (allenamento extra degli stessi atleti: non va sommato)
 
   function costruisciReportSocieta(ctx){
     const anno = annoConteggio();
@@ -3678,7 +3672,7 @@
 
     // Nuovi arrivi: la data di inserimento viene salvata dal 2026; il dato è completo solo dal 2027 in poi
     const nuoviArrivi = parseInt(anno.anno, 10) >= 2027
-      ? Object.values(ctx.atletiPerGruppo).reduce((t, lista) => t + lista.filter(a => a.creatoIl && a.creatoIl >= anno.inizio && a.creatoIl <= anno.fine).length, 0)
+      ? Object.entries(ctx.atletiPerGruppo).filter(([gid]) => !isGruppoCondiviso(gid)).map(([, lista]) => lista).reduce((t, lista) => t + lista.filter(a => a.creatoIl && a.creatoIl >= anno.inizio && a.creatoIl <= anno.fine).length, 0)
       : null;
 
     // Spunti da discutere, ricavati dai dati
@@ -3796,6 +3790,12 @@
       conteggiAtleti[gid] = (conteggiAtleti[gid] || 0) + 1;
       if(!atletiPerGruppo[gid]) atletiPerGruppo[gid] = [];
       atletiPerGruppo[gid].push(a);
+      // Gruppo condiviso: l'atleta compare anche lì (solo per l'elenco/numero del gruppo; i totali usano snapAtleti)
+      (Array.isArray(a.gruppiExtra) ? a.gruppiExtra : []).forEach(x => {
+        if(!isGruppoCondiviso(x)) return;
+        if(!atletiPerGruppo[x]) atletiPerGruppo[x] = [];
+        atletiPerGruppo[x].push(a);
+      });
     });
 
     const conteggiAllenamenti = {};
@@ -4244,6 +4244,67 @@
     renderSquadreFoglio();
   }
 
+  // Card "Presenze" delle sezioni del gruppo aperto (CAS, Concorsi salti…), costruite dalle definizioni in SEZIONI_PER_GRUPPO
+  function renderCardsSezioni(){
+    const cont = document.getElementById('presenze-cas-cards');
+    const sez = sezioniGruppo(currentGruppoId) || [];
+    cont.innerHTML = sez.map(z => `
+      <div class="card-principale cp-sez" id="card-presenze-${z.id}" role="button" tabindex="0" style="--cas:${z.colore};">
+        <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
+        <div class="cp-testi">
+          <div class="cp-titolo">Presenze ${escHtml(z.nome)}</div>
+          <div class="cp-sub" id="cas-coach-${z.id}" style="font-weight:600; color:var(--text);"></div>
+          <div class="cp-sub" id="presenze-ultimo-${z.id}">Ultimo allenamento: —</div>
+        </div>
+        <span class="cp-freccia" aria-hidden="true">›</span>
+      </div>`).join('');
+    sez.forEach(z => {
+      const el = document.getElementById('card-presenze-' + z.id);
+      el.addEventListener('click', () => apriPresenze(z.id));
+      el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(z.id); } });
+    });
+  }
+
+  // Home dell'allenatore per un gruppo: il suo (gruppo di casa) oppure quello condiviso (Concorsi salti)
+  async function mostraHomeCoach(gid){
+    const sw = document.getElementById('coach-switch-gruppo');
+    if(gruppoCondivisoUtente && gruppoHomeId){
+      const gHome = GRUPPI[gruppoHomeId], gCond = GRUPPI[gruppoCondivisoUtente];
+      sw.innerHTML = `<button type="button" data-g="${gruppoHomeId}" class="${gid === gruppoHomeId ? 'attivo' : ''}">${escHtml(gHome ? gHome.nome : 'Il mio gruppo')}</button>` +
+                     `<button type="button" data-g="${gruppoCondivisoUtente}" class="${gid === gruppoCondivisoUtente ? 'attivo' : ''}">${escHtml(gCond ? gCond.nome : 'Gruppo condiviso')}</button>`;
+      sw.style.display = '';
+      sw.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { if(b.dataset.g !== gid) mostraHomeCoach(b.dataset.g); }));
+    } else {
+      sw.style.display = 'none'; sw.innerHTML = '';
+    }
+    currentGruppoId = gid;
+    sezioneCorrente = null;
+    const g = GRUPPI[gid];
+    document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
+    const qConteggio = qAtletiGruppo(gid);
+    const snapConteggio = await getDocs(qConteggio);
+    const atletiAttiviHome = snapConteggio.docs.filter(d => !d.data().archiviato).map(d => ({ nome: d.data().nome }));
+    document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${atletiAttiviHome.length} atleti` : "";
+    const senzaAllenamenti = gruppoSenzaAllenamenti(g);
+    if(!senzaAllenamenti) avviaUltimoAllenamento(gid);
+    // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
+    const schedeAttive = !!(g && g.nome === 'Cadetti');
+    document.getElementById('card-schede').style.display = schedeAttive ? '' : 'none';
+    document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
+    const sezHome = sezioniGruppo(gid);
+    document.getElementById('card-presenze').style.display = (senzaAllenamenti || sezHome) ? 'none' : '';
+    document.getElementById('card-risultati').style.display = sezHome ? 'none' : '';   // CAS: niente gare
+    document.getElementById('presenze-cas-cards').style.display = (sezHome && !senzaAllenamenti) ? '' : 'none';
+    renderCardsSezioni();
+    aggiornaCoachCardCas();
+    const mostraExportHome = !!(sezHome && !senzaAllenamenti);
+    document.getElementById('home-export-cas').style.display = mostraExportHome ? '' : 'none';
+    if(mostraExportHome){ popolaMesiExport('home-'); caricaXLSX().catch(() => {}); }
+    document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
+    renderMessaggiCoach();
+    showView('view-coach');
+  }
+
   // Gruppi che non fanno registrazione degli allenamenti (es. Mezzofondo): solo gare.
   // Si riconosce dal nome, oppure aggiungendo sul gruppo (Firestore) il campo senzaAllenamenti = true.
   function gruppoSenzaAllenamenti(g){
@@ -4258,8 +4319,21 @@
 
   // Gruppi con presenze divise in sezioni (menu separati). Chiave = ID documento del gruppo.
   const SEZIONI_PER_GRUPPO = {
-    'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3', colore:'#2f7de1', coach:'Capraro' }, { id:'cas45', nome:'CAS 4-5', colore:'#d9552b', coach:'Barbisan' } ]   // gruppo cas123
+    'YyErRLw5vg8HgOukeQCU': [ { id:'cas123', nome:'CAS 1-2-3', colore:'#2f7de1', coach:'Capraro' }, { id:'cas45', nome:'CAS 4-5', colore:'#d9552b', coach:'Barbisan' } ],   // gruppo cas123
+    // Gruppo condiviso tra due allenatori: gli atleti restano nel loro gruppo di origine e vi "partecipano" tramite il campo gruppiExtra
+    'concorsiSalti': [ { id:'asta_alto', nome:'Asta + Alto', colore:'#0891b2', coach:'Braido' }, { id:'lungo_triplo', nome:'Lungo + Triplo', colore:'#65a30d', coach:'Mondelli' } ]
   };
+  const GRUPPO_CONDIVISO_ID = 'concorsiSalti';
+  function isGruppoCondiviso(gid){ return gid === GRUPPO_CONDIVISO_ID; }
+  // Atleti di un gruppo: per i gruppi normali sono quelli con gruppoId uguale; per il gruppo condiviso quelli che lo hanno in gruppiExtra
+  function qAtletiGruppo(gid){
+    return isGruppoCondiviso(gid)
+      ? query(collection(db,'atleti'), where('gruppiExtra','array-contains', gid))
+      : query(collection(db,'atleti'), where('gruppoId','==', gid));
+  }
+  let gruppoHomeId = null;              // gruppo "di casa" dell'allenatore
+  let gruppoCondivisoUtente = null;     // id del gruppo condiviso a cui l'allenatore partecipa (se esiste)
+  let aggiungiCondivisoUnsub = null;
   function sezioniGruppo(gid){ return SEZIONI_PER_GRUPPO[gid] || null; }
   // Allenatore di una sezione: se modificato dall'app (campo sezioniCoach del gruppo) vale quello, altrimenti il valore predefinito qui sopra
   function coachSezione(gid, z){
@@ -4476,20 +4550,56 @@
     document.getElementById('gestisci-atleti-feedback').textContent = '';
 
     if(gestisciAtletiUnsub) gestisciAtletiUnsub();
-    const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
+    const q = qAtletiGruppo(currentGruppoId);
     gestisciAtletiUnsub = onSnapshot(q, snap => {
       gestisciAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] }))
         .sort((a,b)=>a.nome.localeCompare(b.nome));
       renderGestisciAtletiListe();
     });
 
+    renderAggiungiCondiviso();
     showView('view-gestisci-atleti');
+  }
+
+  // Nel gruppo condiviso: l'allenatore aggiunge atleti DEL PROPRIO gruppo (restano nel gruppo di origine) scegliendo la sezione
+  function renderAggiungiCondiviso(){
+    const box = document.getElementById('gestisci-aggiungi-condiviso');
+    if(aggiungiCondivisoUnsub){ aggiungiCondivisoUnsub(); aggiungiCondivisoUnsub = null; }
+    if(!box) return;
+    if(!isGruppoCondiviso(currentGruppoId) || !gruppoHomeId){ box.style.display = 'none'; box.innerHTML = ''; return; }
+    const sez = sezioniGruppo(currentGruppoId) || [];
+    const gHome = GRUPPI[gruppoHomeId];
+    aggiungiCondivisoUnsub = onSnapshot(query(collection(db,'atleti'), where('gruppoId','==', gruppoHomeId)), snap => {
+      const liberi = snap.docs
+        .filter(d => !d.data().archiviato && !(d.data().gruppiExtra || []).includes(currentGruppoId))
+        .map(d => ({ id:d.id, nome:d.data().nome }))
+        .sort((a,b) => a.nome.localeCompare(b.nome));
+      const aperto = !!(box.querySelector('details') && box.querySelector('details').open);
+      box.innerHTML = `<details class="report-section" ${aperto ? 'open' : ''}>
+        <summary>➕ Aggiungi dal tuo gruppo${gHome ? ' (' + escHtml(gHome.nome) + ')' : ''} · ${liberi.length}</summary>
+        <div style="padding:2px 0 8px;">
+          ${liberi.length === 0 ? '<p class="empty-note">Tutti gli atleti del tuo gruppo sono già qui.</p>' : liberi.map(a => `
+            <div class="roster-item" style="margin-top:8px;">
+              <span class="nome">${escHtml(a.nome)}</span>
+              <span style="display:flex; gap:6px;">
+                ${sez.map(z => `<button type="button" class="btn-secondary btn-aggiungi-sez" style="padding:6px 10px; font-size:12.5px;" data-id="${a.id}" data-sez="${z.id}">${escHtml(z.nome)}</button>`).join('')}
+              </span>
+            </div>`).join('')}
+        </div></details>`;
+      box.style.display = '';
+      box.querySelectorAll('.btn-aggiungi-sez').forEach(btn => btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try{ await updateDoc(doc(db,'atleti', btn.dataset.id), { gruppiExtra: arrayUnion(currentGruppoId), sezione: btn.dataset.sez }); }
+        catch(err){ console.error(err); alert('Errore nell\'aggiunta: ' + err.message); btn.disabled = false; }
+      }));
+    }, err => { console.error(err); box.style.display = 'none'; });
   }
 
   function renderGestisciAtletiListe(){
     const filtro = (document.getElementById('gestisci-atleti-search').value || '').trim().toLowerCase();
     const attivi = gestisciAtletiDocs.filter(a => !a.archiviato && a.nome.toLowerCase().includes(filtro));
-    const archiviati = gestisciAtletiDocs.filter(a => a.archiviato);
+    const cond = isGruppoCondiviso(currentGruppoId);
+    const archiviati = cond ? [] : gestisciAtletiDocs.filter(a => a.archiviato);
 
     const listaCont = document.getElementById('gestisci-atleti-lista');
     listaCont.innerHTML = attivi.length === 0
@@ -4499,7 +4609,7 @@
             <span class="nome">${a.nome}</span>
             <span style="display:flex; gap:8px; align-items:center;">
               ${sezioniGruppo(currentGruppoId) ? selectSezioneHtml(a, currentGruppoId) : `<button type=\"button\" class=\"btn-sposta\" data-id=\"${a.id}\" aria-label=\"Sposta ${escHtml(a.nome)} in un altro gruppo\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M7 10h13l-3-3\"/><path d=\"M17 14H4l3 3\"/></svg> Sposta</button>`}
-              <button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Ritira</button>
+              ${cond ? `<button type="button" class="btn-archivia-testo btn-togli-condiviso" data-id="${a.id}" data-nome="${escHtml(a.nome)}">Togli</button>` : `<button type="button" class="btn-archivia-testo" data-id="${a.id}" data-nome="${a.nome}">Ritira</button>`}
             </span>
           </div>
         `).join('');
@@ -4509,7 +4619,14 @@
     });
     collegaSelectSezione(listaCont);
 
-    listaCont.querySelectorAll('.btn-archivia-testo').forEach(btn => {
+    listaCont.querySelectorAll('.btn-togli-condiviso').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm(`Togliere ${btn.dataset.nome} da ${GRUPPI[currentGruppoId] ? GRUPPI[currentGruppoId].nome : 'questo gruppo'}?\n\nL'atleta resta nel suo gruppo; le presenze già registrate qui restano salvate.`)) return;
+        try{ await updateDoc(doc(db,'atleti', btn.dataset.id), { gruppiExtra: arrayRemove(currentGruppoId), sezione: deleteField() }); }
+        catch(err){ console.error(err); alert('Errore: ' + err.message); }
+      });
+    });
+    listaCont.querySelectorAll('.btn-archivia-testo:not(.btn-togli-condiviso)').forEach(btn => {
       btn.addEventListener('click', async () => {
         const conferma = confirm(`Segnare ${btn.dataset.nome} come ritirato/a?\n\nSparirà da presenze, gara e schede atleti di questo gruppo. Tutto lo storico già registrato resta salvato — puoi ripristinarlo tu stesso da qui in qualsiasi momento.`);
         if(!conferma) return;
@@ -4548,6 +4665,7 @@
 
   document.getElementById('back-to-presenze-from-gestisci').addEventListener('click', () => {
     if(gestisciAtletiUnsub) { gestisciAtletiUnsub(); gestisciAtletiUnsub = null; }
+    if(aggiungiCondivisoUnsub) { aggiungiCondivisoUnsub(); aggiungiCondivisoUnsub = null; }
     showView('view-coach');
   });
 
@@ -4616,7 +4734,7 @@
     if(rosterUnsub) rosterUnsub();
     presenzaMap.clear();
 
-    const q = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
+    const q = qAtletiGruppo(currentGruppoId);
     rosterUnsub = onSnapshot(q, snap => {
       const tuttiAttivi = snap.docs.filter(d => !d.data().archiviato).map(d => ({ id: d.id, nome: d.data().nome, sezione: d.data().sezione || '' })).sort((a,b)=>a.nome.localeCompare(b.nome));
       atletiSenzaSezione = sezioneCorrente ? tuttiAttivi.filter(a => !a.sezione) : [];
@@ -4636,7 +4754,7 @@
     if(reportPresenzeUnsub) reportPresenzeUnsub();
     if(reportRisultatiUnsub) reportRisultatiUnsub();
 
-    const qAtleti = query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId));
+    const qAtleti = qAtletiGruppo(currentGruppoId);
     reportAtletiUnsub = onSnapshot(qAtleti, snap => {
       reportAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato, archiviatoIl: d.data().archiviatoIl || '' }));
       renderReport();
@@ -4712,7 +4830,7 @@
     const gid = currentGruppoId;
     const [sp, sa] = await Promise.all([
       getDocs(query(collection(db,'presenze'), where('gruppoId','==', gid))),
-      getDocs(query(collection(db,'atleti'), where('gruppoId','==', gid)))
+      getDocs(qAtletiGruppo(gid))
     ]);
     exportHomeDati = {
       gruppoId: gid,
@@ -5022,7 +5140,7 @@
     document.getElementById('admin-sezione-nuovi').innerHTML = sezAdmin ? sezAdmin.map(z => `<option value="${z.id}">${z.nome}</option>`).join('') : '';
 
     if(adminRosterUnsub) adminRosterUnsub();
-    const q = query(collection(db,'atleti'), where('gruppoId','==', gruppoId));
+    const q = qAtletiGruppo(gruppoId);
     adminRosterUnsub = onSnapshot(q, snap => {
       adminRosterDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, dataNascita: d.data().dataNascita || '', sezione: d.data().sezione || '', archiviato: !!d.data().archiviato, storicoGruppi: d.data().storicoGruppi || [] })).sort((a,b)=>a.nome.localeCompare(b.nome));
       renderAdminRosterList();
@@ -7920,30 +8038,9 @@
         avviaListenerMessaggiLetture();
         showView('view-admin');
       } else if(dati.ruolo === "allenatore"){
-        currentGruppoId = dati.gruppoId;
-        const g = GRUPPI[dati.gruppoId];
-        document.getElementById('coach-group-name').textContent = g ? g.nome : "Il tuo gruppo";
-        const qConteggio = query(collection(db,'atleti'), where('gruppoId','==', dati.gruppoId));
-        const snapConteggio = await getDocs(qConteggio);
-        const atletiAttiviHome = snapConteggio.docs.filter(d => !d.data().archiviato).map(d => ({ nome: d.data().nome }));
-        document.getElementById('coach-group-sub').textContent = g ? `${g.coach} · ${atletiAttiviHome.length} atleti` : "";
-        const senzaAllenamenti = gruppoSenzaAllenamenti(g);
-        if(!senzaAllenamenti) avviaUltimoAllenamento(dati.gruppoId);
-        // La scheda atleta è in fase di test: visibile solo al gruppo Cadetti
-        const schedeAttive = !!(g && g.nome === 'Cadetti');
-        document.getElementById('card-schede').style.display = schedeAttive ? '' : 'none';
-        document.querySelector('.griglia-azioni').classList.toggle('tre-card', !schedeAttive);
-        const sezHome = sezioniGruppo(dati.gruppoId);
-        document.getElementById('card-presenze').style.display = (senzaAllenamenti || sezHome) ? 'none' : '';
-        document.getElementById('card-risultati').style.display = sezHome ? 'none' : '';   // CAS: niente gare
-        document.getElementById('presenze-cas-cards').style.display = (sezHome && !senzaAllenamenti) ? '' : 'none';
-        aggiornaCoachCardCas();
-        const mostraExportHome = !!(sezHome && !senzaAllenamenti);
-        document.getElementById('home-export-cas').style.display = mostraExportHome ? '' : 'none';
-        if(mostraExportHome){ popolaMesiExport('home-'); caricaXLSX().catch(() => {}); }
-        document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
-        renderMessaggiCoach();
-        showView('view-coach');
+        gruppoHomeId = dati.gruppoId;
+        gruppoCondivisoUtente = (dati.gruppoCondiviso && GRUPPI[dati.gruppoCondiviso]) ? dati.gruppoCondiviso : null;
+        await mostraHomeCoach(dati.gruppoId);
       } else {
         showView('view-unconfigured');
       }
@@ -8213,11 +8310,6 @@
   // --- Navigazione Registra presenze ---
   document.getElementById('card-risultati').addEventListener('click', apriRisultati);
   document.getElementById('card-presenze').addEventListener('click', () => apriPresenze());
-  ['cas123','cas45'].forEach(id => {
-    const el = document.getElementById('card-presenze-' + id);
-    el.addEventListener('click', () => apriPresenze(id));
-    el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriPresenze(id); } });
-  });
   const apriReportSocieta = () => { pulisciStampaSocieta(); popolaPeriodoSelect(); showView('view-report-societa'); renderReportSocieta(); window.scrollTo(0, 0); };
   document.getElementById('riga-report-societa').addEventListener('click', apriReportSocieta);
   document.getElementById('riga-report-societa').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriReportSocieta(); } });
