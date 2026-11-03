@@ -1960,21 +1960,26 @@
         </div>
       </div>
 
-      <!-- Esporta presenze in Excel: per i gruppi a sezioni (CAS) sta qui, non nel report -->
-      <div class="report-section" id="home-export-cas" style="display:none; padding:14px 16px; margin-bottom:20px;">
-        <div style="font-weight:600; margin-bottom:8px;">📤 Esporta presenze (Excel)</div>
-        <p class="sub" style="margin:0 0 10px; font-size:12.5px;">Un file per sezione, con il totale dei giorni di presenza e il dettaglio giorno per giorno del mese, da condividere con la società.</p>
-        <div class="fisico-campo" id="home-export-sezione-campo" style="margin-bottom:10px; display:none;">
-          <label for="home-export-sezione">File da esportare</label>
-          <select id="home-export-sezione"></select>
+      <!-- Esporta presenze in Excel: per i gruppi a sezioni (CAS) sta qui, in una tendina, non nel report -->
+      <details class="report-section" id="home-export-cas" style="display:none; margin-bottom:20px;">
+        <summary>📤 Esporta presenze (Excel)</summary>
+        <div style="padding:2px 0 14px;">
+          <p class="sub" style="margin:0 0 10px; font-size:12.5px;">Un file per sezione, con il totale dei giorni di presenza e il dettaglio giorno per giorno del mese. Puoi condividerlo (WhatsApp, email…) oppure scaricarlo.</p>
+          <div class="fisico-campo" id="home-export-sezione-campo" style="margin-bottom:10px; display:none;">
+            <label for="home-export-sezione">File da esportare</label>
+            <select id="home-export-sezione"></select>
+          </div>
+          <div class="fisico-campo" style="margin-bottom:10px;">
+            <label for="home-export-mese">Mese</label>
+            <select id="home-export-mese"></select>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn-primary" id="home-export-excel-btn" style="flex:1; width:auto;">📤 Condividi</button>
+            <button type="button" class="btn-secondary" id="home-export-scarica-btn" style="flex:1; width:auto;">⬇️ Scarica</button>
+          </div>
+          <p class="save-feedback" id="home-export-feedback" style="min-height:18px; margin:8px 0 0;"></p>
         </div>
-        <div class="fisico-campo" style="margin-bottom:10px;">
-          <label for="home-export-mese">Mese</label>
-          <select id="home-export-mese"></select>
-        </div>
-        <button type="button" class="btn-primary" id="home-export-excel-btn" style="width:100%;">Esporta e condividi</button>
-        <p class="save-feedback" id="home-export-feedback" style="min-height:18px; margin:8px 0 0;"></p>
-      </div>
+      </details>
 
       <div class="foglio-batteria griglia-azioni">
         <div class="corsia c-gara" id="card-risultati">
@@ -3452,6 +3457,8 @@
   function showView(id){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    const tendinaExport = document.getElementById('home-export-cas');
+    if(tendinaExport) tendinaExport.open = false;   // alla riapertura i dati dell'export si rileggono
     if(id === 'view-admin'){
       document.getElementById('view-admin').querySelectorAll('details').forEach(d => d.removeAttribute('open'));
       squadreGruppoSelezionato = '';
@@ -4698,24 +4705,39 @@
     });
   }
 
-  async function esportaPresenzeExcel(pref = ''){
+  // Home (CAS): dati letti all'apertura della tendina e tenuti qui, così al tocco di "Condividi"
+  // non si aspetta più la rete (altrimenti iPhone/Android rifiutano la condivisione e si ricade sul download).
+  let exportHomeDati = null;
+  async function caricaDatiExportHome(){
+    const gid = currentGruppoId;
+    const [sp, sa] = await Promise.all([
+      getDocs(query(collection(db,'presenze'), where('gruppoId','==', gid))),
+      getDocs(query(collection(db,'atleti'), where('gruppoId','==', gid)))
+    ]);
+    exportHomeDati = {
+      gruppoId: gid,
+      sessioni: sp.docs.map(d => d.data()),
+      atleti: sa.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato }))
+    };
+  }
+
+  // pref: '' = report del gruppo, 'home-' = tendina nella home (CAS)
+  // modo: 'auto' (condivide se può, altrimenti scarica: report) | 'condividi' | 'scarica'
+  async function esportaPresenzeExcel(pref = '', modo = 'auto'){
     const fb = document.getElementById(pref + 'export-feedback');
-    const btn = document.getElementById(pref + 'export-excel-btn');
+    const bottoni = ['export-excel-btn', 'export-scarica-btn'].map(i => document.getElementById(pref + i)).filter(Boolean);
     const mese = document.getElementById(pref + 'export-mese').value;
     const g = GRUPPI[currentGruppoId];
     const sezDef = sezioniGruppo(currentGruppoId);
-    btn.disabled = true; fb.textContent = 'Preparo il file…';
+    bottoni.forEach(b => b.disabled = true); fb.textContent = 'Preparo il file…';
     try{
-      await caricaXLSX();
-      // Nel report i dati sono già in memoria; dalla home li leggo ora (solo al click)
+      if(!window.XLSX) await caricaXLSX();
+      // Nel report i dati sono già in memoria; nella home sono quelli letti all'apertura della tendina
       let sessioniDati = reportSessioni, atletiDati = reportAtletiDocs;
       if(pref){
-        const [sp, sa] = await Promise.all([
-          getDocs(query(collection(db,'presenze'), where('gruppoId','==', currentGruppoId))),
-          getDocs(query(collection(db,'atleti'), where('gruppoId','==', currentGruppoId)))
-        ]);
-        sessioniDati = sp.docs.map(d => d.data());
-        atletiDati = sa.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato }));
+        if(!exportHomeDati || exportHomeDati.gruppoId !== currentGruppoId) await caricaDatiExportHome();
+        sessioniDati = exportHomeDati.sessioni;
+        atletiDati = exportHomeDati.atleti;
       }
       const [anno, mm] = mese.split('-').map(Number);
       const meseTesto = `${MESI_ESTESI[mm - 1]} ${anno}`;
@@ -4784,15 +4806,21 @@
       const creati = sezioni.map(creaFile);
       const titolo = `Presenze ${nomeGruppo} — ${meseTesto}`;
 
-      if(navigator.canShare && navigator.canShare({ files: creati.map(c => c.file) })){
-        try{
-          await navigator.share({ files: creati.map(c => c.file), title: titolo });
-          fb.textContent = creati.length > 1 ? `${creati.length} file pronti ✓` : 'File pronto ✓';
-          return;
-        } catch(e){
-          if(e && e.name === 'AbortError'){ fb.textContent = ''; return; }
-          // altro errore di condivisione: ripiego sul download
+      let motivoDownload = '';
+      if(modo !== 'scarica'){
+        if(navigator.canShare && navigator.canShare({ files: creati.map(c => c.file) })){
+          try{
+            await navigator.share({ files: creati.map(c => c.file), title: titolo });
+            fb.textContent = creati.length > 1 ? `${creati.length} file condivisi ✓` : 'File condiviso ✓';
+            return;
+          } catch(e){
+            if(e && e.name === 'AbortError'){ fb.textContent = ''; return; }
+            motivoDownload = 'Condivisione non riuscita: ';   // altro errore: ripiego sul download
+          }
+        } else {
+          motivoDownload = 'Condivisione non disponibile su questo dispositivo: ';
         }
+        if(modo === 'auto') motivoDownload = '';
       }
       for(let i = 0; i < creati.length; i++){
         const url = URL.createObjectURL(creati[i].blob);
@@ -4802,16 +4830,34 @@
         setTimeout(() => URL.revokeObjectURL(url), 5000);
         if(i < creati.length - 1) await new Promise(r => setTimeout(r, 500));
       }
-      fb.textContent = creati.length > 1 ? `${creati.length} file scaricati ✓ (cerca nei Download)` : 'File scaricato ✓ (cerca nei Download)';
+      fb.textContent = motivoDownload + (creati.length > 1 ? `${creati.length} file scaricati ✓ (cerca nei Download)` : 'File scaricato ✓ (cerca nei Download)');
     } catch(err){
       console.error(err);
       fb.textContent = 'Errore: ' + err.message;
     } finally {
-      btn.disabled = false;
+      bottoni.forEach(b => b.disabled = false);
     }
   }
-  document.getElementById('export-excel-btn').addEventListener('click', () => esportaPresenzeExcel(''));
-  document.getElementById('home-export-excel-btn').addEventListener('click', () => esportaPresenzeExcel('home-'));
+  document.getElementById('export-excel-btn').addEventListener('click', () => esportaPresenzeExcel('', 'auto'));
+  document.getElementById('home-export-excel-btn').addEventListener('click', () => esportaPresenzeExcel('home-', 'condividi'));
+  document.getElementById('home-export-scarica-btn').addEventListener('click', () => esportaPresenzeExcel('home-', 'scarica'));
+
+  // Aprendo la tendina: preparo libreria e dati (i pulsanti restano spenti finché non sono pronti)
+  document.getElementById('home-export-cas').addEventListener('toggle', async e => {
+    if(!e.target.open) return;
+    const fb = document.getElementById('home-export-feedback');
+    const bottoni = ['home-export-excel-btn', 'home-export-scarica-btn'].map(i => document.getElementById(i));
+    bottoni.forEach(b => b.disabled = true); fb.textContent = 'Carico i dati…';
+    try{
+      await Promise.all([window.XLSX ? Promise.resolve() : caricaXLSX(), caricaDatiExportHome()]);
+      fb.textContent = '';
+    } catch(err){
+      console.error(err);
+      fb.textContent = 'Errore: ' + err.message;
+    } finally {
+      bottoni.forEach(b => b.disabled = false);
+    }
+  });
 
   function calcolaReport(){
     const sessioni = reportSessioni.filter(x => inAnnoCorrente(x.data));
