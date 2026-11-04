@@ -4149,7 +4149,7 @@
             <p style="font-size:14px; margin:0;"><strong>${atletiGruppo.length}</strong> <span style="color:var(--text-dim);">atleti in totale</span></p>
             ${blocchi}${blocco3}
           </div>
-          ${isSocietaConScrittura() ? `
+          ${isSocietaConScrittura() && !isGruppoCondiviso(id) ? `
             <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-bottom:16px;">
               👥 Gestisci atleti ${g.nome}
             </button>
@@ -4233,7 +4233,7 @@
             ${elencoHtml}
           </div>
         </div>
-        ${isSocietaConScrittura() ? `
+        ${isSocietaConScrittura() && !isGruppoCondiviso(id) ? `
           <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-bottom:16px;">
             👥 Gestisci atleti ${g.nome}
           </button>
