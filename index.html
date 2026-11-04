@@ -4297,7 +4297,7 @@
     document.getElementById('presenze-cas-cards').style.display = (sezHome && !senzaAllenamenti) ? '' : 'none';
     renderCardsSezioni();
     aggiornaCoachCardCas();
-    const mostraExportHome = !!(sezHome && !senzaAllenamenti);
+    const mostraExportHome = !!(sezHome && !senzaAllenamenti && !isGruppoCondiviso(currentGruppoId));   // niente esportazione per Concorsi salti
     document.getElementById('home-export-cas').style.display = mostraExportHome ? '' : 'none';
     if(mostraExportHome){ popolaMesiExport('home-'); caricaXLSX().catch(() => {}); }
     document.querySelector('.griglia-azioni').classList.toggle('senza-allenamenti', senzaAllenamenti);
@@ -8582,6 +8582,7 @@
     const input = document.getElementById('admin-nuovo-atleta');
     const nome = input.value.trim();
     if(!nome) return;
+    if(isGruppoCondiviso(adminRosterGruppoId)){ alert("Concorsi salti non ha atleti propri: gli atleti restano nel loro gruppo. Aggiungi l'atleta al suo gruppo e poi, da Gestisci atleti di Concorsi salti, usa 'Aggiungi dal tuo gruppo'."); return; }
     const dati = { gruppoId: adminRosterGruppoId, nome };
     if(sezioniGruppo(adminRosterGruppoId)) dati.sezione = document.getElementById('admin-sezione-nuovi').value;
     await addDoc(collection(db,'atleti'), { ...dati, creatoIl: dataLocaleISO(new Date()) });
@@ -8596,6 +8597,7 @@
       feedback.textContent = "Scrivi almeno un nome.";
       return;
     }
+    if(isGruppoCondiviso(adminRosterGruppoId)){ alert("Concorsi salti non ha atleti propri: gli atleti restano nel loro gruppo. Aggiungi l'atleta al suo gruppo e poi, da Gestisci atleti di Concorsi salti, usa 'Aggiungi dal tuo gruppo'."); return; }
     const btn = this;
     btn.disabled = true;
     feedback.textContent = "Aggiunta in corso…";
@@ -8863,6 +8865,7 @@
     const input = document.getElementById('nuovo-atleta');
     const nome = input.value.trim();
     if(!nome) return;
+    if(isGruppoCondiviso(currentGruppoId)){ alert("Concorsi salti non ha atleti propri: gli atleti restano nel loro gruppo. Aggiungi l'atleta al suo gruppo e poi, da Gestisci atleti di Concorsi salti, usa 'Aggiungi dal tuo gruppo'."); return; }
     await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome, ...(sezioneCorrente ? { sezione: sezioneCorrente } : {}), creatoIl: dataLocaleISO(new Date()) });
     input.value = "";
   });
