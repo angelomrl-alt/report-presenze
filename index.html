@@ -4514,7 +4514,9 @@
     }
 
     if(rosterDocs.length === 0){
-      list.innerHTML = '<div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>';
+      list.innerHTML = isGruppoCondiviso(currentGruppoId)
+        ? '<div class="roster-empty">Nessun atleta in questa sezione. Aggiungili da Gestisci atleti.</div>'
+        : '<div class="roster-empty">Nessun atleta ancora. Aggiungine uno qui sotto.</div>';
       return;
     }
     list.innerHTML = rosterDocs.map(a => {
@@ -4730,6 +4732,8 @@
     document.getElementById('save-feedback').textContent = "";
     presenzeDocIdAttuale = null;
     document.getElementById('presenze-esistente-banner').style.display = 'none';
+    // Concorsi salti: gli atleti non si creano qui (si aggiungono da Gestisci atleti, dal proprio gruppo)
+    document.getElementById('add-atleta-form').style.display = isGruppoCondiviso(currentGruppoId) ? 'none' : '';
 
     if(rosterUnsub) rosterUnsub();
     presenzaMap.clear();
