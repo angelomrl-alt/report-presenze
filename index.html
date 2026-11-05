@@ -1866,6 +1866,14 @@
   .nota-testo{font-size:13.5px; line-height:1.5; white-space:pre-wrap;}
   .nuova-nota textarea{width:100%; min-height:50px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:'Inter',sans-serif; resize:vertical; margin-top:10px;}
 
+    .pt-lista{display:grid; gap:2px;}
+  .pt-riga{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(40px,1fr) auto; align-items:center; gap:10px; min-height:40px; padding:4px 0; border-bottom:1px solid var(--border); font-size:13.5px;}
+  .pt-riga:last-child{border-bottom:0;}
+  .pt-nome{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pt-barra{height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden;}
+  .pt-barra i{display:block; height:100%; background:var(--primary); border-radius:3px;}
+  .pt-num{font-weight:700; text-align:right; white-space:nowrap;}
+  .pt-num small{font-weight:500; color:var(--text-dim);}
   /* ===== Layout B: cruscotto (società) + intestazione a fascia (allenatore) ===== */
   #view-admin main{padding-bottom:104px;}
   #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:10px;}
@@ -2202,6 +2210,11 @@
         <button type="button" class="btn-primary" id="export-excel-btn" style="width:100%;">Esporta e condividi</button>
         <p class="save-feedback" id="export-feedback" style="min-height:18px; margin:8px 0 0;"></p>
       </div>
+
+      <details class="report-section" id="report-sez-totali">
+        <summary class="report-summary-flex"><span>📋 Presenze totali per atleta</span><span class="report-summary-num"><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
+        <div id="pt-corpo" style="padding-top:8px;"></div>
+      </details>
 
       <details class="report-section" id="report-sez-atleta">
         <summary class="report-summary-flex"><span>👤 Presenze per atleta</span><span class="report-summary-num"><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6l6-6"/></svg></span></summary>
@@ -4186,6 +4199,18 @@
         a.archiviato && a.archiviatoIl && a.archiviatoIl >= rangeStagioneGruppo.inizio && a.archiviatoIl <= rangeStagioneGruppo.fine
       ).length;
 
+      // Presenze totali (anno in corso) di ogni atleta attivo del gruppo
+      const cardPresenzeAtleti = (conPerc) => {
+        const m = contiAllenamentiAtleta[id] || new Map();
+        const tot = conteggiAllenamenti[id] || 0;
+        const righe = atletiGruppo.map(a => ({ nome: a.nome, n: m.get(a.nome) || 0 })).sort((x,y) => y.n - x.n || x.nome.localeCompare(y.nome));
+        const max = conPerc ? Math.max(1, tot) : Math.max(1, ...righe.map(r => r.n));
+        return `<div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+          <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">📋 Presenze per atleta · ${new Date().getFullYear()}${conPerc ? ` · ${tot} allenamenti` : ''}</p>
+          ${righe.length === 0 ? '<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta nel gruppo.</p>' : `<div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.n / max * 100)}%"></i></span><span class="pt-num">${r.n}${conPerc && tot > 0 ? ` <small>· ${Math.round(r.n / tot * 100)}%</small>` : ''}</span></div>`).join('')}</div>`}
+        </div>`;
+      };
+
       // Gruppo a sezioni (CAS): solo numero di atleti per sezione + Gestisci atleti (niente allenamenti, gare, certificati, presenze, podi)
       const sezioniDettaglio = sezioniGruppo(id);
       if(sezioniDettaglio){
@@ -4211,6 +4236,7 @@
           <div style="display:grid; gap:12px; margin:16px 0;">
             <p style="font-size:14px; margin:0;"><strong>${atletiGruppo.length}</strong> <span style="color:var(--text-dim);">atleti in totale</span></p>
             ${blocchi}${blocco3}
+            ${cardPresenzeAtleti(false)}
           </div>
           ${isSocietaConScrittura() && !isGruppoCondiviso(id) ? `
             <button type="button" class="btn-secondary gruppo-gestisci-btn" data-gruppo="${id}" style="margin-bottom:16px;">
@@ -4285,6 +4311,7 @@
             <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">🏆 Più presenti agli allenamenti</p>
             ${podioHtml}
           </div>
+          ${cardPresenzeAtleti(true)}
           <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
             <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">🥇 Podi in gara</p>
             ${podioMedaglieHtml}
@@ -7953,7 +7980,29 @@
     return `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}`;
   }
 
+  // Totali dell'anno in corso per ogni atleta attivo del gruppo: presenze, allenamenti registrati, percentuale
+  function renderTotaliPresenze(){
+    const corpo = document.getElementById('pt-corpo');
+    if(!corpo) return;
+    const perGiorno = new Map();   // più sezioni nello stesso giorno -> un solo allenamento
+    reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && inAnnoCorrente(x.data)).forEach(x => {
+      const m = perGiorno.get(x.data) || { presenti: new Set(), assenti: new Set() };
+      (x.presenti || []).forEach(n => m.presenti.add(n)); (x.assenti || []).forEach(n => m.assenti.add(n));
+      perGiorno.set(x.data, m);
+    });
+    const righe = reportAtletiDocs.filter(a => !a.archiviato).map(a => {
+      let P = 0, R = 0;
+      perGiorno.forEach(m => { if(m.presenti.has(a.nome)){ P++; R++; } else if(m.assenti.has(a.nome)){ R++; } });
+      return { nome: a.nome, P, R, perc: R > 0 ? Math.round(P / R * 100) : null };
+    }).sort((x,y) => y.P - x.P || x.nome.localeCompare(y.nome));
+    if(righe.length === 0){ corpo.innerHTML = '<p class="empty-note">Nessun atleta nel gruppo.</p>'; return; }
+    const max = Math.max(1, ...righe.map(r => r.P));
+    corpo.innerHTML = `<p class="sub" style="font-size:12.5px; margin:0 0 6px;">Allenamenti ${new Date().getFullYear()} · ${perGiorno.size} registrat${perGiorno.size === 1 ? 'o' : 'i'}</p>
+      <div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.P / max * 100)}%"></i></span><span class="pt-num">${r.P}${r.perc !== null ? ` <small>· ${r.perc}%</small>` : ''}</span></div>`).join('')}</div>`;
+  }
+
   function renderPresenzeAtleta(){
+    renderTotaliPresenze();
     const sel = document.getElementById('pa-atleta');
     if(!sel) return;
     if(!paMese) paMese = meseCorrentePA();
