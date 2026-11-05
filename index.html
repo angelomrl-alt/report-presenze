@@ -4500,16 +4500,53 @@
     if(!box) return;
     const g = GRUPPI[currentGruppoId];
     const giorni = (g && Array.isArray(g.giorniAllenamento)) ? g.giorniAllenamento : [];
-    if(currentRuolo !== 'allenatore' || !presenzeCaricate || !g || gruppoSenzaAllenamenti(g) || giorni.length === 0){
+    const perSezione = isGruppoCondiviso(currentGruppoId);
+    const senzaGiorni = perSezione ? !Object.values((g && g.sezioniGiorni) || {}).some(a => Array.isArray(a) && a.length) : giorni.length === 0;
+    if(currentRuolo !== 'allenatore' || !presenzeCaricate || !g || gruppoSenzaAllenamenti(g) || senzaGiorni){
       box.style.display = 'none';
       return;
     }
-    const mancanti = dateDaRegistrare(giorni, dateAllenamentiRegistrate, leggiSaltate(currentGruppoId));
-    if(mancanti.length === 0){ box.style.display = 'none'; return; }
     const etichetta = iso => {
       const t = new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'short' });
       return t.charAt(0).toUpperCase() + t.slice(1);
     };
+    const collegaAvviso = () => {
+      box.querySelectorAll('.ap-registra').forEach(b => b.addEventListener('click', () => {
+        apriPresenze(b.dataset.sez || null);
+        const campo = document.getElementById('presenze-data');
+        campo.value = b.dataset.data;
+        campo.dispatchEvent(new Event('input'));
+      }));
+      box.querySelectorAll('.ap-salta').forEach(b => b.addEventListener('click', () => {
+        salvaSaltata(currentGruppoId + (b.dataset.sez ? '#' + b.dataset.sez : ''), b.dataset.data);
+        aggiornaAvvisoPresenze();
+      }));
+    };
+    if(perSezione){
+      // Concorsi salti: ogni sezione ha i suoi giorni di allenamento
+      const voci = [];
+      (sezioniGruppo(currentGruppoId) || []).forEach(z => {
+        const gz = (g.sezioniGiorni && Array.isArray(g.sezioniGiorni[z.id])) ? g.sezioniGiorni[z.id] : [];
+        if(gz.length === 0) return;
+        const reg = new Set(Array.from(sezioniRegistratePerData.entries()).filter(([, set]) => set.has(z.id)).map(([d]) => d));
+        dateDaRegistrare(gz, reg, leggiSaltate(currentGruppoId + '#' + z.id)).forEach(iso => voci.push({ iso, z }));
+      });
+      if(voci.length === 0){ box.style.display = 'none'; return; }
+      voci.sort((a,b) => b.iso.localeCompare(a.iso) || a.z.nome.localeCompare(b.z.nome));
+      box.innerHTML = `<div class="ap-titolo">⏰ Presenze da registrare</div>` + voci.map(v => `
+        <div class="ap-riga">
+          <span>${etichetta(v.iso)} · ${escHtml(v.z.nome)}</span>
+          <span class="ap-azioni">
+            <button type="button" class="ap-registra" data-data="${v.iso}" data-sez="${v.z.id}">Registra</button>
+            <button type="button" class="ap-salta" data-data="${v.iso}" data-sez="${v.z.id}">Non c'è stato</button>
+          </span>
+        </div>`).join('');
+      box.style.display = '';
+      collegaAvviso();
+      return;
+    }
+    const mancanti = dateDaRegistrare(giorni, dateAllenamentiRegistrate, leggiSaltate(currentGruppoId));
+    if(mancanti.length === 0){ box.style.display = 'none'; return; }
     const sezAvviso = sezioniGruppo(currentGruppoId);
     const bottoniRegistra = iso => sezAvviso
       ? sezAvviso.filter(z => !(sezioniRegistratePerData.get(iso) || new Set()).has(z.id))
@@ -4524,16 +4561,7 @@
         </span>
       </div>`).join('');
     box.style.display = '';
-    box.querySelectorAll('.ap-registra').forEach(b => b.addEventListener('click', () => {
-      apriPresenze(b.dataset.sez || null);
-      const campo = document.getElementById('presenze-data');
-      campo.value = b.dataset.data;
-      campo.dispatchEvent(new Event('input'));
-    }));
-    box.querySelectorAll('.ap-salta').forEach(b => b.addEventListener('click', () => {
-      salvaSaltata(currentGruppoId, b.dataset.data);
-      aggiornaAvvisoPresenze();
-    }));
+    collegaAvviso();
   }
 
   // Riga "Ultimo allenamento" sulla card Registra presenze (si aggiorna da sola)
@@ -5371,7 +5399,14 @@
       const consentite = g.disciplineConsentite || [];
       const giorniGruppo = Array.isArray(g.giorniAllenamento) ? g.giorniAllenamento : [];
       const nomiGiorni = { 1:'Lun', 2:'Mar', 3:'Mer', 4:'Gio', 5:'Ven', 6:'Sab', 0:'Dom' };
-      const testoGiorni = giorniGruppo.length ? '(' + [1,2,3,4,5,6,0].filter(n => giorniGruppo.includes(n)).map(n => nomiGiorni[n]).join(', ') + ')' : '(nessuno)';
+      const sezG = isGruppoCondiviso(id) ? sezioniGruppo(id) : null;   // Concorsi salti: giorni diversi per ogni sezione
+      const giorniSez = z => (g.sezioniGiorni && Array.isArray(g.sezioniGiorni[z.id])) ? g.sezioniGiorni[z.id] : [];
+      const testoGiorni = sezG
+        ? '(' + sezG.map(z => z.nome + ': ' + (giorniSez(z).length ? [1,2,3,4,5,6,0].filter(n => giorniSez(z).includes(n)).map(n => nomiGiorni[n]).join(', ') : 'nessuno')).join(' · ') + ')'
+        : (giorniGruppo.length ? '(' + [1,2,3,4,5,6,0].filter(n => giorniGruppo.includes(n)).map(n => nomiGiorni[n]).join(', ') + ')' : '(nessuno)');
+      const giorniHtml = sezG
+        ? sezG.map(z => `<div data-sez-giorni="${z.id}" style="margin:0 0 12px; padding-left:10px; border-left:5px solid ${z.colore};"><p class="bulk-label" style="margin:0 0 6px; font-weight:700;">${escHtml(z.nome)}</p><div class="giorni-check">${[1,2,3,4,5,6,0].map(n => `<label class="gruppo-check-label"><input type="checkbox" value="${n}" class="giorno-input" ${giorniSez(z).includes(n) ? 'checked' : ''}>${nomiGiorni[n]}</label>`).join('')}</div></div>`).join('')
+        : `<div class="giorni-check">${checkboxesGiorni}</div>`;
       const checkboxesGiorni = [1,2,3,4,5,6,0].map(n => `
         <label class="gruppo-check-label">
           <input type="checkbox" value="${n}" class="giorno-input" ${giorniGruppo.includes(n) ? 'checked' : ''}>
@@ -5416,7 +5451,7 @@
           </button>
           <div class="gruppo-giorni-panel" id="ggiorni-${id}" style="display:none; padding:12px 0;">
             <p class="bulk-label">Se l'allenatore non registra le presenze di uno di questi giorni, nella sua home compare un avviso. Lascia vuoto per non avere avvisi.</p>
-            <div class="giorni-check">${checkboxesGiorni}</div>
+            ${giorniHtml}
             <button type="button" class="btn-secondary g-giorni-save" data-id="${id}" style="margin-top:10px;">Salva giorni</button>
             <span class="save-feedback g-giorni-feedback" data-id="${id}"></span>
           </div>
@@ -5477,9 +5512,16 @@
         const panel = document.getElementById('ggiorni-' + id);
         const feedback = panel.querySelector('.g-giorni-feedback');
         const scelti = Array.from(panel.querySelectorAll('.giorno-input:checked')).map(c => parseInt(c.value, 10));
+        const blocchiSez = panel.querySelectorAll('[data-sez-giorni]');
+        let payloadGiorni = { giorniAllenamento: scelti };
+        if(blocchiSez.length){
+          const mappa = {};
+          blocchiSez.forEach(bl => { mappa[bl.dataset.sezGiorni] = Array.from(bl.querySelectorAll('.giorno-input:checked')).map(c => parseInt(c.value, 10)); });
+          payloadGiorni = { sezioniGiorni: mappa };
+        }
         feedback.textContent = "Salvataggio in corso…";
         try{
-          await updateDoc(doc(db,'gruppi', id), { giorniAllenamento: scelti });
+          await updateDoc(doc(db,'gruppi', id), payloadGiorni);
           feedback.textContent = "Salvato ✓";
         } catch(err){
           console.error('Errore salvataggio giorniAllenamento:', err);
