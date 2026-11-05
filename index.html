@@ -5404,14 +5404,14 @@
       const testoGiorni = sezG
         ? '(' + sezG.map(z => z.nome + ': ' + (giorniSez(z).length ? [1,2,3,4,5,6,0].filter(n => giorniSez(z).includes(n)).map(n => nomiGiorni[n]).join(', ') : 'nessuno')).join(' · ') + ')'
         : (giorniGruppo.length ? '(' + [1,2,3,4,5,6,0].filter(n => giorniGruppo.includes(n)).map(n => nomiGiorni[n]).join(', ') + ')' : '(nessuno)');
-      const giorniHtml = sezG
-        ? sezG.map(z => `<div data-sez-giorni="${z.id}" style="margin:0 0 12px; padding-left:10px; border-left:5px solid ${z.colore};"><p class="bulk-label" style="margin:0 0 6px; font-weight:700;">${escHtml(z.nome)}</p><div class="giorni-check">${[1,2,3,4,5,6,0].map(n => `<label class="gruppo-check-label"><input type="checkbox" value="${n}" class="giorno-input" ${giorniSez(z).includes(n) ? 'checked' : ''}>${nomiGiorni[n]}</label>`).join('')}</div></div>`).join('')
-        : `<div class="giorni-check">${checkboxesGiorni}</div>`;
       const checkboxesGiorni = [1,2,3,4,5,6,0].map(n => `
         <label class="gruppo-check-label">
           <input type="checkbox" value="${n}" class="giorno-input" ${giorniGruppo.includes(n) ? 'checked' : ''}>
           ${nomiGiorni[n]}
         </label>`).join('');
+      const giorniHtml = sezG
+        ? sezG.map(z => `<div data-sez-giorni="${z.id}" style="margin:0 0 12px; padding-left:10px; border-left:5px solid ${z.colore};"><p class="bulk-label" style="margin:0 0 6px; font-weight:700;">${escHtml(z.nome)}</p><div class="giorni-check">${[1,2,3,4,5,6,0].map(n => `<label class="gruppo-check-label"><input type="checkbox" value="${n}" class="giorno-input" ${giorniSez(z).includes(n) ? 'checked' : ''}>${nomiGiorni[n]}</label>`).join('')}</div></div>`).join('')
+        : `<div class="giorni-check">${checkboxesGiorni}</div>`;
       const checkboxesDiscipline = discipline.map(nome => `
         <label class="gruppo-check-label">
           <input type="checkbox" value="${nome}" class="disc-allow-input" ${consentite.includes(nome) ? 'checked' : ''}>
