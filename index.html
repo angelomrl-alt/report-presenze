@@ -3878,9 +3878,14 @@
 
     const conteggiAllenamenti = {};
     const contiAllenamentiAtleta = {}; // gruppoId -> Map(nome -> conteggio)
+    const giorniAtleta = new Map();    // 'gruppoId|nome' -> { P:Set(date), R:Set(date) }: giorni di presenza / registrati
     docsPresenze.forEach(d => {
       const p = d.data();
       if(p.tipo !== 'allenamento') return;
+      if(p.data){
+        (p.presenti || []).forEach(n => { const r = giorniAtleta.get(p.gruppoId + '|' + n) || { P:new Set(), R:new Set() }; r.P.add(p.data); r.R.add(p.data); giorniAtleta.set(p.gruppoId + '|' + n, r); });
+        (p.assenti || []).forEach(n => { const r = giorniAtleta.get(p.gruppoId + '|' + n) || { P:new Set(), R:new Set() }; r.R.add(p.data); giorniAtleta.set(p.gruppoId + '|' + n, r); });
+      }
       conteggiAllenamenti[p.gruppoId] = (conteggiAllenamenti[p.gruppoId] || 0) + 1;
       if(!p.presenti) return;
       if(!contiAllenamentiAtleta[p.gruppoId]) contiAllenamentiAtleta[p.gruppoId] = new Map();
@@ -4200,14 +4205,19 @@
       ).length;
 
       // Presenze totali (anno in corso) di ogni atleta attivo del gruppo
-      const cardPresenzeAtleti = (conPerc) => {
-        const m = contiAllenamentiAtleta[id] || new Map();
-        const tot = conteggiAllenamenti[id] || 0;
-        const righe = atletiGruppo.map(a => ({ nome: a.nome, n: m.get(a.nome) || 0 })).sort((x,y) => y.n - x.n || x.nome.localeCompare(y.nome));
-        const max = conPerc ? Math.max(1, tot) : Math.max(1, ...righe.map(r => r.n));
+      const cardPresenzeAtleti = (conExtra) => {
+        const righe = atletiGruppo.map(a => {
+          const base = giorniAtleta.get(id + '|' + a.nome) || { P:new Set(), R:new Set() };
+          const ex = (conExtra && Array.isArray(a.gruppiExtra) && a.gruppiExtra.some(isGruppoCondiviso)) ? giorniAtleta.get(GRUPPO_CONDIVISO_ID + '|' + a.nome) : null;
+          const P = new Set(base.P), R = new Set(base.R);
+          if(ex){ ex.P.forEach(x => P.add(x)); ex.R.forEach(x => R.add(x)); }
+          return { nome: a.nome, P: P.size, R: R.size, extra: !!ex };
+        }).sort((x,y) => y.P - x.P || x.nome.localeCompare(y.nome));
+        const max = Math.max(1, ...righe.map(r => r.P));
+        const conSomma = righe.some(r => r.extra);
         return `<div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
-          <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">📋 Presenze per atleta · ${new Date().getFullYear()}${conPerc ? ` · ${tot} allenamenti` : ''}</p>
-          ${righe.length === 0 ? '<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta nel gruppo.</p>' : `<div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.n / max * 100)}%"></i></span><span class="pt-num">${r.n}${conPerc && tot > 0 ? ` <small>· ${Math.round(r.n / tot * 100)}%</small>` : ''}</span></div>`).join('')}</div>`}
+          <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">📋 Giorni di presenza · ${new Date().getFullYear()}${conSomma ? ' · inclusi Concorsi salti' : ''}</p>
+          ${righe.length === 0 ? '<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta nel gruppo.</p>' : `<div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.P / max * 100)}%"></i></span><span class="pt-num">${r.P}<small> gg${conExtra && r.R > 0 ? ' · ' + Math.round(r.P / r.R * 100) + '%' : ''}</small></span></div>`).join('')}</div>`}
         </div>`;
       };
 
@@ -4852,7 +4862,7 @@
 
     const qAtleti = qAtletiGruppo(currentGruppoId);
     reportAtletiUnsub = onSnapshot(qAtleti, snap => {
-      reportAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', archiviato: !!d.data().archiviato, archiviatoIl: d.data().archiviatoIl || '' }));
+      reportAtletiDocs = snap.docs.map(d => ({ id:d.id, nome:d.data().nome, sezione: d.data().sezione || '', gruppiExtra: d.data().gruppiExtra || [], archiviato: !!d.data().archiviato, archiviatoIl: d.data().archiviatoIl || '' }));
       renderReport();
     });
 
@@ -7980,25 +7990,41 @@
     return `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  // Totali dell'anno in corso per ogni atleta attivo del gruppo: presenze, allenamenti registrati, percentuale
+  // Presenze ai Concorsi salti dei miei atleti (si sommano ai giorni del gruppo di casa)
+  let presenzeCondiviso = [];
+  let condivisoUnsub = null;
+  function avviaPresenzeCondivisoReport(){
+    if(condivisoUnsub || !gruppoCondivisoUtente || currentGruppoId === gruppoCondivisoUtente) return;
+    condivisoUnsub = onSnapshot(query(collection(db,'presenze'), where('gruppoId','==', gruppoCondivisoUtente)),
+      snap => { presenzeCondiviso = snap.docs.map(d => d.data()); renderTotaliPresenze(); },
+      err => { console.error(err); presenzeCondiviso = []; });
+  }
+
+  // Giorni di presenza dell'anno in corso per ogni atleta attivo: giorni distinti (gruppo + Concorsi salti), allenamenti registrati, percentuale
   function renderTotaliPresenze(){
     const corpo = document.getElementById('pt-corpo');
     if(!corpo) return;
-    const perGiorno = new Map();   // più sezioni nello stesso giorno -> un solo allenamento
-    reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && inAnnoCorrente(x.data)).forEach(x => {
-      const m = perGiorno.get(x.data) || { presenti: new Set(), assenti: new Set() };
-      (x.presenti || []).forEach(n => m.presenti.add(n)); (x.assenti || []).forEach(n => m.assenti.add(n));
-      perGiorno.set(x.data, m);
-    });
+    avviaPresenzeCondivisoReport();
+    const usaCondiviso = !!gruppoCondivisoUtente && currentGruppoId !== gruppoCondivisoUtente;
+    const sorgenti = reportSessioni.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && inAnnoCorrente(x.data));
+    const extra = usaCondiviso ? presenzeCondiviso.filter(x => x.tipo === 'allenamento' && typeof x.data === 'string' && inAnnoCorrente(x.data)) : [];
+    const giorni = new Set(sorgenti.map(x => x.data));
     const righe = reportAtletiDocs.filter(a => !a.archiviato).map(a => {
-      let P = 0, R = 0;
-      perGiorno.forEach(m => { if(m.presenti.has(a.nome)){ P++; R++; } else if(m.assenti.has(a.nome)){ R++; } });
-      return { nome: a.nome, P, R, perc: R > 0 ? Math.round(P / R * 100) : null };
+      const P = new Set(), R = new Set();
+      const conta = x => {
+        if((x.presenti || []).includes(a.nome)){ P.add(x.data); R.add(x.data); }
+        else if((x.assenti || []).includes(a.nome)){ R.add(x.data); }
+      };
+      sorgenti.forEach(conta);
+      const nelCondiviso = usaCondiviso && (a.gruppiExtra || []).includes(gruppoCondivisoUtente);
+      if(nelCondiviso) extra.forEach(conta);
+      return { nome: a.nome, P: P.size, R: R.size, perc: R.size > 0 ? Math.round(P.size / R.size * 100) : null, extra: nelCondiviso };
     }).sort((x,y) => y.P - x.P || x.nome.localeCompare(y.nome));
     if(righe.length === 0){ corpo.innerHTML = '<p class="empty-note">Nessun atleta nel gruppo.</p>'; return; }
     const max = Math.max(1, ...righe.map(r => r.P));
-    corpo.innerHTML = `<p class="sub" style="font-size:12.5px; margin:0 0 6px;">Allenamenti ${new Date().getFullYear()} · ${perGiorno.size} registrat${perGiorno.size === 1 ? 'o' : 'i'}</p>
-      <div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.P / max * 100)}%"></i></span><span class="pt-num">${r.P}${r.perc !== null ? ` <small>· ${r.perc}%</small>` : ''}</span></div>`).join('')}</div>`;
+    const conSomma = righe.some(r => r.extra);
+    corpo.innerHTML = `<p class="sub" style="font-size:12.5px; margin:0 0 6px;">Giorni di presenza ${new Date().getFullYear()} · ${giorni.size} allenament${giorni.size === 1 ? 'o' : 'i'} del gruppo${conSomma ? ' · includono i Concorsi salti' : ''}</p>
+      <div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.P / max * 100)}%"></i></span><span class="pt-num">${r.P}<small> gg${r.perc !== null ? ' · ' + r.perc + '%' : ''}</small></span></div>`).join('')}</div>`;
   }
 
   function renderPresenzeAtleta(){
@@ -8157,6 +8183,8 @@
       } else if(dati.ruolo === "allenatore"){
         gruppoHomeId = dati.gruppoId;
         gruppoCondivisoUtente = (dati.gruppoCondiviso && GRUPPI[dati.gruppoCondiviso]) ? dati.gruppoCondiviso : null;
+        if(condivisoUnsub){ condivisoUnsub(); condivisoUnsub = null; }
+        presenzeCondiviso = [];
         await mostraHomeCoach(dati.gruppoId);
       } else {
         showView('view-unconfigured');
