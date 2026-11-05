@@ -3759,7 +3759,7 @@
     }
 
     datiReportSocieta = {
-      anno: anno.anno, atletiAttivi: ctx.atletiAttivi, ritirati: ctx.ritirati, allenamenti: ctx.allenamenti, gare: ctx.gare,
+      anno: anno.anno, atletiOrfani: ctx.atletiOrfani || [], atletiAttivi: ctx.atletiAttivi, ritirati: ctx.ritirati, allenamenti: ctx.allenamenti, gare: ctx.gare,
       oro: ctx.oro, argento: ctx.argento, bronzo: ctx.bronzo, presenzaMedia, nuoviArrivi,
       squadre, mesiPresenza, topMedaglie: topMedaglie.slice(0, 5), spunti,
       podiStorico: ctx.podiStorico || 0, gareStorico: ctx.gareStorico || 0
@@ -3796,6 +3796,7 @@
         <td>${q.allenamenti === null ? '—' : q.allenamenti}</td>
         <td>${q.presenza === null ? '—' : q.presenza + '%'}</td>
         <td>${q.gare}</td><td>${podi(q)}</td></tr>`).join('')}</tbody></table>` +
+      (d.atletiOrfani.length ? `<p class="sub" style="font-size:12px; margin:10px 0 0; color:var(--clay); font-weight:600;">Attenzione: ${d.atletiOrfani.length} atlet${d.atletiOrfani.length===1?'a attivo non appartiene':'i attivi non appartengono'} a nessuna squadra reale, per questo il totale in alto supera la somma delle squadre: ${d.atletiOrfani.slice(0,12).map(o => escHtml(o.nome) + (isGruppoCondiviso(o.gid) ? ' (creato in Concorsi salti)' : ' (gruppo non trovato)')).join(', ')}${d.atletiOrfani.length>12?'…':''}.</p>` : '') +
       (d.squadre.some(q => q.condiviso) ? `<p class="sub" style="font-size:11.5px; margin:8px 0 0;">Tra parentesi: atleti che partecipano a un gruppo condiviso. Sono già contati nei loro gruppi, quindi non si sommano al totale.</p>` : '') +
       (ESCLUSI_PRESENZA_MESE.some(id => GRUPPI[id]) ? `<p class="sub" style="font-size:11.5px; margin:8px 0 0;">Allenamenti e presenza non conteggiati per: ${ESCLUSI_PRESENZA_MESE.filter(id => GRUPPI[id]).map(id => escHtml(GRUPPI[id].nome)).join(', ')}.</p>` : '');
 
@@ -3846,9 +3847,11 @@
 
     const conteggiAtleti = {};
     const atletiPerGruppo = {}; // gruppoId -> [atleta, ...] con tutti i dati (nome, scadenzaCertificato)
+    const atletiOrfani = [];   // attivi che non risultano in nessuna squadra (gruppo inesistente o creati direttamente nel gruppo condiviso)
     snapAtleti.docs.forEach(d => {
       const a = d.data();
       const gid = a.gruppoId;
+      if(!a.archiviato && (!GRUPPI[gid] || isGruppoCondiviso(gid))) atletiOrfani.push({ nome: a.nome || '(senza nome)', gid });
       conteggiAtleti[gid] = (conteggiAtleti[gid] || 0) + 1;
       if(!atletiPerGruppo[gid]) atletiPerGruppo[gid] = [];
       atletiPerGruppo[gid].push(a);
@@ -4162,7 +4165,7 @@
     impostaGraficoConfronto('chart-confronto-gare', mensileGareContiPerGruppo);
 
     costruisciReportSocieta({
-      docsPresenze, atletiPerGruppo, conteggiAllenamenti, conteggiGare, medagliePerGruppoAtleta,
+      docsPresenze, atletiPerGruppo, atletiOrfani, conteggiAllenamenti, conteggiGare, medagliePerGruppoAtleta,
       atletiAttivi: atletiAttiviCount, ritirati: ritiratiStagioneCount, allenamenti: totaleGiorniAllenamento, gare: totaleGare,
       oro, argento, bronzo,
       podiStorico: risultatiStorico.filter(r => [1,2,3].includes(parseInt(r.piazzamento, 10))).length,
