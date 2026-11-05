@@ -2506,7 +2506,7 @@
           <div class="corsia-details-corpo" id="admin-eventi-list"></div>
         </details>
 
-        <details class="corsia-details">
+        <details class="corsia-details" id="corsia-messaggi" style="display:none;">
           <summary class="corsia-summary">
             <span class="corsia-riga" style="background:var(--info);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--info) 14%, var(--surface));">📢</span>
@@ -3059,13 +3059,14 @@
   }
 
   // --- Bacheca messaggi società -> squadre ---
+  const MESSAGGI_ATTIVI = false;   // messaggi società → squadre disattivati (per riattivarli: true e togliere display:none a #corsia-messaggi)
   let messaggiListenerAvviato = false;
   let messaggiDocs = []; // [{id, testo, gruppoId, creatoIl}]
   let messaggiLetture = {}; // gruppoId -> ultimaLettura (ISO string), solo per società
   let messaggiLettureUnsub = null;
 
   function avviaListenerMessaggi(){
-    if(messaggiListenerAvviato) return;
+    if(!MESSAGGI_ATTIVI || messaggiListenerAvviato) return;
     messaggiListenerAvviato = true;
     onSnapshot(collection(db,'messaggi'), snap => {
       messaggiDocs = snap.docs.map(d => ({ id:d.id, ...d.data() }))
@@ -3080,7 +3081,7 @@
   // Solo la società può leggere l'intera collezione messaggiLetture (un allenatore vedrebbe
   // negata l'intera richiesta, perché conterrebbe anche gruppi che non può leggere).
   function avviaListenerMessaggiLetture(){
-    if(messaggiLettureUnsub) return;
+    if(!MESSAGGI_ATTIVI || messaggiLettureUnsub) return;
     messaggiLettureUnsub = onSnapshot(collection(db,'messaggiLetture'), snap => {
       messaggiLetture = {};
       snap.docs.forEach(d => { messaggiLetture[d.id] = d.data().ultimaLettura || ''; });
@@ -8261,13 +8262,7 @@
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
           Riepilogo in una riga con atleti (e ritirati dell'anno), allenamenti e gare; i conteggi ripartono da zero ogni 1° gennaio e i dati vecchi restano salvati. Nel menu Presenze per atleta scegli un atleta e un mese per vedere giorno per giorno se c'era. Con "Esporta presenze (Excel)" scegli il mese e condividi il file con il totale dei giorni di presenza di ogni atleta.
         </p>
-
-        <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi dalla società</h3>
-        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          In home, se la società ha scritto qualcosa (a tutti o solo al tuo gruppo) lo trovi lì, con un puntino se non l'hai ancora letto.
-        </p>
-
-        <h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti del gruppo</h3>
+<h3 style="margin:0 0 8px; font-size:15px;">👥 Gestisci atleti del gruppo</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
           Dalla home, tocca Gestisci atleti: puoi segnare come ritirato un atleta che non fa più parte del gruppo (i suoi dati restano salvati, recuperabili in ogni momento) oppure spostarlo in un'altra squadra.
         </p>
@@ -8284,10 +8279,6 @@
           I 4 numeri in alto sono i totali di tutta la società (con i ritirati dell'anno in corso, se ce ne sono). "Squadre" apre il dettaglio di un gruppo; "Attività e strumenti" raccoglie gare, eventi, messaggi e confronto tra i gruppi.
         </p>
 
-        <h3 style="margin:0 0 8px; font-size:15px;">📢 Messaggi alle squadre</h3>
-        <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
-          Scrivi un avviso a tutti i gruppi o a uno solo. Vedi anche se e quando ogni squadra l'ha letto.
-        </p>
 
         <h3 style="margin:0 0 8px; font-size:15px;">🗂️ Gestisci gruppi</h3>
         <p style="font-size:14px; color:var(--text-dim); line-height:1.6; margin:0 0 16px;">
