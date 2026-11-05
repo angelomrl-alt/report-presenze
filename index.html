@@ -16,20 +16,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg-track:#f3f1ea;
+    --bg-track:#eef1f6;
     --surface:#ffffff;
-    --surface-2:#f1ede3;
+    --surface-2:#e8edf4;
     --primary:#3ecf8e;
     --primary-ink:#0c2018;
     --accent-lane:#f5a623;
-    --text:#1a1f29;
-    --text-dim:#6b6657;
+    --text:#0f172a;
+    --text-dim:#556176;
     --danger:#f4574a;
-    --border:#e4e0d5;
-    --border-strong:#d8d3c5;
-    --border-hover:#c7c0ae;
-    --placeholder:#9c9686;
-    --hover-bg:#ece7da;
+    --border:#dde3ec;
+    --border-strong:#cbd5e3;
+    --border-hover:#b3c0d4;
+    --placeholder:#8793a6;
+    --hover-bg:#e2e8f1;
     --remove-border:#d9b8b0;
     --remove-text:#a8554a;
     --cert-banner-text:#8a3a30;
@@ -40,6 +40,8 @@
     --c-salti:#f472b6;
     --clay:#c0432f;
     --info:#5b8def;
+    --navy:#0f2a5c;
+    --accent-blue:#1d4ed8;
     --radius:14px;
     --btn-shadow:0 2px 5px rgba(26,31,41,.16), 0 1px 2px rgba(26,31,41,.08);
     --btn-shadow-active:0 1px 2px rgba(26,31,41,.14);
@@ -60,6 +62,8 @@
     --cert-banner-text:#f7a8a0;
     --clay:#d9573f;
     --info:#7ba3f0;
+    --navy:#1a3a73;
+    --accent-blue:#7ba3f0;
     --btn-shadow:0 2px 6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
     --btn-shadow-active:0 1px 2px rgba(0,0,0,.4);
   }
@@ -1861,6 +1865,40 @@
   .nota-data{font-size:11.5px; color:var(--text-dim); margin-bottom:3px; display:flex; justify-content:space-between;}
   .nota-testo{font-size:13.5px; line-height:1.5; white-space:pre-wrap;}
   .nuova-nota textarea{width:100%; min-height:50px; padding:10px; border:1.5px solid var(--border-strong); border-radius:8px; background:var(--surface-2); color:var(--text); font-size:13.5px; font-family:'Inter',sans-serif; resize:vertical; margin-top:10px;}
+
+  /* ===== Layout B: cruscotto (società) + intestazione a fascia (allenatore) ===== */
+  #view-admin main{padding-bottom:104px;}
+  #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:10px;}
+  #admin-kpi-grid .kpi-card{align-items:flex-start; text-align:left; padding:12px; border-radius:12px;}
+  #admin-kpi-grid .kpi-card:first-child{grid-column:1 / -1; background:var(--navy); border-color:var(--navy); color:#fff; padding:20px; border-radius:16px; gap:4px;}
+  #admin-kpi-grid .kpi-card:first-child .kpi-value{font-size:52px; line-height:1.05;}
+  #admin-kpi-grid .kpi-card:first-child .kpi-label{font-size:13px; color:#c7d4f2; font-weight:600;}
+  #admin-kpi-grid .kpi-card:first-child .kpi-ritirati{font-size:13px; color:#ffd7d2; margin-top:2px;}
+  #admin-kpi-grid .kpi-card:not(:first-child) .kpi-value{font-size:22px;}
+  #admin-kpi-grid .kpi-card:not(:first-child) .kpi-label{font-size:12px;}
+  #admin-kpi-grid .kpi-medaglie{font-size:15px; gap:6px;}
+  .chips-squadre{display:flex; gap:8px; overflow-x:auto; padding:2px 0 6px; margin:0 -2px; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
+  .chips-squadre::-webkit-scrollbar{display:none;}
+  .chip-sq{flex:none; min-height:44px; padding:0 16px; border-radius:999px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); font:inherit; font-size:14px; font-weight:700; cursor:pointer;}
+  .chip-sq.on{background:var(--text); color:var(--bg-track); border-color:var(--text);}
+  #admin-squadre-select{display:none;}
+  #view-admin .foglio-batteria{display:grid; grid-template-columns:1fr 1fr; gap:10px; background:none; border:0; overflow:visible;}
+  #view-admin .foglio-batteria > .corsia-details{border:1px solid var(--border); border-radius:14px; background:var(--surface); overflow:hidden; min-width:0;}
+  #view-admin .foglio-batteria > details[open], #view-admin .foglio-batteria > #riga-report-societa{grid-column:1 / -1;}
+  #view-admin .foglio-batteria .corsia-summary{flex-direction:column; align-items:flex-start; gap:8px; padding:14px; min-height:92px;}
+  #view-admin .foglio-batteria .corsia-riga, #view-admin .foglio-batteria .corsia-freccia-details{display:none;}
+  #view-admin .foglio-batteria .corsia-icona{width:auto; height:auto; background:none !important; font-size:20px;}
+  #view-admin .foglio-batteria #riga-report-societa .corsia-summary{flex-direction:row; align-items:center; min-height:64px;}
+  .tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; display:grid; grid-template-columns:repeat(4,1fr); background:var(--surface); border-top:1px solid var(--border-strong); padding:6px 6px calc(8px + env(safe-area-inset-bottom,0px));}
+  .tabbar button{min-height:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:none; border:0; font:inherit; font-size:11.5px; font-weight:700; color:var(--text-dim); cursor:pointer;}
+  .tabbar button.on{color:var(--accent-blue);}
+  .tabbar svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+  #view-coach .header-gruppo-corsie{background:var(--navy); color:#fff; border-radius:16px; padding:20px; margin-bottom:16px;}
+  #view-coach .header-gruppo-corsie h2{color:#fff;}
+  #view-coach .header-gruppo-corsie .eyebrow-clay{color:#ffb4a8;}
+  #view-coach .header-gruppo-corsie .sub{color:#c7d4f2;}
+  #view-coach .header-gruppo-corsie .sub .num{color:#fff;}
+  #view-coach .header-gruppo-corsie .sub .sep{background:#6f86b8;}
 </style>
 </head>
 <body>
@@ -2464,6 +2502,12 @@
       <button class="btn-logout" data-logout>Esci</button>
       <button type="button" class="btn-logout btn-hamburger">☰</button>
     </header>
+    <nav class="tabbar" id="admin-tabbar" aria-label="Sezioni">
+      <button type="button" data-tab="andamento" class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg> Andamento</button>
+      <button type="button" data-tab="squadre"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 010 6M18 15c2 .5 3 2 3 5"/></svg> Squadre</button>
+      <button type="button" data-tab="eventi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg> Eventi</button>
+      <button type="button" data-tab="report"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg> Report</button>
+    </nav>
     <main>
       <div class="header-gruppo-corsie" style="padding-bottom:6px;">
         <p class="eyebrow-clay">Società</p>
@@ -2473,6 +2517,7 @@
       <div class="kpi-grid" id="admin-kpi-grid" style="margin-top:20px;"></div>
 
       <p class="section-eyebrow" style="margin-top:26px;">Squadre</p>
+      <div id="admin-squadre-chips" class="chips-squadre"></div>
       <select id="admin-squadre-select" class="scheda-search"></select>
       <div id="admin-gruppo-detail"></div>
 
@@ -3577,6 +3622,9 @@
 
   // Menù a tendina "Squadre" nella home Società: alla scelta mostra il dettaglio
   // del gruppo scelto, riusando lo stesso pannello già esistente (renderDettaglioGruppo).
+  function aggiornaChipsSquadre(){
+    document.querySelectorAll('#admin-squadre-chips .chip-sq').forEach(b => b.classList.toggle('on', b.dataset.id === squadreGruppoSelezionato));
+  }
   function renderSquadreFoglio(){
     const select = document.getElementById('admin-squadre-select');
     if(!select) return;
@@ -3591,8 +3639,19 @@
 
     select.onchange = (e) => {
       squadreGruppoSelezionato = e.target.value;
+      aggiornaChipsSquadre();
       if(typeof renderGroupsGrid === 'function') renderGroupsGrid();
     };
+    // Squadre come pulsanti (il menù a tendina resta sotto, nascosto, e guida la logica)
+    const chips = document.getElementById('admin-squadre-chips');
+    if(chips){
+      chips.innerHTML = gruppiOrdinati.map(([id,g]) => `<button type="button" class="chip-sq" data-id="${id}">${escHtml(g.nome)}</button>`).join('');
+      chips.querySelectorAll('.chip-sq').forEach(b => b.addEventListener('click', () => {
+        select.value = (squadreGruppoSelezionato === b.dataset.id) ? '' : b.dataset.id;
+        select.onchange({ target: select });
+      }));
+      aggiornaChipsSquadre();
+    }
 
     if(typeof popolaSelectDestinatarioMessaggi === 'function') popolaSelectDestinatarioMessaggi();
   }
@@ -8306,6 +8365,15 @@
   document.getElementById('card-risultati').addEventListener('click', apriRisultati);
   document.getElementById('card-presenze').addEventListener('click', () => apriPresenze());
   const apriReportSocieta = () => { pulisciStampaSocieta(); popolaPeriodoSelect(); showView('view-report-societa'); renderReportSocieta(); window.scrollTo(0, 0); };
+  document.getElementById('admin-tabbar').addEventListener('click', e => {
+    const b = e.target.closest('button[data-tab]'); if(!b) return;
+    const t = b.dataset.tab;
+    if(t === 'report'){ apriReportSocieta(); return; }
+    document.querySelectorAll('#admin-tabbar button').forEach(x => x.classList.toggle('on', x === b));
+    if(t === 'andamento') window.scrollTo({ top:0, behavior:'smooth' });
+    if(t === 'squadre') document.getElementById('admin-squadre-chips').scrollIntoView({ behavior:'smooth', block:'center' });
+    if(t === 'eventi'){ const d = document.getElementById('eventi-details-societa'); d.open = true; d.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  });
   document.getElementById('riga-report-societa').addEventListener('click', apriReportSocieta);
   document.getElementById('riga-report-societa').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriReportSocieta(); } });
   document.getElementById('back-from-report-societa').addEventListener('click', () => { pulisciStampaSocieta(); showView('view-admin'); });
