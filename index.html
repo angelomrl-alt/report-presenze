@@ -1874,6 +1874,9 @@
   .pt-barra i{display:block; height:100%; background:var(--primary); border-radius:3px;}
   .pt-num{font-weight:700; text-align:right; white-space:nowrap;}
   .pt-num small{font-weight:500; color:var(--text-dim);}
+  .card-principale.cp-gara{background:color-mix(in srgb, var(--clay) 12%, var(--surface)); border:1px solid color-mix(in srgb, var(--clay) 45%, var(--surface));}
+  .card-principale.cp-gara:active{background:color-mix(in srgb, var(--clay) 22%, var(--surface));}
+  .card-principale.cp-gara .cp-icona{stroke:var(--clay);}
   /* ===== Layout B: cruscotto (società) + intestazione a fascia (allenatore) ===== */
   #view-admin main{padding-bottom:104px;}
   #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:10px;}
@@ -1999,6 +2002,15 @@
 
       <div id="presenze-cas-cards" style="display:none;"></div>
 
+      <div class="card-principale cp-gara" id="card-risultati" role="button" tabindex="0">
+        <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h12l-2 4l2 4H5"/></svg>
+        <div class="cp-testi">
+          <div class="cp-titolo">Registra gara</div>
+          <div class="cp-sub">Risultati e piazzamenti degli atleti</div>
+        </div>
+        <span class="cp-freccia" aria-hidden="true">›</span>
+      </div>
+
       <!-- Esporta presenze in Excel: per i gruppi a sezioni (CAS) sta qui, in una tendina, non nel report -->
       <details class="report-section" id="home-export-cas" style="display:none; margin-bottom:20px;">
         <summary>📤 Esporta presenze (Excel)</summary>
@@ -2021,17 +2033,6 @@
       </details>
 
       <div class="foglio-batteria griglia-azioni">
-        <div class="corsia c-gara" id="card-risultati">
-          <div class="corsia-riga"></div>
-          <div class="corsia-corpo">
-            <div class="corsia-icona"><svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2 4l2 4H5"/></svg></div>
-            <div class="corsia-testi">
-              <div class="corsia-titolo">Registra gara</div>
-              </div>
-          </div>
-          <div class="corsia-freccia">›</div>
-        </div>
-
         <div class="corsia c-report" id="card-report">
           <div class="corsia-riga"></div>
           <div class="corsia-corpo">
@@ -8485,6 +8486,7 @@
 
   // --- Navigazione Registra presenze ---
   document.getElementById('card-risultati').addEventListener('click', apriRisultati);
+  document.getElementById('card-risultati').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); apriRisultati(); } });
   document.getElementById('card-presenze').addEventListener('click', () => apriPresenze());
   const apriReportSocieta = () => { pulisciStampaSocieta(); popolaPeriodoSelect(); showView('view-report-societa'); renderReportSocieta(); window.scrollTo(0, 0); };
   document.getElementById('admin-tabbar').addEventListener('click', e => {
