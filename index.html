@@ -1886,6 +1886,8 @@
   .cal-g{min-height:40px; border-radius:8px; border:1px solid transparent; background:none; color:var(--text-dim); font:inherit; font-size:13.5px; opacity:.55;}
   .cal-g.dati{background:color-mix(in srgb, var(--primary) 22%, var(--surface)); color:var(--text); font-weight:700; opacity:1; cursor:pointer; border-color:color-mix(in srgb, var(--primary) 55%, var(--surface));}
   .cal-g.sel{background:var(--text); color:var(--bg-track); border-color:var(--text);}
+  #view-admin .foglio-batteria .corsia-testi{min-width:0; width:100%;}
+  #view-admin .foglio-batteria .corsia-titolo, #view-admin .foglio-batteria .corsia-anteprima{white-space:normal; overflow:visible; text-overflow:clip; display:block;}
   /* ===== Layout B: cruscotto (società) + intestazione a fascia (allenatore) ===== */
   #view-admin main{padding-bottom:104px;}
   #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:10px;}
@@ -2555,7 +2557,7 @@
             <span class="corsia-riga" style="background:var(--clay);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--clay) 14%, var(--surface));">🏁</span>
             <span class="corsia-testi">
-              <span class="corsia-titolo">Ultima giornata di gare</span>
+              <span class="corsia-titolo">Giorni di gara</span>
               <span class="corsia-anteprima" id="anteprima-ultima-gara">—</span>
             </span>
             <span class="corsia-freccia-details">›</span>
@@ -2568,7 +2570,7 @@
             <span class="corsia-riga" style="background:var(--primary);"></span>
             <span class="corsia-icona" style="background:color-mix(in srgb, var(--primary) 14%, var(--surface));">🏃</span>
             <span class="corsia-testi">
-              <span class="corsia-titolo">Ultimo allenamento</span>
+              <span class="corsia-titolo">Giorni di allenamento</span>
               <span class="corsia-anteprima" id="anteprima-ultimo-allenamento">—</span>
             </span>
             <span class="corsia-freccia-details">›</span>
