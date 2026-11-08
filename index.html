@@ -3937,6 +3937,73 @@
     </div>`;
   }
 
+  // ===== Ultima giornata di gare (società): stesso stile dell'ultimo allenamento, con calendario dei giorni di gara =====
+  let ultimaGaraSel = null, ultimaGaraMese = null, ultimaGaraDati = [];
+  function disegnaUltimaGara(risultati){
+    ultimaGaraDati = risultati;
+    const cont = document.getElementById('ultima-giornata-gare');
+    if(!cont) return;
+    const giorni = new Set(risultati.map(r => r.data));
+    const ultima = Array.from(giorni).sort().pop() || '';
+    if(!ultima){ cont.innerHTML = '<p class="empty-note">Nessun risultato con posizione registrato ancora.</p>'; return; }
+    if(!ultimaGaraSel || !giorni.has(ultimaGaraSel)) ultimaGaraSel = ultima;
+    if(!ultimaGaraMese) ultimaGaraMese = ultimaGaraSel.slice(0, 7);
+    if(!cont.dataset.pronto){
+      cont.dataset.pronto = '1';
+      cont.addEventListener('click', e => {
+        const nav = e.target.closest('[data-gmese]');
+        const g = e.target.closest('[data-ggiorno]');
+        const ult = e.target.closest('[data-gultimo]');
+        if(nav){ const [y, m] = ultimaGaraMese.split('-').map(Number); const d = new Date(y, m - 1 + parseInt(nav.dataset.gmese, 10), 1); ultimaGaraMese = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+        else if(g){ ultimaGaraSel = g.dataset.ggiorno; }
+        else if(ult){ ultimaGaraSel = ult.dataset.gultimo; ultimaGaraMese = ultimaGaraSel.slice(0, 7); }
+        else return;
+        disegnaUltimaGara(ultimaGaraDati);
+      });
+    }
+    const [anno, mese] = ultimaGaraMese.split('-').map(Number);
+    const offset = (new Date(anno, mese - 1, 1).getDay() + 6) % 7;
+    const nGiorni = new Date(anno, mese, 0).getDate();
+    const annoCorrente = new Date().getFullYear();
+    const celle = [];
+    for(let i = 0; i < offset; i++) celle.push('<span></span>');
+    for(let d = 1; d <= nGiorni; d++){
+      const iso = anno + '-' + String(mese).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      celle.push(giorni.has(iso)
+        ? `<button type="button" class="cal-g dati${iso === ultimaGaraSel ? ' sel' : ''}" data-ggiorno="${iso}" aria-label="${d}: gara registrata">${d}</button>`
+        : `<span class="cal-g" aria-hidden="true" style="display:flex; align-items:center; justify-content:center;">${d}</span>`);
+    }
+    const nomeMese = new Date(anno, mese - 1, 1).toLocaleDateString('it-IT', { month:'long', year:'numeric' });
+    const dataLunga = new Date(ultimaGaraSel + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const podi = risultati.filter(r => r.data === ultimaGaraSel && [1,2,3].includes(parseInt(r.piazzamento, 10)));
+    const perGara = new Map();   // nomeGara -> { luogo, righe }
+    podi.forEach(r => {
+      const k = r.gara || '—';
+      if(!perGara.has(k)) perGara.set(k, { luogo: r.luogo || '', righe: [] });
+      perGara.get(k).righe.push(r);
+    });
+    const medaglie = { 1:'🥇', 2:'🥈', 3:'🥉' };
+    const corpo = perGara.size === 0
+      ? '<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun podio in questa giornata.</p>'
+      : Array.from(perGara.entries()).map(([nomeGara, info]) => `
+        <div style="margin-bottom:12px;">
+          <p style="font-weight:700; font-size:14px; margin:0 0 2px;">${escHtml(nomeGara)}</p>
+          ${info.luogo ? `<p style="font-size:12px; color:var(--text-dim); margin:0 0 6px;">📍 ${escHtml(info.luogo)}</p>` : ''}
+          ${info.righe.slice().sort((a,b) => parseInt(a.piazzamento, 10) - parseInt(b.piazzamento, 10)).map(r => {
+            const p = parseInt(r.piazzamento, 10);
+            const nomeGruppo = (GRUPPI[r.gruppoId] && GRUPPI[r.gruppoId].nome) || '—';
+            return `<div style="display:flex; justify-content:space-between; gap:10px; font-size:13.5px; padding:5px 0; border-top:1px solid var(--border);"><span>${medaglie[p] || ''} <span style="font-weight:600;">${escHtml(r.atleta)}</span> <span style="color:var(--text-dim); font-size:11.5px;">(${escHtml(nomeGruppo)})</span> · ${escHtml(r.disciplina || '')}</span><span style="font-weight:700;">${p}°</span></div>`;
+          }).join('')}
+        </div>`).join('');
+    cont.innerHTML = `<div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+      <div class="cal-testa"><button type="button" class="cal-nav" data-gmese="-1" aria-label="Mese precedente" ${mese <= 1 && anno <= annoCorrente ? 'disabled' : ''}>‹</button><b>${nomeMese}</b><button type="button" class="cal-nav" data-gmese="1" aria-label="Mese successivo" ${mese >= 12 && anno >= annoCorrente ? 'disabled' : ''}>›</button></div>
+      <div class="cal-griglia">${['L','M','M','G','V','S','D'].map(x => `<span class="cal-gs">${x}</span>`).join('')}${celle.join('')}</div>
+      <p style="font-size:12.5px; color:var(--text-dim); margin:0 0 10px;">${dataLunga}${ultimaGaraSel !== ultima ? ` · <button type="button" data-gultimo="${ultima}" style="background:none; border:0; padding:0; font:inherit; color:var(--accent-blue); font-weight:700; cursor:pointer;">Vai all’ultima</button>` : ''}</p>
+      ${corpo}
+      <p style="font-size:11.5px; color:var(--text-dim); margin:6px 0 0;">${podi.length} podi${podi.length === 1 ? 'o' : ''} in questa giornata. Giorni evidenziati: gare registrate.</p>
+    </div>`;
+  }
+
   async function renderGroupsGrid(){
     const [snapAtleti, snapPresenze, snapGare, snapRisultati] = await Promise.all([
       getDocs(collection(db,'atleti')),
@@ -4097,57 +4164,10 @@
 
     // Riepilogo ultima giornata di gare
 
-    const ultimaGiornataCont = document.getElementById('ultima-giornata-gare');
     const risultatiConPosizione = snapRisultati.docs.map(d => d.data()).filter(r => r.data && r.piazzamento);
     const dateConRisultati = risultatiConPosizione.map(r => r.data).sort();
     const ultimaData = dateConRisultati.length ? dateConRisultati[dateConRisultati.length - 1] : null;
-    if(!ultimaData){
-      ultimaGiornataCont.innerHTML = '<p class="empty-note">Nessun risultato con posizione registrato ancora.</p>';
-    } else {
-      // Solo i podi (1°, 2° e 3°) dell'ultima giornata
-      const risultatiUltimaData = risultatiConPosizione.filter(r => r.data === ultimaData && [1,2,3].includes(parseInt(r.piazzamento, 10)));
-      const perGara = new Map(); // nomeGara -> {luogo, righe:[]}
-      risultatiUltimaData.forEach(r => {
-        const chiave = r.gara || '—';
-        if(!perGara.has(chiave)) perGara.set(chiave, { luogo: r.luogo || '', righe: [] });
-        perGara.get(chiave).righe.push(r);
-      });
-      const dataLabel = new Date(ultimaData + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'long', year:'numeric' });
-      const medaglie = {1:'🥇',2:'🥈',3:'🥉'};
-      ultimaGiornataCont.innerHTML = perGara.size === 0
-      ? `<p class="empty-note">Nessun podio nell'ultima giornata di gare (${dataLabel}).</p>`
-      : `
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px;">
-          <p style="font-size:12.5px; color:var(--text-dim); margin:0 0 12px;">${dataLabel}</p>
-          ${Array.from(perGara.entries()).map(([nomeGara, info]) => {
-            const righeOrdinate = info.righe.slice().sort((a,b) => {
-              const pa = parseInt(a.piazzamento,10), pb = parseInt(b.piazzamento,10);
-              if(isNaN(pa) && isNaN(pb)) return 0;
-              if(isNaN(pa)) return 1;
-              if(isNaN(pb)) return -1;
-              return pa - pb;
-            });
-            return `
-              <div style="margin-bottom:14px;">
-                <p style="font-weight:700; font-size:14px; margin:0 0 2px;">${nomeGara}</p>
-                ${info.luogo ? `<p style="font-size:12px; color:var(--text-dim); margin:0 0 8px;">📍 ${info.luogo}</p>` : ''}
-                ${righeOrdinate.map(r => {
-                  const p = parseInt(r.piazzamento,10);
-                  const prefisso = medaglie[p] ? medaglie[p] + ' ' : '';
-                  const nomeGruppo = (GRUPPI[r.gruppoId] && GRUPPI[r.gruppoId].nome) || '—';
-                  return `
-                    <div style="display:flex; justify-content:space-between; font-size:13px; padding:3px 0;">
-                      <span>${prefisso}${r.atleta} <span style="color:var(--text-dim); font-size:11.5px;">(${nomeGruppo})</span> - ${r.disciplina}</span>
-                      <span style="color:var(--text-dim);">${isNaN(p) ? '' : p + '°'}</span>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
-    }
+    disegnaUltimaGara(risultatiConPosizione);
 
     const anteprimaGaraEl = document.getElementById('anteprima-ultima-gara');
     if(anteprimaGaraEl){
