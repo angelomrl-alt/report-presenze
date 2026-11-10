@@ -3014,6 +3014,7 @@
   }
 
   // Periodo dei report. Di default l'anno solare in corso (gen-dic); si può scegliere un anno precedente. I dati non vengono mai cancellati: cambia solo cosa si vede.
+  const ANNO_INIZIO_LAVORO = 2026;   // primo anno con dati: i selettori di periodo non mostrano anni precedenti
   let periodoReport = 'anno:' + new Date().getFullYear();
   function annoConteggio(){
     const [tipo, val] = periodoReport.split(':');
@@ -3031,7 +3032,7 @@
   function opzioniPeriodo(){
     const cy = new Date().getFullYear();
     const out = [];
-    for(let a = cy; a >= cy - 2; a--) out.push({ v: 'anno:' + a, t: `${a} (gennaio-dicembre)` });
+    for(let a = cy; a >= Math.max(ANNO_INIZIO_LAVORO, cy - 2); a--) out.push({ v: 'anno:' + a, t: `${a} (gennaio-dicembre)` });
     return out;
   }
   function popolaPeriodoSelect(){
@@ -3897,7 +3898,7 @@
     if(!ultima){ cont.innerHTML = '<p class="empty-note">Nessun allenamento registrato ancora.</p>'; anteprima.textContent = '—'; return; }
     anteprima.textContent = new Date(ultima + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'short', day:'numeric', month:'short' }) + ' · ' + riepilogoGiornoAllenamento(sess, ultima).totale + ' presenti';
     if(!ultimoAllSel || !giorni.has(ultimoAllSel)) ultimoAllSel = ultima;
-    if(!ultimoAllMese) ultimoAllMese = ultimoAllSel.slice(0, 7);
+    if(!ultimoAllMese || ultimoAllMese.slice(0, 4) !== String(annoConteggio().anno)) ultimoAllMese = ultimoAllSel.slice(0, 7);
     if(!cont.dataset.pronto){
       cont.dataset.pronto = '1';
       cont.addEventListener('click', e => {
@@ -3914,7 +3915,7 @@
     const [anno, mese] = ultimoAllMese.split('-').map(Number);
     const offset = (new Date(anno, mese - 1, 1).getDay() + 6) % 7;   // settimana da lunedì
     const nGiorni = new Date(anno, mese, 0).getDate();
-    const annoCorrente = new Date().getFullYear();
+    const annoCorrente = parseInt(annoConteggio().anno, 10);   // anno scelto nel selettore Periodo
     const celle = [];
     for(let i = 0; i < offset; i++) celle.push('<span></span>');
     for(let d = 1; d <= nGiorni; d++){
@@ -3949,7 +3950,7 @@
     const ultima = Array.from(giorni).sort().pop() || '';
     if(!ultima){ cont.innerHTML = '<p class="empty-note">Nessun risultato con posizione registrato ancora.</p>'; return; }
     if(!ultimaGaraSel || !giorni.has(ultimaGaraSel)) ultimaGaraSel = ultima;
-    if(!ultimaGaraMese) ultimaGaraMese = ultimaGaraSel.slice(0, 7);
+    if(!ultimaGaraMese || ultimaGaraMese.slice(0, 4) !== String(annoConteggio().anno)) ultimaGaraMese = ultimaGaraSel.slice(0, 7);
     if(!cont.dataset.pronto){
       cont.dataset.pronto = '1';
       cont.addEventListener('click', e => {
@@ -3966,7 +3967,7 @@
     const [anno, mese] = ultimaGaraMese.split('-').map(Number);
     const offset = (new Date(anno, mese - 1, 1).getDay() + 6) % 7;
     const nGiorni = new Date(anno, mese, 0).getDate();
-    const annoCorrente = new Date().getFullYear();
+    const annoCorrente = parseInt(annoConteggio().anno, 10);   // anno scelto nel selettore Periodo
     const celle = [];
     for(let i = 0; i < offset; i++) celle.push('<span></span>');
     for(let d = 1; d <= nGiorni; d++){
@@ -4332,7 +4333,7 @@
         const max = Math.max(1, ...righe.map(r => r.P));
         const conSomma = righe.some(r => r.extra);
         return `<div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
-          <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">📋 Giorni di presenza · ${new Date().getFullYear()}${conSomma ? ' · inclusi Concorsi salti' : ''}</p>
+          <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text-dim); margin:0 0 8px;">📋 Giorni di presenza · ${annoConteggio().anno}${conSomma ? ' · inclusi Concorsi salti' : ''}</p>
           ${righe.length === 0 ? '<p style="font-size:13px; color:var(--text-dim); margin:0;">Nessun atleta nel gruppo.</p>' : `<div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.P / max * 100)}%"></i></span><span class="pt-num">${r.P}<small> gg${conExtra && r.R > 0 ? ' · ' + Math.round(r.P / r.R * 100) + '%' : ''}</small></span></div>`).join('')}</div>`}
         </div>`;
       };
@@ -7965,7 +7966,7 @@
     const select = document.getElementById('report-stagione-select');
     if(!select || !schedaDatiCorrenti) return;
     const cy = new Date().getFullYear();
-    const elenco = [String(cy), String(cy - 1), String(cy - 2)];
+    const elenco = [String(cy), String(cy - 1), String(cy - 2)].filter(a => parseInt(a, 10) >= ANNO_INIZIO_LAVORO);
     const selezionataPrima = select.value;
     select.innerHTML = elenco.map(a => `<option value="${a}">${a} (gennaio-dicembre)</option>`).join('');
     select.value = elenco.includes(selezionataPrima) ? selezionataPrima : String(cy);
@@ -8181,7 +8182,7 @@
     if(righe.length === 0){ corpo.innerHTML = '<p class="empty-note">Nessun atleta nel gruppo.</p>'; return; }
     const max = Math.max(1, ...righe.map(r => r.P));
     const conSomma = righe.some(r => r.extra);
-    corpo.innerHTML = `<p class="sub" style="font-size:12.5px; margin:0 0 6px;">Giorni di presenza ${new Date().getFullYear()} · ${giorni.size} allenament${giorni.size === 1 ? 'o' : 'i'} del gruppo${conSomma ? ' · includono i Concorsi salti' : ''}</p>
+    corpo.innerHTML = `<p class="sub" style="font-size:12.5px; margin:0 0 6px;">Giorni di presenza ${annoConteggio().anno} · ${giorni.size} allenament${giorni.size === 1 ? 'o' : 'i'} del gruppo${conSomma ? ' · includono i Concorsi salti' : ''}</p>
       <div class="pt-lista">${righe.map(r => `<div class="pt-riga"><span class="pt-nome">${escHtml(r.nome)}</span><span class="pt-barra"><i style="width:${Math.round(r.P / max * 100)}%"></i></span><span class="pt-num">${r.P}<small> gg${r.perc !== null ? ' · ' + r.perc + '%' : ''}</small></span></div>`).join('')}</div>`;
   }
 
