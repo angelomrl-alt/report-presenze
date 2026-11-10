@@ -1214,12 +1214,12 @@
   .nomi-controllo .nc-riga{display:flex; justify-content:space-between; font-size:13px; padding:3px 0;}
   .avviso-presenze{background:color-mix(in srgb, var(--clay) 10%, var(--surface)); border:1px solid color-mix(in srgb, var(--clay) 35%, var(--surface)); border-radius:12px; padding:10px 14px; margin-bottom:12px;}
   .ap-titolo{font-size:13.5px; font-weight:700; color:var(--clay); margin-bottom:6px;}
-  /* Richiamo "presenze da registrare": pulsazione lenta (non lampeggio rapido, per non affaticare né dare fastidio) */
+  /* Richiamo "presenze da registrare": pulsazione ben visibile, circa 1 al secondo (sotto la soglia di 3 al secondo oltre la quale i lampeggi possono dare fastidio) */
   @keyframes ap-pulsa{
     0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--clay) 0%, transparent); border-color:color-mix(in srgb, var(--clay) 35%, var(--surface));}
     50%{box-shadow:0 0 0 6px color-mix(in srgb, var(--clay) 28%, transparent); border-color:var(--clay);}
   }
-  .avviso-presenze{border-width:2px; animation:ap-pulsa 1.8s ease-in-out infinite;}
+  .avviso-presenze{border-width:2px; animation:ap-pulsa 0.9s ease-in-out infinite;}
   @media (prefers-reduced-motion: reduce){ .avviso-presenze{animation:none; border-color:var(--clay);} }
   .ap-riga{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0; font-size:14px;}
   .ap-azioni{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
