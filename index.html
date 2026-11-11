@@ -1895,6 +1895,7 @@
   .cal-g.sel{background:var(--text); color:var(--bg-track); border-color:var(--text);}
   #view-admin .foglio-batteria .corsia-testi{min-width:0; width:100%;}
   #view-admin .foglio-batteria .corsia-titolo, #view-admin .foglio-batteria .corsia-anteprima{white-space:normal; overflow:visible; text-overflow:clip; display:block;}
+  .badge-nuovi{display:inline-block; background:var(--clay); color:#fff; border-radius:999px; font-size:11px; font-weight:800; padding:1px 7px; margin-left:4px; vertical-align:middle;}
   /* ===== Layout B: cruscotto (società) + intestazione a fascia (allenatore) ===== */
   #view-admin main{padding-bottom:104px;}
   #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:10px;}
@@ -1913,7 +1914,7 @@
   #admin-squadre-select{display:none;}
   #view-admin .foglio-batteria{display:grid; grid-template-columns:1fr 1fr; gap:10px; background:none; border:0; overflow:visible;}
   #view-admin .foglio-batteria > .corsia-details{border:1px solid var(--border); border-radius:14px; background:var(--surface); overflow:hidden; min-width:0;}
-  #view-admin .foglio-batteria > details[open], #view-admin .foglio-batteria > #riga-report-societa, #view-admin .foglio-batteria > #eventi-details-societa{grid-column:1 / -1;}
+  #view-admin .foglio-batteria > details[open], #view-admin .foglio-batteria > #riga-report-societa{grid-column:1 / -1;}
   #view-admin .foglio-batteria .corsia-summary{flex-direction:column; align-items:flex-start; gap:8px; padding:14px; min-height:92px;}
   #view-admin .foglio-batteria .corsia-riga, #view-admin .foglio-batteria .corsia-freccia-details{display:none;}
   #view-admin .foglio-batteria .corsia-icona{width:auto; height:auto; background:none !important; font-size:20px;}
@@ -2583,6 +2584,19 @@
             <span class="corsia-freccia-details">›</span>
           </summary>
           <div class="corsia-details-corpo" id="ultimo-allenamento"></div>
+        </details>
+
+        <details class="corsia-details">
+          <summary class="corsia-summary">
+            <span class="corsia-riga" style="background:var(--clay);"></span>
+            <span class="corsia-icona" style="background:color-mix(in srgb, var(--clay) 14%, var(--surface));">🆕</span>
+            <span class="corsia-testi">
+              <span class="corsia-titolo">Nuovi atleti <span class="badge-nuovi" id="badge-nuovi-atleti" style="display:none;"></span></span>
+              <span class="corsia-anteprima" id="anteprima-nuovi-atleti">—</span>
+            </span>
+            <span class="corsia-freccia-details">›</span>
+          </summary>
+          <div class="corsia-details-corpo" id="nuovi-atleti"></div>
         </details>
 
         <details class="corsia-details" id="eventi-details-societa">
@@ -3947,6 +3961,52 @@
     </div>`;
   }
 
+  // ===== Nuovi atleti (società): inseriti negli ultimi 30 giorni, con gruppo e allenatore =====
+  let nuoviAtletiRecenti = [];
+  function nuoviAtletiVisti(){ try{ return JSON.parse(localStorage.getItem('atletiNuoviVisti') || '[]'); }catch(e){ return []; } }
+  function disegnaNuoviAtleti(docs){
+    const cont = document.getElementById('nuovi-atleti');
+    if(!cont) return;
+    const anteprima = document.getElementById('anteprima-nuovi-atleti');
+    const badge = document.getElementById('badge-nuovi-atleti');
+    const lim = new Date(); lim.setDate(lim.getDate() - 30);
+    const limISO = dataLocaleISO(lim);
+    const recenti = docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(a => !a.archiviato && typeof a.creatoIl === 'string' && a.creatoIl >= limISO)
+      .sort((a,b) => b.creatoIl.localeCompare(a.creatoIl) || (a.nome || '').localeCompare(b.nome || ''));
+    nuoviAtletiRecenti = recenti;
+    const visti = nuoviAtletiVisti();
+    const nonVisti = recenti.filter(a => !visti.includes(a.id));
+    badge.style.display = nonVisti.length ? '' : 'none';
+    badge.textContent = nonVisti.length;
+    anteprima.textContent = recenti.length === 0 ? 'Nessuno negli ultimi 30 giorni' : (nonVisti.length ? nonVisti.length + ' da vedere · ' : '') + recenti.length + ' negli ultimi 30 giorni';
+    if(!cont.dataset.pronto){
+      cont.dataset.pronto = '1';
+      cont.addEventListener('click', e => {
+        if(!e.target.closest('[data-visti]')) return;
+        try{ localStorage.setItem('atletiNuoviVisti', JSON.stringify(Array.from(new Set(nuoviAtletiVisti().concat(nuoviAtletiRecenti.map(a => a.id)))))); }catch(err){}
+        const nodi = Array.from(document.querySelectorAll('#nuovi-atleti [data-visti]'));
+        nodi.forEach(n => n.remove());
+        badge.style.display = 'none';
+        cont.querySelectorAll('.chip-nuovo').forEach(c => c.remove());
+        anteprima.textContent = nuoviAtletiRecenti.length + ' negli ultimi 30 giorni';
+      });
+    }
+    if(recenti.length === 0){ cont.innerHTML = '<p class="empty-note">Nessun atleta aggiunto negli ultimi 30 giorni.</p>'; return; }
+    cont.innerHTML = `<div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
+      ${recenti.map(a => {
+        const g = GRUPPI[a.gruppoId];
+        const nuovo = !visti.includes(a.id);
+        const data = new Date(a.creatoIl + 'T00:00:00').toLocaleDateString('it-IT', { day:'numeric', month:'short' });
+        return `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border);">
+          <span style="min-width:0;"><span style="font-weight:700; font-size:14px;">${escHtml(a.nome || '—')}</span>${nuovo ? ' <span class="badge-nuovo-chip chip-nuovo" style="background:var(--clay); color:#fff; border-radius:6px; font-size:10.5px; font-weight:800; padding:1px 6px;">NUOVO</span>' : ''}<br><span style="font-size:12px; color:var(--text-dim);">${escHtml(g ? g.nome : 'Gruppo non trovato')}${g && g.coach ? ' · ' + escHtml(g.coach) : ''}</span></span>
+          <span style="font-size:12.5px; color:var(--text-dim); white-space:nowrap;">${data}</span>
+        </div>`;
+      }).join('')}
+      ${nonVisti.length ? `<button type="button" class="btn-secondary" data-visti="1" style="margin-top:12px; width:100%;">Segna come visti</button>` : ''}
+    </div>`;
+  }
+
   // ===== Ultima giornata di gare (società): stesso stile dell'ultimo allenamento, con calendario dei giorni di gara =====
   let ultimaGaraSel = null, ultimaGaraMese = null, ultimaGaraDati = [];
   function disegnaUltimaGara(risultati){
@@ -4178,6 +4238,7 @@
     const dateConRisultati = risultatiConPosizione.map(r => r.data).sort();
     const ultimaData = dateConRisultati.length ? dateConRisultati[dateConRisultati.length - 1] : null;
     disegnaUltimaGara(risultatiConPosizione);
+    disegnaNuoviAtleti(snapAtleti.docs);
 
     const anteprimaGaraEl = document.getElementById('anteprima-ultima-gara');
     if(anteprimaGaraEl){
@@ -8895,7 +8956,7 @@
     if(isGruppoCondiviso(adminRosterGruppoId)){ alert("Concorsi salti non ha atleti propri: gli atleti restano nel loro gruppo. Aggiungi l'atleta al suo gruppo e poi, da Gestisci atleti di Concorsi salti, usa 'Aggiungi dal tuo gruppo'."); return; }
     const dati = { gruppoId: adminRosterGruppoId, nome };
     if(sezioniGruppo(adminRosterGruppoId)) dati.sezione = document.getElementById('admin-sezione-nuovi').value;
-    await addDoc(collection(db,'atleti'), { ...dati, creatoIl: dataLocaleISO(new Date()) });
+    await addDoc(collection(db,'atleti'), { ...dati, creatoIl: dataLocaleISO(new Date()), creatoDa: (auth.currentUser && auth.currentUser.uid) || '' });
     input.value = "";
   });
 
@@ -9176,7 +9237,7 @@
     const nome = input.value.trim();
     if(!nome) return;
     if(isGruppoCondiviso(currentGruppoId)){ alert("Concorsi salti non ha atleti propri: gli atleti restano nel loro gruppo. Aggiungi l'atleta al suo gruppo e poi, da Gestisci atleti di Concorsi salti, usa 'Aggiungi dal tuo gruppo'."); return; }
-    await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome, ...(sezioneCorrente ? { sezione: sezioneCorrente } : {}), creatoIl: dataLocaleISO(new Date()) });
+    await addDoc(collection(db,'atleti'), { gruppoId: currentGruppoId, nome, ...(sezioneCorrente ? { sezione: sezioneCorrente } : {}), creatoIl: dataLocaleISO(new Date()), creatoDa: (auth.currentUser && auth.currentUser.uid) || '' });
     input.value = "";
   });
 
