@@ -1903,6 +1903,9 @@
   .avviso-oggi.fatto{background:color-mix(in srgb, var(--primary) 12%, var(--surface)); border-color:color-mix(in srgb, var(--primary) 50%, var(--surface));}
   .avviso-oggi.fatto .ao-titolo{color:var(--text);}
   .ap-nota{font-size:12px; color:var(--text-dim); margin:-2px 0 6px;}
+  .cp-oggi{display:inline-block; align-self:flex-start; font-size:12.5px; font-weight:800; border-radius:999px; padding:3px 10px; margin:3px 0 4px;}
+  .cp-oggi.da-fare{background:var(--accent-blue); color:#fff;}
+  .cp-oggi.fatto{background:none; color:var(--text); padding-left:0;}
   /* ===== Layout B: cruscotto (società) + intestazione a fascia (allenatore) ===== */
   #view-admin main{padding-bottom:104px;}
   #admin-kpi-grid{grid-template-columns:repeat(3,1fr); gap:10px;}
@@ -2011,7 +2014,6 @@
         <p class="sub" id="coach-group-sub">—</p>
       </div>
 
-      <div id="avviso-oggi" class="avviso-oggi" style="display:none;"></div>
       <div id="avviso-presenze" class="avviso-presenze" style="display:none;"></div>
 
       <div class="msg-strip" id="msg-strip-coach" style="display:none;">
@@ -2025,6 +2027,7 @@
         <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
         <div class="cp-testi">
           <div class="cp-titolo">Registra presenze</div>
+          <div class="cp-oggi" id="presenze-oggi" style="display:none;"></div>
           <div class="cp-sub" id="presenze-ultimo">Ultimo allenamento: —</div>
         </div>
         <span class="cp-freccia" aria-hidden="true">›</span>
@@ -4548,6 +4551,7 @@
         <svg class="cp-icona" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></svg>
         <div class="cp-testi">
           <div class="cp-titolo">Presenze ${escHtml(z.nome)}</div>
+          <div class="cp-oggi" id="presenze-oggi-${z.id}" style="display:none;"></div>
           <div class="cp-sub" id="cas-coach-${z.id}" style="font-weight:600; color:var(--text);"></div>
           <div class="cp-sub" id="presenze-ultimo-${z.id}">Ultimo allenamento: —</div>
         </div>
@@ -4689,15 +4693,20 @@
     }
     return out;
   }
-  // Richiamo per l'allenamento di OGGI (separato dagli arretrati): blu finché non è registrato, verde dopo
+  // Allenamento di OGGI: lo stato compare sulla card "Registra presenze" (o su quella di ogni sezione): "OGGI · da registrare" oppure "✓ Oggi registrato"
   function aggiornaAvvisoOggi(){
-    const box = document.getElementById('avviso-oggi');
-    if(!box) return;
+    document.querySelectorAll('.cp-oggi').forEach(e => { e.style.display = 'none'; e.textContent = ''; });
     const g = GRUPPI[currentGruppoId];
-    if(currentRuolo !== 'allenatore' || !presenzeCaricate || !g || gruppoSenzaAllenamenti(g)){ box.style.display = 'none'; return; }
+    if(currentRuolo !== 'allenatore' || !presenzeCaricate || !g || gruppoSenzaAllenamenti(g)) return;
     const oggi = new Date(), iso = dataLocaleISO(oggi), dow = oggi.getDay();
+    const mostra = (id, fatta, presenti) => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.className = 'cp-oggi ' + (fatta ? 'fatto' : 'da-fare');
+      el.textContent = fatta ? '✓ Oggi registrato · ' + presenti + ' presenti' : 'OGGI · da registrare';
+      el.style.display = '';
+    };
     const sez = sezioniGruppo(currentGruppoId);
-    const voci = [];   // { z, fatta, presenti }
     if(sez){
       sez.forEach(z => {
         const giorniZ = isGruppoCondiviso(currentGruppoId)
@@ -4705,29 +4714,12 @@
           : (Array.isArray(g.giorniAllenamento) ? g.giorniAllenamento : []);
         if(!giorniZ.includes(dow)) return;
         const u = sessioniAllenamentoGruppo.find(x => x.data === iso && x.sezione === z.id);
-        voci.push({ z, fatta: !!u, presenti: u ? (u.presenti || []).length : 0 });
+        mostra('presenze-oggi-' + z.id, !!u, u ? (u.presenti || []).length : 0);
       });
-    } else {
-      const giorni = Array.isArray(g.giorniAllenamento) ? g.giorniAllenamento : [];
-      if(giorni.includes(dow)){
-        const u = sessioniAllenamentoGruppo.find(x => x.data === iso);
-        voci.push({ z: null, fatta: !!u, presenti: u ? (u.presenti || []).length : 0 });
-      }
+    } else if((Array.isArray(g.giorniAllenamento) ? g.giorniAllenamento : []).includes(dow)){
+      const u = sessioniAllenamentoGruppo.find(x => x.data === iso);
+      mostra('presenze-oggi', !!u, u ? (u.presenti || []).length : 0);
     }
-    if(voci.length === 0){ box.style.display = 'none'; return; }
-    const tutte = voci.every(v => v.fatta);
-    box.className = 'avviso-oggi' + (tutte ? ' fatto' : '');
-    box.innerHTML = `<div class="ao-titolo">${tutte ? '✅ Oggi registrato' : '📅 Oggi c’è allenamento · ricordati le presenze'}</div>` + voci.map(v => `
-      <div class="ao-riga">
-        <span>${v.z ? escHtml(v.z.nome) + ' · ' : ''}${v.fatta ? v.presenti + ' presenti' : 'da registrare'}</span>
-        ${v.fatta ? '' : `<button type="button" class="ao-registra" ${v.z ? `data-sez="${v.z.id}"` : ''}>Registra</button>`}
-      </div>`).join('');
-    box.style.display = '';
-    box.querySelectorAll('.ao-registra').forEach(b => b.addEventListener('click', () => {
-      apriPresenze(b.dataset.sez || null);
-      const campo = document.getElementById('presenze-data');
-      if(campo){ campo.value = iso; campo.dispatchEvent(new Event('input')); }
-    }));
   }
 
   function aggiornaAvvisoPresenze(){
@@ -4769,7 +4761,7 @@
       });
       if(voci.length === 0){ box.style.display = 'none'; return; }
       voci.sort((a,b) => b.iso.localeCompare(a.iso) || a.z.nome.localeCompare(b.z.nome));
-      box.innerHTML = `<div class="ap-titolo">⏰ Presenze arretrate · giorni passati</div><div class="ap-nota">Giorni già trascorsi senza registrazione. L'allenamento di oggi si registra dal riquadro blu o dal pulsante Presenze.</div>` + voci.map(v => `
+      box.innerHTML = `<div class="ap-titolo">⏰ Giorni passati da registrare</div>` + voci.map(v => `
         <div class="ap-riga">
           <span>${etichetta(v.iso)} · ${escHtml(v.z.nome)}</span>
           <span class="ap-azioni">
@@ -4788,7 +4780,7 @@
       ? sezAvviso.filter(z => !(sezioniRegistratePerData.get(iso) || new Set()).has(z.id))
           .map(z => `<button type="button" class="ap-registra" data-data="${iso}" data-sez="${z.id}">${z.nome}</button>`).join('')
       : `<button type="button" class="ap-registra" data-data="${iso}">Registra</button>`;
-    box.innerHTML = `<div class="ap-titolo">⏰ Presenze arretrate · giorni passati</div><div class="ap-nota">Giorni già trascorsi senza registrazione. L'allenamento di oggi si registra dal riquadro blu o dal pulsante Presenze.</div>` + mancanti.map(iso => `
+    box.innerHTML = `<div class="ap-titolo">⏰ Giorni passati da registrare</div>` + mancanti.map(iso => `
       <div class="ap-riga">
         <span>${etichetta(iso)}</span>
         <span class="ap-azioni">
@@ -4809,8 +4801,6 @@
     sessioniAllenamentoGruppo = [];
     const box = document.getElementById('avviso-presenze');
     if(box) box.style.display = 'none';
-    const boxOggi = document.getElementById('avviso-oggi');
-    if(boxOggi) boxOggi.style.display = 'none';
     const el = document.getElementById('presenze-ultimo');
     if(!el) return;
     ultimoAllUnsub = onSnapshot(query(collection(db,'presenze'), where('gruppoId','==', gruppoId)), snap => {
