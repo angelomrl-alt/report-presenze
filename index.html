@@ -4065,36 +4065,30 @@
     // Gare del giorno scelto: dalle gare salvate, più eventuali risultati senza una gara collegata
     const gareGiorno = new Map();   // gruppoId|nome -> { nome, luogo, gruppoId, partecipanti, podi, risultati }
     gare.filter(g => g.data === ultimaGaraSel).forEach(g => {
-      gareGiorno.set((g.gruppoId || '') + '|' + (g.nome || '—'), { nome: g.nome || '—', luogo: g.luogo || '', gruppoId: g.gruppoId, partecipanti: Array.isArray(g.partecipanti) ? g.partecipanti : [], podi: [], risultati: 0 });
+      gareGiorno.set((g.gruppoId || '') + '|' + (g.nome || '—'), { nome: g.nome || '—', luogo: g.luogo || '', gruppoId: g.gruppoId, partecipanti: Array.isArray(g.partecipanti) ? g.partecipanti : [], atleti: new Set(), podi: [], risultati: 0 });
     });
     risultati.filter(r => r.data === ultimaGaraSel).forEach(r => {
       const k = (r.gruppoId || '') + '|' + (r.gara || '—');
-      if(!gareGiorno.has(k)) gareGiorno.set(k, { nome: r.gara || '—', luogo: r.luogo || '', gruppoId: r.gruppoId, partecipanti: [], podi: [], risultati: 0 });
+      if(!gareGiorno.has(k)) gareGiorno.set(k, { nome: r.gara || '—', luogo: r.luogo || '', gruppoId: r.gruppoId, partecipanti: [], atleti: new Set(), podi: [], risultati: 0 });
       const e = gareGiorno.get(k);
       e.risultati++;
+      if(r.atleta) e.atleti.add(r.atleta);
       if([1,2,3].includes(parseInt(r.piazzamento, 10))) e.podi.push(r);
     });
-    const medaglie = { 1:'🥇', 2:'🥈', 3:'🥉' };
-    const corpo = Array.from(gareGiorno.values()).map(e => {
+    // Come per gli allenamenti: una riga per squadra con il nome della gara e il numero di atleti
+    const righeGara = Array.from(gareGiorno.values()).map(e => ({ ...e, n: Math.max(e.partecipanti.length, e.atleti.size) }))
+      .sort((a,b) => ((GRUPPI[a.gruppoId] && GRUPPI[a.gruppoId].nome) || '').localeCompare((GRUPPI[b.gruppoId] && GRUPPI[b.gruppoId].nome) || ''));
+    const totaleAtleti = righeGara.reduce((t, e) => t + e.n, 0);
+    const corpo = righeGara.map(e => {
       const g = GRUPPI[e.gruppoId];
-      return `<div style="margin-bottom:12px;">
-        <p style="font-weight:700; font-size:14px; margin:0 0 2px;">${escHtml(e.nome)}</p>
-        <p style="font-size:12px; color:var(--text-dim); margin:0 0 4px;">${e.luogo ? '📍 ' + escHtml(e.luogo) + ' · ' : ''}${escHtml(g ? g.nome : 'Gruppo non trovato')}${g && g.coach ? ' · ' + escHtml(g.coach) : ''}</p>
-        ${e.partecipanti.length ? `<p style="font-size:12px; color:var(--text-dim); margin:0 0 6px;">👥 ${e.partecipanti.length} atlet${e.partecipanti.length === 1 ? 'a' : 'i'}: ${e.partecipanti.map(escHtml).join(', ')}</p>` : ''}
-        ${e.podi.length
-          ? e.podi.slice().sort((a,b) => parseInt(a.piazzamento, 10) - parseInt(b.piazzamento, 10)).map(r => {
-              const p = parseInt(r.piazzamento, 10);
-              return `<div style="display:flex; justify-content:space-between; gap:10px; font-size:13.5px; padding:5px 0; border-top:1px solid var(--border);"><span>${medaglie[p] || ''} <span style="font-weight:600;">${escHtml(r.atleta)}</span> · ${escHtml(r.disciplina || '')}</span><span style="font-weight:700;">${p}°</span></div>`;
-            }).join('')
-          : `<p style="font-size:13px; color:var(--text-dim); margin:0; padding-top:5px; border-top:1px solid var(--border);">${e.risultati ? 'Nessun podio in questa gara.' : 'Risultati non ancora inseriti.'}</p>`}
-      </div>`;
+      return `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13.5px; padding:6px 0; border-top:1px solid var(--border);"><span style="min-width:0;"><span style="font-weight:600;">${escHtml(g ? g.nome : 'Gruppo non trovato')}</span><br><span style="font-size:12px; color:var(--text-dim);">${escHtml(e.nome)}</span></span><span style="white-space:nowrap;">${e.n} atlet${e.n === 1 ? 'a' : 'i'}</span></div>`;
     }).join('');
     cont.innerHTML = `<div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;">
       <div class="cal-testa"><button type="button" class="cal-nav" data-gmese="-1" aria-label="Mese precedente" ${mese <= 1 && anno <= annoCorrente ? 'disabled' : ''}>‹</button><b>${nomeMese}</b><button type="button" class="cal-nav" data-gmese="1" aria-label="Mese successivo" ${mese >= 12 && anno >= annoCorrente ? 'disabled' : ''}>›</button></div>
       <div class="cal-griglia">${['L','M','M','G','V','S','D'].map(x => `<span class="cal-gs">${x}</span>`).join('')}${celle.join('')}</div>
       <p style="font-size:12.5px; color:var(--text-dim); margin:0 0 10px;">${dataLunga}${ultimaGaraSel !== ultima ? ` · <button type="button" data-gultimo="${ultima}" style="background:none; border:0; padding:0; font:inherit; color:var(--accent-blue); font-weight:700; cursor:pointer;">Vai all’ultima</button>` : ''}</p>
       ${corpo}
-      <p style="font-size:11.5px; color:var(--text-dim); margin:6px 0 0;">${gareGiorno.size} gar${gareGiorno.size === 1 ? 'a' : 'e'} in questa giornata. Giorni evidenziati: gare registrate.</p>
+      <p style="font-size:11.5px; color:var(--text-dim); margin:10px 0 0;">Totale ${totaleAtleti} partecipanti. Giorni evidenziati: gare registrate.</p>
     </div>`;
   }
 
