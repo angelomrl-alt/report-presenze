@@ -8784,7 +8784,8 @@
       feedback.textContent = "Segna almeno un atleta come partecipante.";
       return;
     }
-    if(schedaModelloCadetti()){
+    {
+      // Vale per tutti i gruppi: un podio senza disciplina non verrebbe salvato e sparirebbe dai report
       const senzaSpecialita = [];
       garaPartecipanti.forEach((righe, atletaId) => {
         const atleta = risultatiAtletiDocs.find(a => a.id === atletaId);
@@ -8793,7 +8794,7 @@
         }
       });
       if(senzaSpecialita.length > 0){
-        feedback.textContent = `Manca la specialità per: ${senzaSpecialita.join(', ')}.`;
+        feedback.textContent = `Manca ${schedaModelloCadetti() ? 'la specialità' : 'la disciplina'} per: ${senzaSpecialita.join(', ')}. Il podio non viene salvato senza.`;
         return;
       }
     }
