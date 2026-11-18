@@ -3835,7 +3835,7 @@
     datiReportSocieta = {
       anno: anno.anno, atletiOrfani: ctx.atletiOrfani || [], atletiAttivi: ctx.atletiAttivi, ritirati: ctx.ritirati, allenamenti: ctx.allenamenti, gare: ctx.gare,
       oro: ctx.oro, argento: ctx.argento, bronzo: ctx.bronzo, presenzaMedia, nuoviArrivi,
-      squadre, mesiPresenza, topMedaglie: topMedaglie.slice(0, 5), spunti,
+      squadre, mesiPresenza, topMedaglie: topMedaglie, spunti,
       podiStorico: ctx.podiStorico || 0, gareStorico: ctx.gareStorico || 0
     };
     const anteprima = document.getElementById('anteprima-report-societa');
@@ -3881,8 +3881,12 @@
 
     const totPodi = d.oro + d.argento + d.bronzo;
     el('rs-medagliere').innerHTML = `<p style="margin:0;"><strong>${totPodi === 0 ? 'Nessun podio ancora' : `🥇${d.oro} 🥈${d.argento} 🥉${d.bronzo}`}</strong> in ${d.gare} gar${d.gare === 1 ? 'a' : 'e'}.</p>` +
-      (d.topMedaglie.length === 0 ? '' : `<div class="rs-solo-nomi" style="margin-top:8px;"><span class="rs-nomi">Atleti con più medaglie</span>${d.topMedaglie.map(a =>
-        `<div style="display:flex; justify-content:space-between; gap:8px; padding:3px 0;"><span>${escHtml(a.nome)} <span style="color:var(--text-dim);">(${escHtml(a.gruppo)})</span></span><span>${[a.oro ? '🥇' + a.oro : '', a.argento ? '🥈' + a.argento : '', a.bronzo ? '🥉' + a.bronzo : ''].filter(Boolean).join(' ')}</span></div>`).join('')}</div>`);
+      (d.topMedaglie.length === 0 ? '' : (() => {
+        const rigaMed = a => `<div style="display:flex; justify-content:space-between; gap:8px; padding:3px 0;"><span>${escHtml(a.nome)} <span style="color:var(--text-dim);">(${escHtml(a.gruppo)})</span></span><span>${[a.oro ? '🥇' + a.oro : '', a.argento ? '🥈' + a.argento : '', a.bronzo ? '🥉' + a.bronzo : ''].filter(Boolean).join(' ')}</span></div>`;
+        const primi = d.topMedaglie.slice(0, 5), altri = d.topMedaglie.slice(5);
+        return `<div class="rs-solo-nomi" style="margin-top:8px;"><span class="rs-nomi">Atleti con più medaglie</span>${primi.map(rigaMed).join('')}` +
+          (altri.length ? `<details style="margin-top:6px;"><summary style="cursor:pointer; font-weight:700; font-size:13px; color:var(--accent-blue); min-height:36px; display:flex; align-items:center;">Mostra tutti gli altri (${altri.length})</summary>${altri.map(rigaMed).join('')}</details>` : '') + `</div>`;
+      })());
 
     if(d.podiStorico > 0){
       el('rs-medagliere').insertAdjacentHTML('beforeend',
